@@ -21,7 +21,7 @@ created_at: 2026-10-08
 verified_at: null
 archive_confirmation: null
 archived: false
-bound_branch: comet
+bound_branch: mvp-scaffold
 direct_override: null
 handoff_context: openspec/changes/mvp-scaffold/.comet/handoff/design-context.json
 handoff_hash: 5fdd4c13be9b263a1203739c9df32349fda8cdf1eca6174f41991801a79dc857

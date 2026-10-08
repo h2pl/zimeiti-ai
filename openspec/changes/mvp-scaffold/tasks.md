@@ -2,10 +2,10 @@
 
 ## 1. 工程骨架
 
-- [ ] 1.1 初始化单仓库四目录（apps/api、apps/web、packages/skills、mcp/）与根 README；验证：目录结构与本文档一致，README 存在 <!-- comet-task:ab562423-79d8-4232-8d28-3b9492d27897 -->
-- [ ] 1.2 apps/api 用 uv 初始化并锁定 Python 3.12 与 LangGraph/deepagents/LiteLLM/FastAPI 版本；验证：`uv sync` 成功且 `uv run python -c "import langgraph, fastapi"` 无报错 <!-- comet-task:ec920216-1889-45bc-aebf-d7553be8097e -->
+- [x] 1.1 初始化单仓库四目录（apps/api、apps/web、packages/skills、mcp/）与根 README；验证：目录结构与本文档一致，README 存在 <!-- comet-task:ab562423-79d8-4232-8d28-3b9492d27897 -->
+- [x] 1.2 apps/api 用 uv 初始化并锁定 Python 3.12 与 LangGraph/deepagents/LiteLLM/FastAPI 版本；验证：`uv sync` 成功且 `uv run python -c "import langgraph, fastapi"` 无报错 <!-- comet-task:ec920216-1889-45bc-aebf-d7553be8097e -->
 - [ ] 1.3 编写 docker-compose.yml（Postgres + pgvector + 健康检查）；验证：`docker compose up -d` 后健康检查通过，`psql` 可连 <!-- comet-task:35f2d9c7-8629-4e30-a710-97a27922c0ea -->
-- [ ] 1.4 FastAPI 应用工厂与 `/health` 端点；验证：`uv run uvicorn` 启动后 `GET /health` 返回 200 <!-- comet-task:d28c0535-77ce-4fa6-9b03-90c5d59ee829 -->
+- [x] 1.4 FastAPI 应用工厂与 `/health` 端点；验证：`uv run uvicorn` 启动后 `GET /health` 返回 200 <!-- comet-task:d28c0535-77ce-4fa6-9b03-90c5d59ee829 -->
 
 ## 2. LangGraph 主干与托管循环（hosted-loop）
 
