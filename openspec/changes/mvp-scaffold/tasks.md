@@ -4,15 +4,15 @@
 
 - [x] 1.1 初始化单仓库四目录（apps/api、apps/web、packages/skills、mcp/）与根 README；验证：目录结构与本文档一致，README 存在 <!-- comet-task:ab562423-79d8-4232-8d28-3b9492d27897 -->
 - [x] 1.2 apps/api 用 uv 初始化并锁定 Python 3.12 与 LangGraph/deepagents/LiteLLM/FastAPI 版本；验证：`uv sync` 成功且 `uv run python -c "import langgraph, fastapi"` 无报错 <!-- comet-task:ec920216-1889-45bc-aebf-d7553be8097e -->
-- [ ] 1.3 编写 docker-compose.yml（Postgres + pgvector + 健康检查）；验证：`docker compose up -d` 后健康检查通过，`psql` 可连 <!-- comet-task:35f2d9c7-8629-4e30-a710-97a27922c0ea -->
+- [x] 1.3 编写 docker-compose.yml（Postgres + pgvector + 健康检查）；验证：`docker compose up -d` 后健康检查通过，`psql` 可连 <!-- comet-task:35f2d9c7-8629-4e30-a710-97a27922c0ea -->
 - [x] 1.4 FastAPI 应用工厂与 `/health` 端点；验证：`uv run uvicorn` 启动后 `GET /health` 返回 200 <!-- comet-task:d28c0535-77ce-4fa6-9b03-90c5d59ee829 -->
 
 ## 2. LangGraph 主干与托管循环（hosted-loop）
 
 - [x] 2.1 Postgres checkpointer 接入与连接管理；验证：写入一条检查点后能在数据库中查到对应记录 <!-- comet-task:5e336a78-8dc2-4a93-a8c7-54449d81c745 -->
-- [ ] 2.2 最小执行图（选题→创作→审批 interrupt→发布）编排；验证：本地触发图执行能走到审批中断点 <!-- comet-task:ed3ef53c-c3fd-4dca-bdc1-d0f8255eeb47 -->
-- [ ] 2.3 托管触发器（定时/事件入口）与断点恢复；验证：kill 进程后重启，循环从持久化状态继续且已完成节点不重复执行 <!-- comet-task:ce77da8a-73e5-4e1d-a067-0a37c459b7f1 -->
-- [ ] 2.4 执行审计记录（动作/时间/结果）写入与查询接口；验证：执行一轮后审计查询接口返回完整动作列表 <!-- comet-task:a698fc0d-b997-402d-981f-34fc34ffea91 -->
+- [x] 2.2 最小执行图（选题→创作→审批 interrupt→发布）编排；验证：本地触发图执行能走到审批中断点 <!-- comet-task:ed3ef53c-c3fd-4dca-bdc1-d0f8255eeb47 -->
+- [x] 2.3 托管触发器（定时/事件入口）与断点恢复；验证：kill 进程后重启，循环从持久化状态继续且已完成节点不重复执行 <!-- comet-task:ce77da8a-73e5-4e1d-a067-0a37c459b7f1 -->
+- [x] 2.4 执行审计记录（动作/时间/结果）写入与查询接口；验证：执行一轮后审计查询接口返回完整动作列表 <!-- comet-task:a698fc0d-b997-402d-981f-34fc34ffea91 -->
 
 ## 3. 账号画像（account-profile）
 
