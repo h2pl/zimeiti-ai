@@ -9,7 +9,7 @@
 
 ## 2. LangGraph 主干与托管循环（hosted-loop）
 
-- [ ] 2.1 Postgres checkpointer 接入与连接管理；验证：写入一条检查点后能在数据库中查到对应记录 <!-- comet-task:5e336a78-8dc2-4a93-a8c7-54449d81c745 -->
+- [x] 2.1 Postgres checkpointer 接入与连接管理；验证：写入一条检查点后能在数据库中查到对应记录 <!-- comet-task:5e336a78-8dc2-4a93-a8c7-54449d81c745 -->
 - [ ] 2.2 最小执行图（选题→创作→审批 interrupt→发布）编排；验证：本地触发图执行能走到审批中断点 <!-- comet-task:ed3ef53c-c3fd-4dca-bdc1-d0f8255eeb47 -->
 - [ ] 2.3 托管触发器（定时/事件入口）与断点恢复；验证：kill 进程后重启，循环从持久化状态继续且已完成节点不重复执行 <!-- comet-task:ce77da8a-73e5-4e1d-a067-0a37c459b7f1 -->
 - [ ] 2.4 执行审计记录（动作/时间/结果）写入与查询接口；验证：执行一轮后审计查询接口返回完整动作列表 <!-- comet-task:a698fc0d-b997-402d-981f-34fc34ffea91 -->
