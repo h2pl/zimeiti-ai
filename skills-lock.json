@@ -1,0 +1,143 @@
+{
+  "version": 1,
+  "skills": {
+    "comet": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills/comet/SKILL.md",
+      "computedHash": "34bddc5134f6f2dd9b6b69874f17687d84c68228c2ea0191f610537bd42881f2"
+    },
+    "comet-any": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills/comet-any/SKILL.md",
+      "computedHash": "67315794e13313520f6f443b407b0fc1782d3527eedcebf5bb1b45596db1a62a"
+    },
+    "comet-archive": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills/comet-archive/SKILL.md",
+      "computedHash": "391932371ffc4841e3d4bf4ae61de4cbcb42aec1ec9f64a1393b625d2cbfde66"
+    },
+    "comet-bilingual-docs": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills-maintainer/comet-bilingual-docs/SKILL.md",
+      "computedHash": "a9ff50f686f689bbd74cbf1c021fbcc9ddfb54a692773b7e876987872252b5ff"
+    },
+    "comet-build": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills/comet-build/SKILL.md",
+      "computedHash": "8b16a9a3d4991aa382075f8ee7ee17b2cd1cffd385e5fd774aa18a7bd1b94d0c"
+    },
+    "comet-classic": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills/comet-classic/SKILL.md",
+      "computedHash": "c2ddebe03498c965f7eea92b7982ab964f78151462228644ec6b705c5b161297"
+    },
+    "comet-design": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills/comet-design/SKILL.md",
+      "computedHash": "d245f5bdf909ed43ac8b26d6285254d408090f8004fc33f647570fef0ab223c7"
+    },
+    "comet-github": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills-maintainer/comet-github/SKILL.md",
+      "computedHash": "746ab8823962725abc892d2bdcc4197999d6fb1bc82303b0e46ee73c2922c6f9"
+    },
+    "comet-github-ci-triage": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills-maintainer/comet-github-ci-triage/SKILL.md",
+      "computedHash": "656f41ae13ab374e54f5673de709bac58000dc6108d5b69ae07305478f2b97ac"
+    },
+    "comet-github-idea-to-issue": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills-maintainer/comet-github-idea-to-issue/SKILL.md",
+      "computedHash": "99502b610ae976efdfe1265278af4fe7919fa922368436c39f871cdf04ade7b3"
+    },
+    "comet-github-issue-fix": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills-maintainer/comet-github-issue-fix/SKILL.md",
+      "computedHash": "a15326c7a3f301452e3cc39e0dacd4ae4064a854a27807947afb4bdbc031661d"
+    },
+    "comet-github-issue-triage": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills-maintainer/comet-github-issue-triage/SKILL.md",
+      "computedHash": "9dabfbdc4d055804c90a770a7b2c0a3a1723903c765c6c8f493d5d18b5d72286"
+    },
+    "comet-github-pr-review": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills-maintainer/comet-github-pr-review/SKILL.md",
+      "computedHash": "69dc55eef56b9c6b3ae9a8584bf3cccd5a1fc9c64b5fce132f45c266e5c1cf5d"
+    },
+    "comet-hotfix": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills/comet-hotfix/SKILL.md",
+      "computedHash": "1266f5868203d334638c89a333dc0dd59e243951e5c2639f5647c629b3f97355"
+    },
+    "comet-memory": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills/comet-memory/SKILL.md",
+      "computedHash": "c0a6be00adc6e81ee2a5b9ab75590c811985830a1454f4b84df27e20e12d788a"
+    },
+    "comet-native": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills/comet-native/SKILL.md",
+      "computedHash": "8ce59a662c8ca117ec6b51fc787e4821e9c1b04859b5bf881d7977e5a77e81eb"
+    },
+    "comet-open": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills/comet-open/SKILL.md",
+      "computedHash": "7931eeb146c29b87c21c9ba98bc5fba471a1f1315a1a6ae2fc7884b7139408dc"
+    },
+    "comet-release": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills-maintainer/comet-release/SKILL.md",
+      "computedHash": "c1c60ccf723d41916c54233b3d5c3140a442450e87922eebdae5c3956f7a910f"
+    },
+    "comet-review": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills/comet-review/SKILL.md",
+      "computedHash": "bddd1f1b5c7eb3de65fb15d55d9b10e0991b472880e2fb63ede2dd2c063b80fc"
+    },
+    "comet-runtime-diagnose": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills-maintainer/comet-runtime-diagnose/SKILL.md",
+      "computedHash": "877009c863672342904e51a60aeaa37358b7258b795bac44891cf5d537b5e89d"
+    },
+    "comet-safe-delivery": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills-maintainer/comet-safe-delivery/SKILL.md",
+      "computedHash": "a44727fce993709a41825a1eca57265ae3cf95fd162efa1f0abca7c07605a64e"
+    },
+    "comet-tweak": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills/comet-tweak/SKILL.md",
+      "computedHash": "ff186f78d915bd9fe7497a8096aa88f4213c0cbd2c1bbea1c1eee18f4929c36c"
+    },
+    "comet-verify": {
+      "source": "rpamis/comet",
+      "sourceType": "github",
+      "skillPath": "assets/skills/comet-verify/SKILL.md",
+      "computedHash": "f84c24857896aee4262d264a62125434209b1e20c0ab2fad96e333c5c75388f3"
+    }
+  }
+}
