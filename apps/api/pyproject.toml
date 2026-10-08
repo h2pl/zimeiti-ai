@@ -1,0 +1,38 @@
+[project]
+name = "zimeiti-api"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Test User", email = "test@example.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "deepagents>=0.7.6,<0.8",
+    "fastapi>=0.115",
+    "langchain-deepseek>=1.1.1",
+    "langchain-openai>=1.6.7",
+    "langgraph>=0.4",
+    "langgraph-checkpoint-postgres>=3.1.1",
+    "litellm>=1.104.2",
+    "psycopg[binary]>=3.3.6",
+    "uvicorn[standard]>=0.30",
+]
+
+[project.scripts]
+zimeiti-api = "zimeiti_api:main"
+
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
+
+[build-system]
+requires = ["uv_build>=0.11.23,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]

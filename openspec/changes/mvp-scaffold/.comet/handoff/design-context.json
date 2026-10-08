@@ -1,0 +1,20 @@
+{
+  "change": "mvp-scaffold",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "5fdd4c13be9b263a1203739c9df32349fda8cdf1eca6174f41991801a79dc857",
+  "files": [
+    { "path": "openspec/changes/mvp-scaffold/proposal.md", "sha256": "02351b57f1d0278be924eafee2db41c67649b90f05ed93e8cce05259ba183cf6" },
+    { "path": "openspec/changes/mvp-scaffold/design.md", "sha256": "6fb8f70d853d0878b77b75283343dc94fa45501d37c26666b50b659ef70e42fe" },
+    { "path": "openspec/changes/mvp-scaffold/tasks.md", "sha256": "cb9457f059fbe3c1ba43e691d4d5d376d5a6aa2245a1bea2fa9a4c1e474518f9" },
+    { "path": "openspec/changes/mvp-scaffold/.openspec.yaml", "sha256": "ec3a1b167d0ccdb9f7a3f8f370ba8038feb637051c90a0b3fbcc5e9cef45d7a5" },
+    { "path": "openspec/changes/mvp-scaffold/specs/account-profile/spec.md", "sha256": "3e37089b898a8771df1208037954d875c364217e78625b019d65f122ac5ded4e" },
+    { "path": "openspec/changes/mvp-scaffold/specs/content-creation/spec.md", "sha256": "47e4594c9149335d6d9d05f33600ea7f815ec51e508cd2e6080dfb009fdacdd8" },
+    { "path": "openspec/changes/mvp-scaffold/specs/hosted-loop/spec.md", "sha256": "24018536dc8a69eec93542cf0765f2204a9fa21d7f1f0d3c845b65a1649d3465" },
+    { "path": "openspec/changes/mvp-scaffold/specs/platform-publishing/spec.md", "sha256": "2db04139dc54db0f155c4eb801d59ee5135a1a454f28caaea67897b9a7224e6f" },
+    { "path": "openspec/changes/mvp-scaffold/specs/topic-discovery/spec.md", "sha256": "1d14fe6a8016a7d44d483763ac08a420a353ede859d7d8fb4e125d50e61de8b7" }
+  ]
+}
