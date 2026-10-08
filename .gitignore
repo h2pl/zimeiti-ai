@@ -21,3 +21,7 @@ Thumbs.db
 /.comet/*
 !/.comet/config.yaml
 # <<< Comet managed project state <<<
+
+# 本地密钥与环境配置（勿提交）
+.env
+apps/api/.env
