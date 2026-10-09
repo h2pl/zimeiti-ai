@@ -26,4 +26,5 @@
 
 ## 3. 收尾
 
-- [ ] 3.1 测试报告与缺陷记录更新（verify report 增补）；验证：文档存在且与证据一致 <!-- comet-task:4951b428-40ed-4bda-8c9d-99fcf0d5d984 -->
+- [x] 3.1 测试报告与缺陷记录更新（verify report 增补）；验证：文档存在且与证据一致 <!-- comet-task:4951b428-40ed-4bda-8c9d-99fcf0d5d984 -->
+  - 证据：docs/superpowers/reports/2026-10-09-real-account-verification-verify.md（结论 Go；7 项缺陷 D1-D7 修复记录；make check 53 passed/86.29%）
