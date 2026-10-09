@@ -1,0 +1,16 @@
+{
+  "change": "gzh-typesetting-pipeline",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "adbae3647afa5a7ae9358cbd2d172d194154d431caaf652fd97d30e9401e5812",
+  "files": [
+    { "path": "openspec/changes/gzh-typesetting-pipeline/proposal.md", "sha256": "7b6122cf634f7958f03e8e768b841a4bf7cf45b6cb8e285310de66c687b0e90a" },
+    { "path": "openspec/changes/gzh-typesetting-pipeline/design.md", "sha256": "028e476d86317573e46df7959937d6d1b5c035fb8d9eb3bff6d24315e2cf7027" },
+    { "path": "openspec/changes/gzh-typesetting-pipeline/tasks.md", "sha256": "b21c028837d101fc1afc49be69d9e5b24eeb00861214cf56e4f9413293efda00" },
+    { "path": "openspec/changes/gzh-typesetting-pipeline/.openspec.yaml", "sha256": "8ba8273010ceb66cd0ab320b2f49de179fac6fd6f648317c2cc129442eea7dc0" },
+    { "path": "openspec/changes/gzh-typesetting-pipeline/specs/platform-publishing/spec.md", "sha256": "7c596ffa11b8871f40f63c22554b649f48c006c9fa0fe1edfa591ab50041d832" }
+  ]
+}
