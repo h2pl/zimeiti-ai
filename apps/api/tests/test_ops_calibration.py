@@ -228,27 +228,20 @@ class TestKeyFindings:
         assert "周四" in texts or "周六" in texts  # 最佳发布日
         assert "获赞与收藏" in texts  # 基线异常
 
-    def test_insufficient_data_no_fabrication(self, tmp_path, metrics_db):
-        """证据不足不编造：无快照 → 发现为空或明确「数据不足」。"""
-        from zimeiti_api.ops_calibration import build_key_findings
+    def test_insufficient_data_no_fabrication(self, metrics_db):
+        """证据不足不编造：仅 1 篇事件且无快照 → 关键发现为空。"""
+        from zimeiti_api.ops_calibration import build_evidence, build_key_findings
 
-        findings = build_key_findings(build_evidence := None or _empty_evidence(metrics_db))
-        assert findings == [] or all(
-            "数据不足" not in f["text"] or f.get("honest") for f in findings
+        db = metrics_db
+        db.record_event(
+            platform="gzh-main",
+            title="唯一一篇",
+            source_folder="f0",
+            publish_date="2026-10-09",
+            profile="gzh-main",
         )
-
-
-def _empty_evidence(db):
-    from zimeiti_api.ops_calibration import build_evidence
-
-    db.record_event(
-        platform="gzh-main",
-        title="唯一一篇",
-        source_folder="f0",
-        publish_date="2026-10-09",
-        profile="gzh-main",
-    )
-    return build_evidence(db, platform="gzh-main", profile="gzh-main")
+        ev = build_evidence(db, platform="gzh-main", profile="gzh-main")
+        assert build_key_findings(ev) == []
 
 
 class TestAutoTrigger:

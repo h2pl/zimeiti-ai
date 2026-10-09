@@ -1,0 +1,19 @@
+bash scripts/check-api.sh
+== 1/5 ruff format ==
+40 files left unchanged
+== 2/5 ruff lint ==
+F841 Local variable `build_evidence` is assigned to but never used
+   --> tests\test_ops_calibration.py:235:39
+    |
+233 |         from zimeiti_api.ops_calibration import build_key_findings
+234 |
+235 |         findings = build_key_findings(build_evidence := None or _empty_evidence(metrics_db))
+    |                                       ^^^^^^^^^^^^^^
+236 |         assert findings == [] or all(
+237 |             "数据不足" not in f["text"] or f.get("honest") for f in findings
+    |
+help: Remove assignment to unused variable `build_evidence`
+
+Found 1 error.
+No fixes available (1 hidden fix can be enabled with the `--unsafe-fixes` option).
+make: *** [check] ���� 1

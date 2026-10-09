@@ -1,0 +1,58 @@
+bash scripts/check-api.sh
+== 1/5 ruff format ==
+40 files left unchanged
+== 2/5 ruff lint ==
+All checks passed!
+== 3/5 mypy ==
+Success: no issues found in 29 source files
+== 4/5 bandit ==
+== 5/5 pytest + coverage(>=80%) ==
+........................................................................ [ 76%]
+......................                                                   [100%]
+============================== warnings summary ===============================
+tests\conftest.py:16
+tests\conftest.py:16
+  E:\Projects\zimeiti-ai\apps\api\tests\conftest.py:16: DeprecationWarning: 'asyncio.WindowsSelectorEventLoopPolicy' is deprecated and slated for removal in Python 3.16
+    from asyncio import WindowsSelectorEventLoopPolicy
+
+tests\conftest.py:18
+  E:\Projects\zimeiti-ai\apps\api\tests\conftest.py:18: DeprecationWarning: 'asyncio.set_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())
+
+tests/test_approvals_api.py::test_approvals_api_flow
+  tests\test_approvals_api.py:58: PytestWarning: The test <Function test_approvals_api_flow> is marked with '@pytest.mark.asyncio' but it is not an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.
+    def test_approvals_api_flow():
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.14.5-final-0 _______________
+
+Name                                    Stmts   Miss  Cover   Missing
+---------------------------------------------------------------------
+src\zimeiti_api\__init__.py                 0      0   100%
+src\zimeiti_api\app.py                     58     10    83%   43, 59, 72-79
+src\zimeiti_api\audit.py                   20      1    95%   27
+src\zimeiti_api\checkpoints.py              9      0   100%
+src\zimeiti_api\compliance.py              19      0   100%
+src\zimeiti_api\config.py                  13      0   100%
+src\zimeiti_api\creation.py                29      1    97%   68
+src\zimeiti_api\credentials.py             38      5    87%   18-20, 22, 80
+src\zimeiti_api\graph.py                   11      0   100%
+src\zimeiti_api\hosted.py                  44      5    89%   37, 58-60, 65
+src\zimeiti_api\models.py                  13     11    15%   13-33
+src\zimeiti_api\ops_calibration.py        147     14    90%   29-31, 111, 117, 123, 130, 232-234, 284, 310-318, 325-327
+src\zimeiti_api\ops_metrics.py            223     24    89%   214, 227, 317, 331, 348, 382-383, 408, 412-413, 516-526, 529-531, 538
+src\zimeiti_api\platforms\__init__.py       0      0   100%
+src\zimeiti_api\platforms\gzh.py           64     11    83%   43, 49, 67-78, 82-87
+src\zimeiti_api\platforms\xhs.py          113     20    82%   154-159, 162-163, 165-166, 179-180, 204-206, 223-224, 228-230
+src\zimeiti_api\profiles.py                24      2    92%   33, 37
+src\zimeiti_api\publisher.py               34      3    91%   30-31, 54
+src\zimeiti_api\seal.py                    21      3    86%   21-22, 37
+src\zimeiti_api\tools.py                  126     10    92%   100, 123-124, 164-166, 218-221
+src\zimeiti_api\topics.py                  30      6    80%   36-44
+src\zimeiti_api\xhs_readback.py            15     15     0%   12-32
+---------------------------------------------------------------------
+TOTAL                                    1051    141    87%
+Required test coverage of 80% reached. Total coverage: 86.58%
+94 passed, 4 warnings in 27.42s
+== 全部门禁通过 ==
