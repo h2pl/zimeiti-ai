@@ -2,7 +2,8 @@
 comet_change: ops-metrics-report
 role: technical-design
 canonical_spec: openspec
-status: draft
+archived-with: 2026-10-10-ops-metrics-report
+status: final
 ---
 
 # Design：ops-metrics-report

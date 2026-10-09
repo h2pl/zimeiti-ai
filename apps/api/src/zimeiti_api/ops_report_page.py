@@ -63,7 +63,8 @@ def _svg_line(series: list[dict], metric: str) -> str:
         poly_pts.append(f"{x:.1f},{y:.1f}")
         label = _esc(f"{s['captured_at']} {s['value']:g}")
         circles.append(
-            f"<circle cx='{x:.1f}' cy='{y:.1f}' r='3' fill='#e84393'><title>{label}</title></circle>"
+            f"<circle cx='{x:.1f}' cy='{y:.1f}' r='3' fill='#e84393'>"
+            f"<title>{label}</title></circle>"
         )
     polyline = (
         "<polyline points='"
@@ -145,11 +146,12 @@ def render_html_report(
     by_metric: dict[str, list[dict]] = {}
     for s in snaps:
         by_metric.setdefault(s["metric"], []).append(s)
-    trend_parts = [
-        f"<div style='margin-bottom:16px'>{_svg_line(sorted(v, key=lambda x: x['captured_at']), k)}</div>"
-        for k, v in sorted(by_metric.items())
-        if len(v) >= 2
-    ]
+
+    def _trend_div(metric: str, series: list[dict]) -> str:
+        ordered = sorted(series, key=lambda x: x["captured_at"])
+        return f"<div style='margin-bottom:16px'>{_svg_line(ordered, metric)}</div>"
+
+    trend_parts = [_trend_div(k, v) for k, v in sorted(by_metric.items()) if len(v) >= 2]
     trend_html = "".join(trend_parts) or "<p class='na'>无数据（快照不足）</p>"
 
     # 发布节奏（按星期）

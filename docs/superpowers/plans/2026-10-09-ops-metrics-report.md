@@ -2,6 +2,7 @@
 change: ops-metrics-report
 design-doc: openspec/changes/ops-metrics-report/design.md
 base-ref: f12bfd2
+archived-with: 2026-10-10-ops-metrics-report
 ---
 
 <!-- comet-task-authority: openspec/changes/ops-metrics-report/tasks.md -->
