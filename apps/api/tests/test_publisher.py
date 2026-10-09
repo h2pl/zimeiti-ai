@@ -27,6 +27,30 @@ class TestExecutor:
         )
         assert result["platform_result"] == "submitted"  # mock 平台返回 submitted
 
+    def test_router_three_tier_outcome_passthrough(self, executor):
+        """真实路由器契约（Task 1.1）：dict 三档结果必须透传，不得硬编码 unverified。"""
+
+        def router(account, draft):
+            return {"platform_result": "MEDIA_1", "readback": "verified"}
+
+        result = executor.publish(
+            "gzh-main",
+            {"title": "t", "body": "b"},
+            platform_call=router,
+            credentials_sealed=encrypt_secret("c"),
+        )
+        assert result == {"platform_result": "MEDIA_1", "readback": "verified"}
+
+    def test_str_platform_result_defaults_unverified(self, executor):
+        """非契约返回（str 占位）降级 unverified，不冒报成功。"""
+        result = executor.publish(
+            "xhs-main",
+            {"title": "t", "body": "b"},
+            platform_call=lambda account, draft: "submitted",
+            credentials_sealed=encrypt_secret("c"),
+        )
+        assert result == {"platform_result": "submitted", "readback": "unverified"}
+
     def test_rate_limit_blocks_second_publish_same_day(self, executor):
         executor.publish(
             "xhs-main", {"title": "t1", "body": "b"}, credentials_sealed=encrypt_secret("c1")

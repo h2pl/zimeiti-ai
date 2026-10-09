@@ -55,9 +55,14 @@ class PublishExecutor:
         decrypt_secret(credentials_sealed)  # 凭证无效会在此时抛异常
 
         platform_call = platform_call or self._default_platform_call
-        platform_result = platform_call(account, draft)
+        result = platform_call(account, draft)
         self._published_today[account] = self._published_today.get(account, 0) + 1
-        return {"platform_result": platform_result, "readback": "unverified"}
+        # 真实路由器契约（Task 1.1）：返回 {"platform_result", "readback"} 三档结果，
+        # 必须透传其 outcome——A5 演练发现此处曾硬编码 unverified，导致生产审计
+        # 永远记 unverified（W1 复发）。非 dict 返回（测试占位）才降级 unverified。
+        if isinstance(result, dict) and "readback" in result:
+            return result
+        return {"platform_result": result, "readback": "unverified"}
 
     @staticmethod
     def _default_platform_call(account: str, draft: dict) -> str:
