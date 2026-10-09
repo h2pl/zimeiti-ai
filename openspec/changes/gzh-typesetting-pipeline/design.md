@@ -9,13 +9,13 @@ status: draft
 
 ## D0 复用策略（铁律：不重复造轮子）
 
-排版能力完整复用 my-tools/wechat-mp-manage 上游实现，**vendor 拷贝而非重写**（与 real-account-verification 中 vendor wechat_mp 客户端同一模式）：
+封面生成复用 my-tools/wechat-mp-manage 上游实现，**vendor 拷贝而非重写**（与 real-account-verification 中 vendor wechat_mp 客户端同一模式）。
+
+> 范围修正：正文排版转换（md2html + formatting）已在 real-account-verification build 阶段落地（vendor/wechatfmt/ 已存在、依赖已声明），本变更实际缺口仅封面自动生成——proposal 初稿按「三模块全量接入」编写，经代码核对修正为真实范围。
 
 | vendor 模块 | 上游来源 | 用途 |
 |---|---|---|
-| `vendor/wechatfmt/md2html.py` | `my-tools/wechat-mp-manage/.../article_manage/md2html.py` | Markdown → 微信 HTML（mistune + Pygments monokai 内联高亮） |
-| `vendor/wechatfmt/formatting.py` | 同上 `formatting.py` | 微信兼容内联样式（标题/段落/表格/引用/列表转 div） |
-| `vendor/wechatfmt/generate_cover_combined.py` | 同上 `generate_cover_combined.py` | Pillow 拼接封面（2.35:1 + 1:1，标题自适应换行） |
+| `vendor/wechatfmt/generate_cover_combined.py` | `my-tools/wechat-mp-manage/.../article_manage/generate_cover_combined.py` | Pillow 拼接封面（900×1283：2.35:1 宽封面 + 1:1 方封面，标题自适应换行），返回裁剪坐标 |
 
 上游文件保持一字未改（门禁 ruff/mypy/bandit/coverage 排除 vendor 目录，模式与 real-account-verification 一致）。选 vendor 而非 path 依赖/git 依赖：上游为个人私有仓、无包发布，且三模块零相互依赖、单文件自包含。
 
@@ -42,7 +42,7 @@ draft.body (Markdown)
 
 ## D3 依赖
 
-新增（vendored 模块的直接依赖，全部为成熟库）：mistune（Markdown 解析）、pygments（代码高亮）、beautifulsoup4（formatting 的 DOM 处理）、Pillow（封面绘制）。
+新增：Pillow（封面绘制）。mistune/pygments/beautifulsoup4 已随前一变更声明。
 
 ## D4 不做（Non-goals 落地）
 
