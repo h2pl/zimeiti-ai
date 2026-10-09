@@ -128,7 +128,6 @@ class TestGzhReadback:
 
 class TestXhsLoginFlow:
     def _fake_pw(self, actions, state_exists):
-        from pathlib import Path as _P
 
         class FakePage:
             def goto(self, url):
