@@ -12,11 +12,13 @@ def get_model() -> BaseChatModel:
     """
     import os
 
+    from pydantic import SecretStr
+
     deepseek_key = os.environ.get("DEEPSEEK_API_KEY", "")
     if deepseek_key and not deepseek_key.startswith("在这里"):
         from langchain_deepseek import ChatDeepSeek
 
-        return ChatDeepSeek(model="deepseek-chat", api_key=deepseek_key)
+        return ChatDeepSeek(model="deepseek-chat", api_key=SecretStr(deepseek_key))
 
     dashscope_key = os.environ.get("DASHSCOPE_API_KEY", "")
     if dashscope_key:
@@ -24,7 +26,7 @@ def get_model() -> BaseChatModel:
 
         return ChatOpenAI(
             model="qwen-plus",
-            api_key=dashscope_key,
+            api_key=SecretStr(dashscope_key),
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         )
 

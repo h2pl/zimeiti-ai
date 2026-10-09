@@ -62,3 +62,11 @@
 {"ts": "2026-10-09T04:06:14.005713+00:00", "action": "awaiting_approval", "thread_id": "test-7.2"}
 {"ts": "2026-10-09T04:06:14.164536+00:00", "action": "approval_received", "thread_id": "test-7.2"}
 {"ts": "2026-10-09T04:06:14.165090+00:00", "action": "cycle_completed", "thread_id": "test-7.2"}
+{"ts": "2026-10-09T04:11:11.291422+00:00", "action": "cycle_started", "thread_id": "test-7.2", "instruction": "发布审批流测试内容"}
+{"ts": "2026-10-09T04:11:11.362152+00:00", "action": "awaiting_approval", "thread_id": "test-7.2"}
+{"ts": "2026-10-09T04:11:11.510718+00:00", "action": "approval_received", "thread_id": "test-7.2"}
+{"ts": "2026-10-09T04:11:11.511297+00:00", "action": "cycle_completed", "thread_id": "test-7.2"}
+{"ts": "2026-10-09T04:11:17.981696+00:00", "action": "cycle_started", "thread_id": "test-2.3", "instruction": "发布断点恢复内容"}
+{"ts": "2026-10-09T04:11:18.157191+00:00", "action": "awaiting_approval", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T04:11:18.233129+00:00", "action": "approval_received", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T04:11:18.361543+00:00", "action": "cycle_completed", "thread_id": "test-2.3"}
