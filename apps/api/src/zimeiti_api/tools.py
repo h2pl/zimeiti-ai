@@ -19,7 +19,6 @@ from langchain_core.tools import tool
 from zimeiti_api import audit
 from zimeiti_api.compliance import ComplianceGate
 from zimeiti_api.creation import create_drafts as _create_drafts
-from zimeiti_api.credentials import decrypt_secret
 from zimeiti_api.publisher import PublishExecutor
 from zimeiti_api.topics import discover_topics as _discover_topics
 from zimeiti_api.topics import select_topic as _select_topic

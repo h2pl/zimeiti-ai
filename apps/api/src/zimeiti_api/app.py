@@ -5,11 +5,9 @@ import re
 from fastapi import FastAPI, HTTPException
 from langgraph.types import Command
 
-from zimeiti_api.publisher import PublishExecutor
-
 from zimeiti_api import audit, hosted
 from zimeiti_api.checkpoints import DATABASE_URL
-
+from zimeiti_api.publisher import PublishExecutor
 
 # 进程级单例执行器：频控计数跨请求持久（评审 W2 升级项修复）
 EXECUTOR = PublishExecutor(daily_limit=2, allowed_accounts={"xhs-main", "gzh-main"})
@@ -41,7 +39,6 @@ def create_app() -> FastAPI:
         from zimeiti_api.graph import build_minimal_agent
         from zimeiti_api.models import get_model
         from zimeiti_api.profiles import load_profile
-        from zimeiti_api.publisher import PublishExecutor
 
         if not _THREAD_ID_RE.match(thread_id):
             raise HTTPException(status_code=400, detail="非法 thread_id（允许字母数字._-）")
@@ -72,7 +69,6 @@ def create_app() -> FastAPI:
         from zimeiti_api.graph import build_minimal_agent
         from zimeiti_api.models import get_model
         from zimeiti_api.profiles import load_profile
-        from zimeiti_api.publisher import PublishExecutor
 
         if not _THREAD_ID_RE.match(thread_id):
             raise HTTPException(status_code=400, detail="非法 thread_id（允许字母数字._-）")

@@ -8,16 +8,12 @@ import json
 import uuid
 from pathlib import Path
 
-import pytest
-from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
-from langchain_core.messages import AIMessage, HumanMessage
-from langchain_core.tools import tool as lc_tool
-from langgraph.types import Command
+from langchain_core.messages import AIMessage
 
 from zimeiti_api.checkpoints import get_checkpointer
 from zimeiti_api.credentials import encrypt_secret
 from zimeiti_api.graph import build_minimal_agent
-from zimeiti_api.hosted import run_hosted_cycle, resume_after_approval
+from zimeiti_api.hosted import resume_after_approval, run_hosted_cycle
 from zimeiti_api.publisher import PublishExecutor
 
 PROFILE = {
@@ -226,8 +222,8 @@ async def _compliance_block(tmp_path, monkeypatch):
 
 def test_selection_gate_blocks_creation():
     """未挑选选题时 create_drafts 工具必须阻断（C4 闸门）。"""
-    from zimeiti_api.tools import build_default_tools
     from zimeiti_api.publisher import PublishExecutor
+    from zimeiti_api.tools import build_default_tools
 
     model = SeqModel(responses=[AIMessage(content="{}")])
     tools = build_default_tools(
@@ -242,7 +238,7 @@ def test_selection_gate_blocks_creation():
 
 
 def _diag_tmp():
-    import tempfile
     import pathlib
+    import tempfile
 
     return pathlib.Path(tempfile.mkdtemp(prefix="diag5-")) / "cycle"
