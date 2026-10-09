@@ -29,6 +29,7 @@
 - 产品知识库文档：`E:/Projects/multi-agent-manager/knowledge/domains/dev/content-agent/README.md`（定位/能力地图/技术栈/待决策项）
 - Easel 调研（`E:/Projects/Easel`）：五阶段 pipeline、skill 体系、画像六维、发布读回对账、content_guard
 - xiaobei 调研（`E:/Projects/xiaobei`）：获客闭环、crew 治理、微信 IM、Docker 交付、风控事故教训
+- my-tools 资产盘点（`E:/Projects/my-tools`，第一方私有仓）：wechat-mp-toolkit（公众号全量 API 客户端：token 缓存/素材/草稿/发布/群发/留言/菜单/用户标签/二维码/客服/JS-SDK/OAuth2/datacube 统计）+ wechat-mp-manage（Markdown→微信 HTML 排版产线：mistune 内联样式 + Pygments 高亮 + 主题拼接封面 + 摘要提取），已在 real-account-verification/gzh-typesetting-pipeline 两变更中 vendor 复用；**后续所有公众号/内容运营相关功能 MUST 优先复用该资产，禁止重复实现**
 - 《启示录》机会评估八问的问答记录（2026-10-08，见本文档决策栏）
 
 # 非目标
