@@ -28,6 +28,7 @@ class GzhClient:
     def get_access_token(self, force: bool = False) -> str:
         """获取 access_token，本地缓存避免频繁请求。"""
         now = time.time()
+        self._cache.parent.mkdir(parents=True, exist_ok=True)
         if not force and self._cache.exists():
             try:
                 cached = json.loads(self._cache.read_text(encoding="utf-8"))
