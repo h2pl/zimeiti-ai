@@ -150,9 +150,15 @@ class MetricsDB:
             return int(row["id"])
 
     def record_snapshot(
-        self, event_id: int | None, platform: str, metric: str, value: float, source: str
+        self,
+        event_id: int | None,
+        platform: str,
+        metric: str,
+        value: float,
+        source: str,
+        captured_at: str | None = None,
     ) -> int:
-        """写入指标快照（账号级指标 event_id 可为 None）。"""
+        """写入指标快照（账号级指标 event_id 可为 None；captured_at 可注入便于测试）。"""
         with self._conn() as conn:
             cur = conn.execute(
                 "INSERT INTO metric_snapshots"
@@ -164,7 +170,7 @@ class MetricsDB:
                     metric,
                     value,
                     source,
-                    datetime.now().isoformat(timespec="seconds"),
+                    captured_at or datetime.now().isoformat(timespec="seconds"),
                 ),
             )
             conn.commit()

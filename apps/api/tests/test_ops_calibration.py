@@ -30,10 +30,18 @@ def seeded_db(metrics_db):
         topic_direction="AI 提效",
     )
     eid1, eid2 = [e["id"] for e in db.list_events("xhs-main")]
-    db.record_snapshot(eid1, "xhs-main", "read", 100, source="creator-center")
-    db.record_snapshot(eid2, "xhs-main", "read", 300, source="creator-center")
-    db.record_snapshot(None, "xhs-main", "粉丝数", 106, source="creator-center")
-    db.record_snapshot(None, "xhs-main", "粉丝数", 212, source="creator-center")
+    db.record_snapshot(
+        eid1, "xhs-main", "read", 100, source="creator-center", captured_at="2026-10-09T20:00:00"
+    )
+    db.record_snapshot(
+        eid2, "xhs-main", "read", 300, source="creator-center", captured_at="2026-10-09T20:05:00"
+    )
+    db.record_snapshot(
+        None, "xhs-main", "粉丝数", 106, source="creator-center", captured_at="2026-10-09T20:10:00"
+    )
+    db.record_snapshot(
+        None, "xhs-main", "粉丝数", 212, source="creator-center", captured_at="2026-10-09T20:15:00"
+    )
     return db
 
 
@@ -129,3 +137,170 @@ class TestCli:
         assert oc.main(["calibrate", "--platform", "xhs-main", "--profile", "xhs-main"]) == 0
         out = capsys.readouterr().out
         assert "eval.md" in out
+
+
+class TestKeyFindings:
+    """校准报告扩展：关键发现（确定性 Top 3）/ 方法论 / 局限性（Easel 对标）。"""
+
+    def test_key_findings_generated(self, seeded_db, tmp_path):
+        from zimeiti_api.ops_calibration import calibrate
+
+        # 补足成熟度
+        eid = seeded_db.list_events("xhs-main")[0]["id"]
+        for i in range(5):
+            seeded_db.record_snapshot(eid, "xhs-main", "read", 300 + i, source="creator-center")
+        paths = calibrate(
+            seeded_db, platform="xhs-main", profile="xhs-main", out_dir=str(tmp_path / "e")
+        )
+        md = Path(paths[0]).read_text(encoding="utf-8")
+        assert "## 关键发现" in md
+        assert "## 方法论" in md
+        assert "## 局限性" in md
+        assert "关联性不等于因果性" in md  # Easel 局限性声明措辞
+
+    def test_findings_ranked_and_limited_to_three(self, seeded_db, tmp_path):
+        from zimeiti_api.ops_calibration import build_evidence, build_key_findings
+
+        # 丰富数据：生命周期稳增 2 篇、同weekday发布 2 篇、基线异常指标
+        db = seeded_db
+        db.record_event(
+            platform="xhs-main",
+            title="笔记三",
+            source_folder="f3",
+            publish_date="2026-10-08",
+            profile="xhs-main",
+        )
+        db.record_event(
+            platform="xhs-main",
+            title="笔记四",
+            source_folder="f4",
+            publish_date="2026-10-03",
+            profile="xhs-main",
+        )
+        eid2 = [e for e in db.list_events("xhs-main") if e["source_folder"] == "f2"][0]["id"]
+        eid3 = [e for e in db.list_events("xhs-main") if e["source_folder"] == "f3"][0]["id"]
+        db.record_snapshot(
+            eid2,
+            "xhs-main",
+            "read",
+            600,
+            source="creator-center",
+            captured_at="2026-10-09T20:06:00",
+        )
+        db.record_snapshot(
+            eid3,
+            "xhs-main",
+            "read",
+            100,
+            source="creator-center",
+            captured_at="2026-10-09T20:07:00",
+        )
+        db.record_snapshot(
+            eid3,
+            "xhs-main",
+            "read",
+            200,
+            source="creator-center",
+            captured_at="2026-10-09T20:08:00",
+        )
+        db.record_snapshot(
+            None,
+            "xhs-main",
+            "获赞与收藏",
+            1000,
+            source="creator-center",
+            captured_at="2026-10-09T20:09:00",
+        )
+        db.record_snapshot(
+            None,
+            "xhs-main",
+            "获赞与收藏",
+            5281,
+            source="creator-center",
+            captured_at="2026-10-09T20:10:00",
+        )
+
+        ev = build_evidence(db, platform="xhs-main", profile="xhs-main")
+        findings = build_key_findings(ev)
+        assert 1 <= len(findings) <= 3
+        texts = " / ".join(f["text"] for f in findings)
+        assert "稳增型" in texts  # 生命周期结构
+        assert "周四" in texts or "周六" in texts  # 最佳发布日
+        assert "获赞与收藏" in texts  # 基线异常
+
+    def test_insufficient_data_no_fabrication(self, tmp_path, metrics_db):
+        """证据不足不编造：无快照 → 发现为空或明确「数据不足」。"""
+        from zimeiti_api.ops_calibration import build_key_findings
+
+        findings = build_key_findings(build_evidence := None or _empty_evidence(metrics_db))
+        assert findings == [] or all(
+            "数据不足" not in f["text"] or f.get("honest") for f in findings
+        )
+
+
+def _empty_evidence(db):
+    from zimeiti_api.ops_calibration import build_evidence
+
+    db.record_event(
+        platform="gzh-main",
+        title="唯一一篇",
+        source_folder="f0",
+        publish_date="2026-10-09",
+        profile="gzh-main",
+    )
+    return build_evidence(db, platform="gzh-main", profile="gzh-main")
+
+
+class TestAutoTrigger:
+    """按量触发：自上次校准以来新快照 ≥5 执行；--force 绕过（xiaobei）。"""
+
+    def test_auto_below_threshold_skips(self, seeded_db, tmp_path, capsys):
+        from zimeiti_api.ops_calibration import auto_calibrate
+
+        out = auto_calibrate(
+            seeded_db,
+            platform="xhs-main",
+            profile="xhs-main",
+            out_dir=str(tmp_path / "a"),
+            last_calibrated_at="2026-10-09T23:00:00",
+        )
+        assert out["skipped"] is True
+        assert out["new_snapshots"] == 0  # fixture 快照（10-09 晚）都在校准时间戳之前
+        assert not (tmp_path / "a").exists() or not list((tmp_path / "a").glob("*.md"))
+
+    def test_auto_above_threshold_runs(self, seeded_db, tmp_path):
+        from zimeiti_api.ops_calibration import auto_calibrate
+
+        # 校准时间戳之前 0 条，之后新增 6 条
+        eid = seeded_db.list_events("xhs-main")[0]["id"]
+        for i in range(6):
+            seeded_db.record_snapshot(
+                eid,
+                "xhs-main",
+                "read",
+                400 + i,
+                source="creator-center",
+                captured_at="2026-10-10T01:00:00",
+            )
+        out = auto_calibrate(
+            seeded_db,
+            platform="xhs-main",
+            profile="xhs-main",
+            out_dir=str(tmp_path / "a"),
+            last_calibrated_at="2026-10-10T00:00:00",
+        )
+        assert out["skipped"] is False
+        assert out["new_snapshots"] >= 5
+
+    def test_force_bypasses_threshold(self, seeded_db, tmp_path):
+        from zimeiti_api.ops_calibration import auto_calibrate
+
+        out = auto_calibrate(
+            seeded_db,
+            platform="xhs-main",
+            profile="xhs-main",
+            out_dir=str(tmp_path / "a"),
+            last_calibrated_at=None,
+            force=True,
+        )
+        assert out["skipped"] is False

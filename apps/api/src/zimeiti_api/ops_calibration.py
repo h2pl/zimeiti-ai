@@ -129,7 +129,26 @@ def render_eval_report(evidence: dict, generated_at: datetime | None = None) -> 
     else:
         lines.append("- 无数据")
 
+    findings = build_key_findings(ev)
+    lines += ["", "## 关键发现", ""]
+    if findings:
+        for i, f in enumerate(findings, 1):
+            lines.append(f"{i}. {f['text']}")
+    else:
+        lines.append("- 数据不足，暂无关键发现")
     lines += [
+        "",
+        "## 方法论",
+        "",
+        "- 基线归一化：账号级指标最新值 / 该指标历史均值（绝对值仅作上下文，趋势优先）",
+        "- 生命周期判定：单篇 read 快照序列的确定性规则（速爆/稳增/长尾）",
+        "- 发布节奏：发布事件按星期几计数",
+        "",
+        "## 局限性",
+        "",
+        f"- 样本量：{ev['events']} 篇事件 / {ev['snapshots']} 条快照（当前）",
+        "- 指标覆盖率：账号级快照与单篇快照分别统计，缺失项不参与计算",
+        "- 关联性不等于因果性——时段/类型分析反映相关关系，不能直接推导因果",
         "",
         f"## 结论（{tag}）",
         "",
@@ -143,10 +162,109 @@ def render_eval_report(evidence: dict, generated_at: datetime | None = None) -> 
     return "\n".join(lines) + "\n"
 
 
+_WEEKDAY_ZH = {
+    "Monday": "周一",
+    "Tuesday": "周二",
+    "Wednesday": "周三",
+    "Thursday": "周四",
+    "Friday": "周五",
+    "Saturday": "周六",
+    "Sunday": "周日",
+}
+
+_LIFECYCLE_INSIGHT = {
+    "速爆型": "发布后首日即冲高——适合追热点选题，并保持发布后 24h 内的互动跟进",
+    "稳增型": "内容持续自然增长——保持系列化选题与稳定更新节奏",
+    "长尾型": "内容长期缓慢获取流量——建议定期回访维护旧文并做合集",
+}
+
+
+def build_key_findings(evidence: dict) -> list[dict]:
+    """确定性关键发现（至多 3 条，按数据排名；证据不足不编造——Easel 模式）。"""
+    findings: list[dict] = []
+
+    # 1. 生命周期结构（占比最高的类型；「数据不足」不计入，避免平局误选）
+    dist = evidence.get("lifecycle_distribution") or {}
+    known = {k: v for k, v in dist.items() if k in _LIFECYCLE_INSIGHT}
+    if known:
+        top_type, top_count = max(known.items(), key=lambda x: x[1])
+        total = sum(dist.values())
+        if True:
+            findings.append(
+                {
+                    "text": f"内容生命周期以「{top_type}」为主（{top_count}/{total} 篇）——"
+                    f"{_LIFECYCLE_INSIGHT[top_type]}",
+                }
+            )
+
+    # 2. 最佳发布日（≥2 篇才纳入）
+    rhythm = evidence.get("rhythm") or {}
+    if rhythm:
+        best_day, best_count = max(rhythm.items(), key=lambda x: x[1])
+        if best_count >= 2:
+            findings.append(
+                {
+                    "text": f"发布集中在{_WEEKDAY_ZH.get(best_day, best_day)}"
+                    f"（{best_count} 篇）——可在该时段验证表现并保持节奏",
+                }
+            )
+
+    # 3. 基线异常（归一化偏离 1 最大的账号级指标，需 ≥2 点快照）
+    anomalies = [
+        (metric, b)
+        for metric, b in (evidence.get("baseline") or {}).items()
+        if b.get("normalized") is not None and abs(b["normalized"] - 1) >= 0.5
+    ]
+    if anomalies:
+        metric, b = max(anomalies, key=lambda x: abs(x[1]["normalized"] - 1))
+        direction = "高于" if b["normalized"] > 1 else "低于"
+        findings.append(
+            {
+                "text": f"账号级指标「{metric}」当前为基线的 {b['normalized']}x"
+                f"（{direction}均值）——关注其变化趋势",
+            }
+        )
+
+    return findings[:3]
+
+
 def _eval_dir() -> str:
     from zimeiti_api.config import DATA_DIR
 
     return str(Path(DATA_DIR) / "metrics" / "evals")
+
+
+def auto_calibrate(
+    db: MetricsDB,
+    platform: str,
+    profile: str | None = None,
+    out_dir: str | None = None,
+    last_calibrated_at: str | None = None,
+    force: bool = False,
+) -> dict:
+    """按量触发校准（xiaobei --force 兜底）：新快照 ≥5 才执行，否则跳过并说明。"""
+    if not force:
+        snaps = db.list_snapshots(platform)
+        new_count = (
+            sum(1 for s in snaps if s["captured_at"] > last_calibrated_at)
+            if last_calibrated_at
+            else 0
+        )
+        if new_count < 5:
+            return {
+                "skipped": True,
+                "new_snapshots": new_count,
+                "threshold": 5,
+                "reason": f"自上次校准以来新快照 {new_count} 条（阈值 5）",
+            }
+    snaps = db.list_snapshots(platform)
+    new_count = (
+        sum(1 for s in snaps if s["captured_at"] > last_calibrated_at)
+        if last_calibrated_at
+        else len(snaps)
+    )
+    paths = calibrate(db, platform=platform, profile=profile, force=force, out_dir=out_dir)
+    return {"skipped": False, "new_snapshots": new_count, "reports": paths}
 
 
 def calibrate(
@@ -180,9 +298,24 @@ def main(argv: list[str] | None = None) -> int:
     p_cal.add_argument("--platform", required=True)
     p_cal.add_argument("--profile", default=None)
     p_cal.add_argument("--force", action="store_true", help="手动兜底触发")
+    p_auto = sub.add_parser("auto", help="按量触发校准（定时入口，新快照 ≥5 才执行）")
+    p_auto.add_argument("--platform", required=True)
+    p_auto.add_argument("--profile", default=None)
+    p_auto.add_argument("--last-calibrated-at", default=None, help="上次校准时间 ISO 格式")
+    p_auto.add_argument("--force", action="store_true", help="绕过阈值（手动兜底）")
     args = parser.parse_args(argv)
 
     db = MetricsDB()
+    if args.cmd == "auto":
+        result = auto_calibrate(
+            db,
+            platform=args.platform,
+            profile=args.profile,
+            last_calibrated_at=args.last_calibrated_at,
+            force=args.force,
+        )
+        print(json.dumps(result, ensure_ascii=False))
+        return 0
     paths = calibrate(db, platform=args.platform, profile=args.profile, force=args.force)
     print(json.dumps({"reports": paths}, ensure_ascii=False))
     return 0
