@@ -2,6 +2,8 @@
 comet_change: real-account-verification
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-09-real-account-verification
+status: final
 ---
 
 # Context

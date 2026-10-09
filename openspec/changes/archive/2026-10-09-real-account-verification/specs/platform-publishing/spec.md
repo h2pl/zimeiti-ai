@@ -18,6 +18,11 @@
 - **WHEN** 查询发布结果
 - **THEN** 状态为 unverified 且审计记录含异常信息
 
+#### Scenario: 未核实不报成功
+- **GIVEN** 发布动作已执行但读回对账失败
+- **WHEN** 查询发布结果
+- **THEN** 状态为 unverified 而非 verified
+
 ## ADDED Requirements
 
 ### Requirement: 小红书登录态管理

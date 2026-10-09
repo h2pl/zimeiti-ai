@@ -2,6 +2,7 @@
 change: real-account-verification
 design-doc: openspec/changes/real-account-verification/design.md
 base-ref: 9b234e374a1148b36b17870e8ec7dd4bfb825f92
+archived-with: 2026-10-09-real-account-verification
 ---
 
 <!-- comet-task-authority: openspec/changes/real-account-verification/tasks.md -->
