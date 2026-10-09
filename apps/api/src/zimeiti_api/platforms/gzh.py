@@ -18,6 +18,7 @@ from typing import Any
 from zimeiti_api.config import CREDENTIALS_DIR, DATA_DIR  # noqa: F401 - config 加载 .env 并锚定目录
 from zimeiti_api.vendor.wechat_mp import WeChatClient
 from zimeiti_api.vendor.wechatfmt.formatting import apply_wechat_styles
+from zimeiti_api.vendor.wechatfmt.generate_cover_combined import generate_cover_combined
 from zimeiti_api.vendor.wechatfmt.md2html import convert_md_to_html
 
 # token 缓存：运行态数据唯一归宿 data/state/（原 cwd 相对路径 .wechat_token_cache.json 已废弃）
@@ -66,23 +67,39 @@ class GzhClient:
 
 
 def publish_gzh_draft(
-    client: GzhClient, draft: Any, cover_image_path: str | None = None
+    client: GzhClient,
+    draft: Any,
+    cover_image_path: str | None = None,
+    cover_output_dir: str | None = None,
 ) -> dict[str, str]:
     """上传草稿箱并读回对账，返回三档 outcome。
 
     认证订阅号：草稿箱 API 可用；群发留人工在公众号后台操作（宪法 I）。
-    cover_image_path：封面图（草稿箱 API 要求 thumb_media_id）；
-    未提供时若已有缓存的封面 media_id 则复用。
+    cover_image_path：显式封面图（草稿箱 API 要求 thumb_media_id）；
+    未提供时优先复用缓存的封面 media_id；再无则自动生成拼接封面
+    （vendor my-tools generate_cover_combined，title 取草稿标题，
+    sub/series 留空——zimeiti-ai 无系列体系）并上传，裁剪坐标随草稿上送。
     draft：GzhDraft 或 dict（发布审批进程从 drafts.json 读回的是 dict）。
     """
     title = draft["title"] if isinstance(draft, dict) else draft.title
     body = draft["body"] if isinstance(draft, dict) else draft.body
     summary = draft["summary"] if isinstance(draft, dict) else draft.summary
     thumb_media_id: str | None = None
+    crop_fields: dict[str, str] = {}
     if cover_image_path and os.path.exists(cover_image_path):
         thumb_media_id = client.upload_permanent_image(cover_image_path)
     elif _DEFAULT_COVER_MEDIA_FILE.exists():
         thumb_media_id = _DEFAULT_COVER_MEDIA_FILE.read_text(encoding="utf-8").strip()
+    else:
+        out_dir = Path(cover_output_dir) if cover_output_dir else Path("data/outputs/gzh-main")
+        cover_path, crop_235_1, crop_1_1 = generate_cover_combined(
+            title=title,
+            sub_series="",
+            series="",
+            output_path=str(out_dir / "cover.png"),
+        )
+        thumb_media_id = client.upload_permanent_image(str(cover_path))
+        crop_fields = {"pic_crop_235_1": crop_235_1, "pic_crop_1_1": crop_1_1}
     articles = [
         {
             "title": title[:64],
@@ -91,6 +108,7 @@ def publish_gzh_draft(
             "digest": summary,
             "author": "zimeiti-ai",
             **({"thumb_media_id": thumb_media_id} if thumb_media_id else {}),
+            **crop_fields,
         }
     ]
     media_id = client.add_draft(articles)

@@ -19,18 +19,28 @@ class TestGzh:
             draft_payloads.append(kw)
             return "MEDIA_001"
 
+        uploads = []
+        monkeypatch.setattr(
+            client._client,
+            "add_material",
+            lambda path: uploads.append(path) or {"media_id": "THUMB_001"},
+        )
         monkeypatch.setattr(client._client, "add_draft", fake_add_draft)
         monkeypatch.setattr(client._client, "count_drafts", lambda: 3)
         monkeypatch.setattr(gzh, "_DEFAULT_COVER_MEDIA_FILE", tmp_path / "no_cover.txt")
 
         draft = GzhDraft(title="AI 提效指南", body="正文内容", summary="摘要")
-        result = gzh.publish_gzh_draft(client, draft)
+        result = gzh.publish_gzh_draft(client, draft, cover_output_dir=str(tmp_path / "out"))
         assert result["platform_result"] == "MEDIA_001"
         assert result["readback"] == "verified"
         assert draft_payloads[0]["title"] == "AI 提效指南"
         # 正文经 vendor 排版管线转为微信兼容 HTML（内联样式），不再是裸 <p> 包裹
         assert "正文内容" in draft_payloads[0]["content"]
         assert 'style="' in draft_payloads[0]["content"]
+        # 封面自动生成（vendor my-tools 拼接封面）并上传，裁剪坐标随草稿上送
+        assert len(uploads) == 1 and Path(uploads[0]).exists()
+        assert draft_payloads[0]["thumb_media_id"] == "THUMB_001"
+        assert "pic_crop_235_1" in draft_payloads[0] and "pic_crop_1_1" in draft_payloads[0]
 
     def test_publish_accepts_dict_draft(self, monkeypatch, tmp_path):
         """真实发布路径从 drafts.json 读回的是 dict，publish 必须兼容。"""
@@ -44,11 +54,20 @@ class TestGzh:
             seen.update(kw)
             return "MEDIA_D"
 
+        monkeypatch.setattr(
+            client._client,
+            "add_material",
+            lambda path: {"media_id": "THUMB_D"},
+        )
         monkeypatch.setattr(client._client, "add_draft", fake_add_draft)
         monkeypatch.setattr(client._client, "count_drafts", lambda: 1)
         monkeypatch.setattr(gzh, "_DEFAULT_COVER_MEDIA_FILE", tmp_path / "no_cover.txt")
 
-        result = gzh.publish_gzh_draft(client, {"title": "标题", "body": "正文", "summary": "摘要"})
+        result = gzh.publish_gzh_draft(
+            client,
+            {"title": "标题", "body": "正文", "summary": "摘要"},
+            cover_output_dir=str(tmp_path / "out"),
+        )
         assert result["platform_result"] == "MEDIA_D"
         assert seen["title"] == "标题"
 
@@ -81,11 +100,16 @@ class TestGzh:
 
         client = gzh.GzhClient("appid", "secret", token_cache=tmp_path / "token.json")
         monkeypatch.setattr(client._client, "get_access_token", lambda force=False: "T")
+        monkeypatch.setattr(
+            client._client,
+            "add_material",
+            lambda path: {"media_id": "THUMB_0"},
+        )
         monkeypatch.setattr(client._client, "add_draft", lambda **kw: "M")
         monkeypatch.setattr(client._client, "count_drafts", lambda: 0)
         monkeypatch.setattr(gzh, "_DEFAULT_COVER_MEDIA_FILE", tmp_path / "no_cover.txt")
         draft = GzhDraft(title="t", body="b", summary="s")
-        result = gzh.publish_gzh_draft(client, draft)
+        result = gzh.publish_gzh_draft(client, draft, cover_output_dir=str(tmp_path / "out"))
         assert result["readback"] == "unverified"
 
 

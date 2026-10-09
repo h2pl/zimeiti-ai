@@ -120,9 +120,7 @@ async def main() -> int:
     result = executor.publish(
         "gzh-main",
         drafts.gzh,
-        platform_call=lambda account, draft: real_platform_router(
-            account, draft, cover_image_path=str(cover)
-        ),
+        platform_call=real_platform_router,
         credentials_sealed=sealed,
     )
     audit.record("walkthrough_a3_gzh_result", slug=SLUG, **result)
