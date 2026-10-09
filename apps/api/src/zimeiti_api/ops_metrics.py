@@ -6,16 +6,16 @@
 - Easel 数据三层：发布事件与时序快照**分离表存储**（单一事实来源）、消费层
   **只读不回写**、确定性脚本聚合（模型只写洞察）、内容生命周期分类
 
-数据落盘：data/metrics/published.db（gitignored）
+数据落盘：项目 Postgres（DATABASE_URL）
 CLI：uv run python -m zimeiti_api.ops_metrics {record|pull|report}
 """
 
 import argparse
 import json
-import sqlite3
 from datetime import datetime, timedelta
-from pathlib import Path
 from typing import Any
+
+import psycopg
 
 # xhs 创作者中心数据看板的指标标签（页面文本为「标签 | 值」相邻对）
 XHS_DASHBOARD_LABELS = (
@@ -35,7 +35,7 @@ XHS_DASHBOARD_LABELS = (
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS publish_events (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     platform TEXT NOT NULL,
     title TEXT,
     content_type TEXT DEFAULT '',
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS publish_events (
     UNIQUE(platform, source_folder, publish_date)
 );
 CREATE TABLE IF NOT EXISTS metric_snapshots (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     event_id INTEGER,
     platform TEXT NOT NULL,
     metric TEXT NOT NULL,
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS metric_snapshots (
     captured_at TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS collection_errors (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id SERIAL PRIMARY KEY,
     platform TEXT NOT NULL,
     scope TEXT NOT NULL,
     error TEXT NOT NULL,
@@ -72,16 +72,24 @@ CREATE TABLE IF NOT EXISTS collection_errors (
 class MetricsDB:
     """SQLite 运营数据层（事件 upsert + 快照 + 失败留痕 + 只读归因）。"""
 
-    def __init__(self, path: str | Path = "data/metrics/published.db"):
-        self.path = Path(path)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        with self._conn() as conn:
-            conn.executescript(SCHEMA)
+    def __init__(self, dsn: str | None = None):
+        """连接项目 Postgres（默认 config.DATABASE_URL；测试可传带 search_path 的 dsn）。"""
+        if dsn is None:
+            from zimeiti_api.config import DATABASE_URL
 
-    def _conn(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(str(self.path))
-        conn.row_factory = sqlite3.Row
-        return conn
+            dsn = DATABASE_URL
+        self.dsn = dsn
+        self.setup()
+
+    def setup(self) -> None:
+        """幂等建表（对齐 checkpoints.py 的 saver.setup() 惯例）。"""
+        with self._conn() as conn:
+            conn.execute(SCHEMA)
+            conn.commit()
+
+    def _conn(self):
+        """连接 PG（dict_row：行以字段名访问，便于读取侧直接转 dict）。"""
+        return psycopg.connect(self.dsn, row_factory=psycopg.rows.dict_row)
 
     # ─── 写入侧 ────────────────────────────────────────────────────
 
@@ -107,7 +115,7 @@ class MetricsDB:
                     (platform, title, content_type, source_folder, publish_date,
                      publish_url, profile, topic_direction, status, notes,
                      created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT(platform, source_folder, publish_date) DO UPDATE SET
                     title=excluded.title,
                     content_type=excluded.content_type,
@@ -135,9 +143,10 @@ class MetricsDB:
             )
             row = conn.execute(
                 "SELECT id FROM publish_events"
-                " WHERE platform=? AND source_folder=? AND publish_date=?",
+                " WHERE platform=%s AND source_folder=%s AND publish_date=%s",
                 (platform, source_folder, publish_date),
             ).fetchone()
+            conn.commit()
             return int(row["id"])
 
     def record_snapshot(
@@ -148,7 +157,7 @@ class MetricsDB:
             cur = conn.execute(
                 "INSERT INTO metric_snapshots"
                 " (event_id, platform, metric, value, source, captured_at)"
-                " VALUES (?, ?, ?, ?, ?, ?)",
+                " VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
                 (
                     event_id,
                     platform,
@@ -158,17 +167,20 @@ class MetricsDB:
                     datetime.now().isoformat(timespec="seconds"),
                 ),
             )
-            return int(cur.lastrowid or 0)
+            conn.commit()
+            return int(cur.fetchone()["id"])
 
     def record_error(self, platform: str, scope: str, error: str) -> int:
         """采集失败留痕（不写零值覆盖历史，spec 要求）。"""
         with self._conn() as conn:
             cur = conn.execute(
                 "INSERT INTO collection_errors (platform, scope, error, occurred_at)"
-                " VALUES (?, ?, ?, ?)",
+                " VALUES (%s, %s, %s, %s) RETURNING id",
                 (platform, scope, str(error)[:500], datetime.now().isoformat(timespec="seconds")),
             )
-            return int(cur.lastrowid or 0)
+            conn.commit()
+            return int(cur.fetchone()["id"])
+            return int(cur.fetchone()["id"])
 
     # ─── 读取侧 ────────────────────────────────────────────────────
 
@@ -176,7 +188,7 @@ class MetricsDB:
         with self._conn() as conn:
             if platform:
                 rows = conn.execute(
-                    "SELECT * FROM publish_events WHERE platform=? ORDER BY publish_date DESC",
+                    "SELECT * FROM publish_events WHERE platform=%s ORDER BY publish_date DESC",
                     (platform,),
                 ).fetchall()
             else:
@@ -189,7 +201,7 @@ class MetricsDB:
         with self._conn() as conn:
             if platform:
                 rows = conn.execute(
-                    "SELECT * FROM metric_snapshots WHERE platform=? ORDER BY captured_at",
+                    "SELECT * FROM metric_snapshots WHERE platform=%s ORDER BY captured_at",
                     (platform,),
                 ).fetchall()
             else:
@@ -202,7 +214,7 @@ class MetricsDB:
         with self._conn() as conn:
             if platform:
                 rows = conn.execute(
-                    "SELECT * FROM collection_errors WHERE platform=? ORDER BY occurred_at DESC",
+                    "SELECT * FROM collection_errors WHERE platform=%s ORDER BY occurred_at DESC",
                     (platform,),
                 ).fetchall()
             else:
@@ -398,13 +410,55 @@ def pull_xhs(db: MetricsDB, page: Any = None) -> dict:
     return {"ok": True, "metrics": metrics}
 
 
+def migrate_from_sqlite(db: "MetricsDB", sqlite_path: str) -> dict:
+    """一次性搬运：旧 SQLite 文件 → Postgres（需要时无损迁移）。
+
+    仅搬运 publish_events / metric_snapshots 两表（collection_errors 为采集日志，不迁移）。
+    """
+    import sqlite3
+
+    src_conn = sqlite3.connect(sqlite_path)
+    src_conn.row_factory = sqlite3.Row
+    events = [dict(r) for r in src_conn.execute("SELECT * FROM publish_events").fetchall()]
+    snaps = [dict(r) for r in src_conn.execute("SELECT * FROM metric_snapshots").fetchall()]
+    src_conn.close()
+
+    counts = {"events": 0, "snapshots": 0}
+    for e in events:
+        db.record_event(
+            platform=e["platform"],
+            title=e["title"] or "",
+            content_type=e.get("content_type") or "",
+            source_folder=e["source_folder"],
+            publish_date=e["publish_date"],
+            publish_url=e.get("publish_url") or "",
+            profile=e.get("profile") or "",
+            topic_direction=e.get("topic_direction") or "",
+            status=e.get("status") or "ok",
+            notes=e.get("notes") or "",
+        )
+        counts["events"] += 1
+    with db._conn() as conn:
+        for s in snaps:
+            conn.execute(
+                "INSERT INTO metric_snapshots"
+                " (event_id, platform, metric, value, source, captured_at)"
+                " VALUES (%s, %s, %s, %s, %s, %s)",
+                (
+                    s["event_id"],
+                    s["platform"],
+                    s["metric"],
+                    s["value"],
+                    s["source"],
+                    s["captured_at"],
+                ),
+            )
+            counts["snapshots"] += 1
+        conn.commit()
+    return counts
+
+
 # ─── CLI ─────────────────────────────────────────────────────────────────
-
-
-def _db_path() -> str:
-    from zimeiti_api.config import DATA_DIR
-
-    return str(Path(DATA_DIR) / "metrics" / "published.db")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -427,12 +481,15 @@ def main(argv: list[str] | None = None) -> int:
     p_rec.add_argument("--notes", default="")
     p_rec.add_argument("--publish-url", default="")
 
+    p_mig = sub.add_parser("migrate-from-sqlite", help="一次性搬运旧 SQLite 数据到 PG")
+    p_mig.add_argument("--path", required=True, help="旧 published.db 路径")
+
     p_rep = sub.add_parser("report", help="只读归因查询")
     p_rep.add_argument("--platform", default=None)
     p_rep.add_argument("--profile", default=None)
 
     args = parser.parse_args(argv)
-    db = MetricsDB(_db_path())
+    db = MetricsDB()
 
     if args.cmd == "record":
         event_id = db.record_event(
@@ -460,6 +517,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.platform in ("all", "xhs"):
             out["xhs"] = pull_xhs(db)
         print(json.dumps(out, ensure_ascii=False, default=str))
+        return 0
+
+    if args.cmd == "migrate-from-sqlite":
+        counts = migrate_from_sqlite(db, args.path)
+        print(json.dumps(counts, ensure_ascii=False))
         return 0
 
     print(json.dumps(db.report(args.platform, args.profile), ensure_ascii=False, default=str))

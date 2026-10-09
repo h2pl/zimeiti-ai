@@ -19,7 +19,12 @@
 - **THEN** 更新既有行（覆盖标题/链接），不新增行
 
 ### Requirement: 指标快照回收
-系统 MUST 能按平台回收互动指标快照：公众号 MUST 通过已 vendor 的 wechat-mp-toolkit datacube 接口取数（用户增减、图文阅读、转发分享等）；小红书 MUST 通过自有创作者中心页面读取每篇笔记的指标列。快照 MUST 带采集时间戳与来源标记；采集失败 MUST 记录失败原因并保留历史值，不得用零值覆盖真实数据。
+系统 MUST 能按平台回收互动指标快照：公众号 MUST 通过已 vendor 的 wechat-mp-toolkit datacube 接口取数（用户增减、图文阅读、转发分享等）；小红书 MUST 通过自有创作者中心页面读取账号级指标。快照 MUST 带采集时间戳与来源标记；采集失败 MUST 记录失败原因并保留历史值，不得用零值覆盖真实数据。
+
+#### Scenario: 快照写入项目数据库
+- **GIVEN** 一次取数完成
+- **WHEN** 写入快照
+- **THEN** 数据写入项目 Postgres（`DATABASE_URL`）的 metric_snapshots 表，不引入第二套 SQL 引擎
 
 #### Scenario: 公众号 datacube 取数
 - **GIVEN** 公众号有效凭据与日期区间
@@ -29,7 +34,7 @@
 #### Scenario: 小红书创作者中心取数
 - **GIVEN** 小红书登录态有效
 - **WHEN** 回收小红书指标
-- **THEN** 快照记录每篇笔记的标题与页面指标列数值，附采集时间与来源（creator-center）
+- **THEN** 快照记录账号级指标（关注数/粉丝数/获赞与收藏/曝光数/观看数/点赞数等），附采集时间与来源（creator-center）
 
 #### Scenario: 采集失败保留历史
 - **GIVEN** 某次采集接口异常

@@ -5,15 +5,15 @@
 """
 
 from zimeiti_api.ops_metrics import (
-    MetricsDB,
+    migrate_from_sqlite,
     parse_gzh_datacube,
     parse_xhs_dashboard,
 )
 
 
 class TestPublishEvents:
-    def test_record_event_and_upsert(self, tmp_path):
-        db = MetricsDB(tmp_path / "m.db")
+    def test_record_event_and_upsert(self, metrics_db):
+        db = metrics_db
         eid1 = db.record_event(
             platform="gzh-main",
             title="标题A",
@@ -39,8 +39,8 @@ class TestPublishEvents:
         assert events[0]["title"] == "标题A（更新）"
         assert events[0]["publish_url"].endswith("/abc")
 
-    def test_record_failed_event_keeps_notes(self, tmp_path):
-        db = MetricsDB(tmp_path / "m.db")
+    def test_record_failed_event_keeps_notes(self, metrics_db):
+        db = metrics_db
         db.record_event(
             platform="xhs-main",
             title="t",
@@ -56,8 +56,8 @@ class TestPublishEvents:
 
 
 class TestSnapshots:
-    def test_snapshot_written_and_history_kept(self, tmp_path):
-        db = MetricsDB(tmp_path / "m.db")
+    def test_snapshot_written_and_history_kept(self, metrics_db):
+        db = metrics_db
         eid = db.record_event(
             platform="gzh-main",
             title="t",
@@ -69,9 +69,9 @@ class TestSnapshots:
         snaps = db.list_snapshots("gzh-main")
         assert snaps[0]["metric"] == "read" and snaps[0]["value"] == 512
 
-    def test_failed_collection_keeps_history_not_zero(self, tmp_path):
+    def test_failed_collection_keeps_history_not_zero(self, metrics_db):
         """采集失败：记录错误，历史值不被零覆盖（spec 要求）。"""
-        db = MetricsDB(tmp_path / "m.db")
+        db = metrics_db
         eid = db.record_event(
             platform="gzh-main",
             title="t",
@@ -133,8 +133,8 @@ class TestXhsDashboardParse:
 
 
 class TestReportReadonly:
-    def test_report_does_not_mutate(self, tmp_path):
-        db = MetricsDB(tmp_path / "m.db")
+    def test_report_does_not_mutate(self, metrics_db):
+        db = metrics_db
         eid = db.record_event(
             platform="gzh-main",
             title="t",
@@ -149,9 +149,9 @@ class TestReportReadonly:
         assert before == after  # 只读不回写
         assert report["platform"] == "gzh-main"
 
-    def test_lifecycle_classification(self, tmp_path):
+    def test_lifecycle_classification(self, metrics_db):
         """内容生命周期判定（速爆/稳增/长尾）为确定性规则。"""
-        db = MetricsDB(tmp_path / "m.db")
+        db = metrics_db
         eid = db.record_event(
             platform="gzh-main",
             title="t",
@@ -179,10 +179,10 @@ class TestLifecycleRules:
 
 
 class TestPullGzh:
-    def test_pull_gzh_writes_snapshots(self, tmp_path, monkeypatch):
+    def test_pull_gzh_writes_snapshots(self, metrics_db, monkeypatch):
         from zimeiti_api import ops_metrics as om
 
-        db = om.MetricsDB(tmp_path / "m.db")
+        db = metrics_db
         raw = {"list": [{"ref_date": "2026-10-08", "new_user": 3, "cancel_user": 1}]}
 
         class FakeGzhClient:
@@ -202,10 +202,10 @@ class TestPullGzh:
         snaps = {s["metric"]: s["value"] for s in db.list_snapshots("gzh-main")}
         assert snaps["new_user"] == 3 and snaps["cancel_user"] == 1
 
-    def test_pull_gzh_failure_records_error(self, tmp_path, monkeypatch):
+    def test_pull_gzh_failure_records_error(self, metrics_db, monkeypatch):
         from zimeiti_api import ops_metrics as om
 
-        db = om.MetricsDB(tmp_path / "m.db")
+        db = metrics_db
 
         class BoomClient:
             def __init__(self, *a, **kw):
@@ -227,10 +227,10 @@ class TestPullGzh:
 class TestPullXhs:
     SAMPLE = "关注数 | 6 | 粉丝数 | 212 | 曝光数 | 88 | 点赞数 | 3 | 收藏数 | 1"
 
-    def test_pull_xhs_with_fake_page(self, tmp_path):
+    def test_pull_xhs_with_fake_page(self, metrics_db):
         from zimeiti_api import ops_metrics as om
 
-        db = om.MetricsDB(tmp_path / "m.db")
+        db = metrics_db
 
         class FakePage:
             def goto(self, url):
@@ -250,10 +250,10 @@ class TestPullXhs:
         snaps = {s["metric"]: s["value"] for s in db.list_snapshots("xhs-main")}
         assert snaps["粉丝数"] == 212
 
-    def test_pull_xhs_failure_records_error(self, tmp_path):
+    def test_pull_xhs_failure_records_error(self, metrics_db):
         from zimeiti_api import ops_metrics as om
 
-        db = om.MetricsDB(tmp_path / "m.db")
+        db = metrics_db
 
         class BoomPage:
             def goto(self, url):
@@ -271,10 +271,10 @@ class TestPullXhs:
 
 
 class TestCli:
-    def test_cli_record_and_report(self, tmp_path, monkeypatch, capsys):
+    def test_cli_record_and_report(self, metrics_db, monkeypatch, capsys):
         from zimeiti_api import ops_metrics as om
 
-        monkeypatch.setattr(om, "_db_path", lambda: str(tmp_path / "cli.db"))
+        monkeypatch.setattr(om, "MetricsDB", lambda *a, **kw: metrics_db)
         assert (
             om.main(
                 [
@@ -324,3 +324,66 @@ class TestXhsLayoutRegression:
         m = parse_xhs_dashboard("笔记数据总览 | 曝光数 | 环比- | 观看数 | 5")
         assert "曝光数" not in m  # 邻居为「环比-」，不写零
         assert m["观看数"] == 5
+
+
+class TestPgBackend:
+    """存储后端为项目 Postgres（消除第二套 SQL 引擎）。"""
+
+    def test_tables_created_in_project_pg(self, metrics_db):
+        import psycopg
+
+        from zimeiti_api.config import DATABASE_URL
+
+        with psycopg.connect(DATABASE_URL) as conn:
+            conn.execute("SET search_path TO zimeiti_metrics_test")
+            rows = conn.execute(
+                "SELECT table_name FROM information_schema.tables"
+                " WHERE table_schema='zimeiti_metrics_test'"
+            ).fetchall()
+        names = {r[0] for r in rows}
+        assert {"publish_events", "metric_snapshots", "collection_errors"} <= names
+
+    def test_setup_is_idempotent(self, metrics_db):
+        metrics_db.setup()  # 重复建表无副作用
+        metrics_db.setup()
+        assert metrics_db.list_events() == []
+
+
+class TestSqliteMigration:
+    def test_migrate_rows_from_sqlite(self, metrics_db, tmp_path):
+        """一次性搬运：旧 SQLite 文件 → PG（需要时无损迁移）。"""
+        import sqlite3
+
+        src_db = tmp_path / "old.db"
+        conn = sqlite3.connect(str(src_db))
+        conn.executescript(
+            """
+            CREATE TABLE publish_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, platform TEXT NOT NULL,
+                title TEXT, content_type TEXT DEFAULT '', source_folder TEXT NOT NULL,
+                publish_date TEXT NOT NULL, publish_url TEXT DEFAULT '',
+                profile TEXT DEFAULT '', topic_direction TEXT DEFAULT '',
+                status TEXT NOT NULL DEFAULT 'ok', notes TEXT DEFAULT '',
+                created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+                UNIQUE(platform, source_folder, publish_date));
+            CREATE TABLE metric_snapshots (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, event_id INTEGER,
+                platform TEXT NOT NULL, metric TEXT NOT NULL, value REAL NOT NULL,
+                source TEXT NOT NULL, captured_at TEXT NOT NULL);
+            INSERT INTO publish_events (platform, title, source_folder, publish_date,
+                status, created_at, updated_at) VALUES ('gzh-main', '旧标题', 'f1',
+                '2026-10-08', 'ok', '2026-10-08T10:00:00', '2026-10-08T10:00:00');
+            INSERT INTO metric_snapshots (event_id, platform, metric, value, source,
+                captured_at) VALUES (1, 'gzh-main', 'read', 42, 'datacube',
+                '2026-10-08T10:00:00');
+            """
+        )
+        conn.commit()
+        conn.close()
+
+        counts = migrate_from_sqlite(metrics_db, str(src_db))
+        assert counts["events"] == 1 and counts["snapshots"] == 1
+        events = metrics_db.list_events("gzh-main")
+        assert events[0]["title"] == "旧标题"
+        snaps = metrics_db.list_snapshots("gzh-main")
+        assert snaps[0]["value"] == 42
