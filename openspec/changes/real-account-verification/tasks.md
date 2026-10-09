@@ -6,7 +6,7 @@
 - [x] 1.2 公众号读回对账：draft/count+list 匹配标题 → 三档；验证：单测（mock 响应）三档各一 <!-- comet-task:166f1fdf-eec4-4783-8353-f80d756c6338 -->
 - [x] 1.3 小红书发布+读回：创作者中心笔记列表解析 → 三档；验证：FakePage 单测 <!-- comet-task:7af24f4f-5bf5-4a3b-a69f-918eba02425e -->
 - [x] 1.4 小红书扫码登录流程（storage_state 持久化/复用/失效引导）；验证：FakePage 单测流程断言 <!-- comet-task:c8e966bf-8198-4627-92ee-9afb3b83afe9 -->
-- [ ] 1.5 W1 回归：占位钩子仅保留单测路径，生产路径不再触达；验证：grep + 单测 <!-- comet-task:c5dd86c4-2439-422a-b7cd-f5cfd69fe3ab -->
+- [x] 1.5 W1 回归：占位钩子仅保留单测路径，生产路径不再触达；验证：grep + 单测 <!-- comet-task:c5dd86c4-2439-422a-b7cd-f5cfd69fe3ab -->
 
 ## 2. 端到端与真账号验收
 

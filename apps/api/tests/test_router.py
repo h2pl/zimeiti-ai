@@ -147,7 +147,7 @@ class TestXhsLoginFlow:
             def storage_state(self, path=None):
                 actions.append(("save", path))
                 if path:
-                    _P(path).write_text("{}", encoding="utf-8")
+                    Path_(path).write_text("{}", encoding="utf-8")
 
         class FakeBrowser:
             def new_context(self, storage_state=None):
