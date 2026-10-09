@@ -2,7 +2,8 @@
 comet_change: gzh-typesetting-pipeline
 role: technical-design
 canonical_spec: openspec
-status: draft
+archived-with: 2026-10-09-gzh-typesetting-pipeline
+status: final
 ---
 
 # Design：gzh-typesetting-pipeline

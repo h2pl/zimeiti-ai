@@ -2,6 +2,7 @@
 change: gzh-typesetting-pipeline
 design-doc: openspec/changes/gzh-typesetting-pipeline/design.md
 base-ref: 484f7206b52dc57351a439c55fadd8361e9b94cd
+archived-with: 2026-10-09-gzh-typesetting-pipeline
 ---
 
 <!-- comet-task-authority: openspec/changes/gzh-typesetting-pipeline/tasks.md -->

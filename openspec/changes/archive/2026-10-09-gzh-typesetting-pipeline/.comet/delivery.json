@@ -1,0 +1,9 @@
+{
+  "action": "push",
+  "targetBranch": "comet/gzh-typesetting-pipeline",
+  "remote": "origin",
+  "schemaVersion": 1,
+  "changeIdentity": "run:53acdcd2-5b72-47f6-92a5-e40cecd74bdc",
+  "authorizationId": "f4c1a175-0802-4d3b-83b8-092802f69394",
+  "authorizedRemoteUrl": "git@github.com:h2pl/zimeiti-ai.git"
+}
