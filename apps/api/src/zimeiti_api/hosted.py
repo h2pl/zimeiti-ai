@@ -24,10 +24,11 @@ def list_pending_approvals() -> list[dict]:
     return json.loads(PENDING_PATH.read_text(encoding="utf-8"))
 
 
-def _add_pending(thread_id: str, instruction: str) -> None:
+def _add_pending(thread_id: str, instruction: str, account: str = "") -> None:
     PENDING_PATH.parent.mkdir(parents=True, exist_ok=True)
     pending = list_pending_approvals()
-    pending.append({"thread_id": thread_id, "instruction": instruction})
+    # account 随中断落盘：恢复端点据此加载正确画像（修复硬编码 xhs-main 遗留项）
+    pending.append({"thread_id": thread_id, "instruction": instruction, "account": account})
     PENDING_PATH.write_text(json.dumps(pending, ensure_ascii=False), encoding="utf-8")
 
 
@@ -38,11 +39,14 @@ def _remove_pending(thread_id: str) -> None:
     PENDING_PATH.write_text(json.dumps(pending, ensure_ascii=False), encoding="utf-8")
 
 
-async def run_hosted_cycle(agent, thread_id: str | None, instruction: str) -> dict:
+async def run_hosted_cycle(
+    agent, thread_id: str | None, instruction: str, account: str = ""
+) -> dict:
     """触发一轮托管循环：从新 thread 运行到审批中断点。
 
     thread_id 不传时自动生成唯一 ID——严禁跨运行复用 thread_id，
     否则残留中断态会污染消息历史（见 design.md 已知问题）。
+    account：账号名，随中断写入 pending 供审批恢复端点加载正确画像。
     """
     thread_id = thread_id or f"cycle-{uuid.uuid4().hex[:12]}"
     audit.record("cycle_started", thread_id=thread_id, instruction=instruction)
@@ -55,7 +59,7 @@ async def run_hosted_cycle(agent, thread_id: str | None, instruction: str) -> di
         audit.record("cycle_failed", thread_id=thread_id, error=str(exc))
         raise
     if "__interrupt__" in result:
-        _add_pending(thread_id, instruction)
+        _add_pending(thread_id, instruction, account=account)
         audit.record("awaiting_approval", thread_id=thread_id)
     else:
         audit.record("cycle_completed", thread_id=thread_id)

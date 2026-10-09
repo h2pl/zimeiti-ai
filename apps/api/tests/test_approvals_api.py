@@ -51,7 +51,7 @@ async def _start_cycle_with_pending_approval():
             cycle_dir="outputs/xhs-main/test-7.2",
             tools=[publish],
         )
-        result = await run_hosted_cycle(agent, "test-7.2", "发布审批流测试内容")
+        result = await run_hosted_cycle(agent, "test-7.2", "发布审批流测试内容", account="xhs-main")
     assert "__interrupt__" in result
 
 
@@ -69,19 +69,31 @@ def test_approvals_api_flow():
         return FakeToolModel(responses=[AIMessage(content="已发布")])
 
     import zimeiti_api.models as models_mod
+    import zimeiti_api.profiles as profiles_mod
 
     monkeypatch = pytest.MonkeyPatch()
     monkeypatch.setattr(models_mod, "get_model", fake_model)
+    # 捕获恢复端点实际加载的账号画像（修复遗留：不再硬编码 xhs-main）
+    loaded_accounts: list[str] = []
+    real_load_profile = profiles_mod.load_profile
+
+    def spy_load_profile(account: str):
+        loaded_accounts.append(account)
+        return real_load_profile(account)
+
+    monkeypatch.setattr(profiles_mod, "load_profile", spy_load_profile)
 
     client = TestClient(create_app())
-    # 1. 审批列表能看到待审批项
+    # 1. 审批列表能看到待审批项（含 account，Web 页据此区分平台）
     resp = client.get("/api/approvals")
     assert resp.status_code == 200
     items = resp.json()
     assert any(i["thread_id"] == "test-7.2" for i in items)
-    # 2. 确认 → resume → 发布完成
+    assert any(i.get("account") == "xhs-main" for i in items)
+    # 2. 确认 → resume（用 pending 记录的账号画像）→ 发布完成
     resp = client.post("/api/approvals/test-7.2/confirm")
     assert resp.status_code == 200
+    assert loaded_accounts == ["xhs-main"]
     # 3. 确认后不再出现在待审批列表
     items = client.get("/api/approvals").json()
     assert not any(i["thread_id"] == "test-7.2" for i in items)
