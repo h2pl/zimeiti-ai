@@ -2,6 +2,7 @@
 change: content-strategy-calibration
 design-doc: openspec/changes/content-strategy-calibration/design.md
 base-ref: 4ef7894
+archived-with: 2026-10-10-content-strategy-calibration
 ---
 
 <!-- comet-task-authority: openspec/changes/content-strategy-calibration/tasks.md -->

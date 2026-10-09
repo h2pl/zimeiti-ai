@@ -1,0 +1,120 @@
+bash scripts/check-api.sh
+== 1/5 ruff format ==
+40 files left unchanged
+== 2/5 ruff lint ==
+All checks passed!
+== 3/5 mypy ==
+Success: no issues found in 29 source files
+== 4/5 bandit ==
+== 5/5 pytest + coverage(>=80%) ==
+.........F.............................................................. [ 81%]
+................                                                         [100%]
+================================== FAILURES ===================================
+_______________ test_real_model_integration_skipped_without_key _______________
+
+    def test_real_model_integration_skipped_without_key():
+        key = os.environ.get("DEEPSEEK_API_KEY", "")
+        if not key or key.startswith("在这里"):
+            pytest.skip("未配置 DEEPSEEK_API_KEY")
+        from dotenv import load_dotenv
+    
+        load_dotenv()
+        from langchain.chat_models import init_chat_model
+    
+        topic = select_topic({"title": "AI 工具提效", "reason": "需求", "direction": "实战清单"})
+        profile = {
+            "account": "xhs-main",
+            "positioning": "职场干货",
+            "style": "轻松",
+            "audience": "互联网人",
+            "platform_rules": "标题≤20字",
+            "preferences": "不夸大",
+        }
+>       drafts = create_drafts(init_chat_model("deepseek:deepseek-chat"), topic, profile)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_creation.py:92: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\zimeiti_api\creation.py:69: in create_drafts
+    return _parse_drafts(content)
+           ^^^^^^^^^^^^^^^^^^^^^^
+src\zimeiti_api\creation.py:56: in _parse_drafts
+    data = json.loads(text)
+           ^^^^^^^^^^^^^^^^
+E:\Dev\Python314\Lib\json\__init__.py:352: in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E:\Dev\Python314\Lib\json\decoder.py:345: in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <json.decoder.JSONDecoder object at 0x00000268B63DC980>
+s = '根据你的账号画像和选题要求，我按“小红书 + 公众号”两个平台分别写了图文草稿，风格保持轻松、面向互联网人，并且避免夸大表达。  \n```json\n{\n  "xhs": {\n    "title": "AI工具提效实战清单",...你平时用AI做什么？欢迎留言交流。",\n    "summary": "分享5个实际在用的AI提效场景：写周报、查资料、做PPT大纲、改文案、会议纪要。不吹不黑，AI适合做初稿和整理，判断和拍板还得自己来。"\n  }\n}\n```'
+idx = 0
+
+    def raw_decode(self, s, idx=0):
+        """Decode a JSON document from ``s`` (a ``str`` beginning with
+        a JSON document) and return a 2-tuple of the Python
+        representation and the index in ``s`` where the document ended.
+    
+        This can be used to decode a JSON document from a string that may
+        have extraneous data at the end.
+    
+        """
+        try:
+            obj, end = self.scan_once(s, idx)
+        except StopIteration as err:
+>           raise JSONDecodeError("Expecting value", s, err.value) from None
+E           json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+E:\Dev\Python314\Lib\json\decoder.py:363: JSONDecodeError
+============================== warnings summary ===============================
+tests\conftest.py:16
+tests\conftest.py:16
+  E:\Projects\zimeiti-ai\apps\api\tests\conftest.py:16: DeprecationWarning: 'asyncio.WindowsSelectorEventLoopPolicy' is deprecated and slated for removal in Python 3.16
+    from asyncio import WindowsSelectorEventLoopPolicy
+
+tests\conftest.py:18
+  E:\Projects\zimeiti-ai\apps\api\tests\conftest.py:18: DeprecationWarning: 'asyncio.set_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())
+
+tests/test_approvals_api.py::test_approvals_api_flow
+  tests\test_approvals_api.py:58: PytestWarning: The test <Function test_approvals_api_flow> is marked with '@pytest.mark.asyncio' but it is not an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.
+    def test_approvals_api_flow():
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.14.5-final-0 _______________
+
+Name                                    Stmts   Miss  Cover   Missing
+---------------------------------------------------------------------
+src\zimeiti_api\__init__.py                 0      0   100%
+src\zimeiti_api\app.py                     58     10    83%   43, 59, 72-79
+src\zimeiti_api\audit.py                   20      1    95%   27
+src\zimeiti_api\checkpoints.py              9      0   100%
+src\zimeiti_api\compliance.py              19      0   100%
+src\zimeiti_api\config.py                  13      0   100%
+src\zimeiti_api\creation.py                29      2    93%   55, 68
+src\zimeiti_api\credentials.py             38      5    87%   18-20, 22, 80
+src\zimeiti_api\graph.py                   11      0   100%
+src\zimeiti_api\hosted.py                  44      5    89%   37, 58-60, 65
+src\zimeiti_api\models.py                  13     11    15%   13-33
+src\zimeiti_api\ops_calibration.py        100     11    89%   29-31, 111, 117, 123, 130, 147-149, 166, 192-194
+src\zimeiti_api\ops_metrics.py            223     24    89%   208, 221, 311, 325, 342, 376-377, 402, 406-407, 510-520, 523-525, 532
+src\zimeiti_api\platforms\__init__.py       0      0   100%
+src\zimeiti_api\platforms\gzh.py           64     11    83%   43, 49, 67-78, 82-87
+src\zimeiti_api\platforms\xhs.py          113     20    82%   154-159, 162-163, 165-166, 179-180, 204-206, 223-224, 228-230
+src\zimeiti_api\profiles.py                24      2    92%   33, 37
+src\zimeiti_api\publisher.py               34      3    91%   30-31, 54
+src\zimeiti_api\seal.py                    21      3    86%   21-22, 37
+src\zimeiti_api\tools.py                  126     10    92%   100, 123-124, 164-166, 218-221
+src\zimeiti_api\topics.py                  30      6    80%   36-44
+src\zimeiti_api\xhs_readback.py            15     15     0%   12-32
+---------------------------------------------------------------------
+TOTAL                                    1004    139    86%
+Required test coverage of 80% reached. Total coverage: 86.16%
+=========================== short test summary info ===========================
+FAILED tests/test_creation.py::test_real_model_integration_skipped_without_key
+1 failed, 87 passed, 4 warnings in 18.66s
+make: *** [check] ���� 1
