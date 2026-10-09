@@ -4,10 +4,36 @@
 "进程重启" = 用同一 thread_id 新建 agent 实例继续，已完成节点不会重跑。
 """
 
+import json
+from pathlib import Path
+
 from langchain_core.messages import HumanMessage
 from langgraph.types import Command
 
 from zimeiti_api import audit
+
+PENDING_PATH = Path("outputs/_state/pending_approvals.json")
+
+
+def list_pending_approvals() -> list[dict]:
+    """待审批列表（Web 审批页数据源）。"""
+    if not PENDING_PATH.exists():
+        return []
+    return json.loads(PENDING_PATH.read_text(encoding="utf-8"))
+
+
+def _add_pending(thread_id: str, instruction: str) -> None:
+    PENDING_PATH.parent.mkdir(parents=True, exist_ok=True)
+    pending = list_pending_approvals()
+    pending.append({"thread_id": thread_id, "instruction": instruction})
+    PENDING_PATH.write_text(json.dumps(pending, ensure_ascii=False), encoding="utf-8")
+
+
+def _remove_pending(thread_id: str) -> None:
+    if not PENDING_PATH.exists():
+        return
+    pending = [p for p in list_pending_approvals() if p["thread_id"] != thread_id]
+    PENDING_PATH.write_text(json.dumps(pending, ensure_ascii=False), encoding="utf-8")
 
 
 async def run_hosted_cycle(agent, thread_id: str, instruction: str) -> dict:
@@ -18,6 +44,7 @@ async def run_hosted_cycle(agent, thread_id: str, instruction: str) -> dict:
         config={"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}},
     )
     if "__interrupt__" in result:
+        _add_pending(thread_id, instruction)
         audit.record("awaiting_approval", thread_id=thread_id)
     else:
         audit.record("cycle_completed", thread_id=thread_id)
@@ -32,6 +59,7 @@ async def resume_after_approval(agent, thread_id: str, approved: bool) -> dict:
         Command(resume={"decisions": [{"type": decision}]}),
         config={"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}},
     )
+    _remove_pending(thread_id)
     audit.record("cycle_completed", thread_id=thread_id)
     return result
 

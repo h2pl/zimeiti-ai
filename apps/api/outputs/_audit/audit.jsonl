@@ -50,3 +50,15 @@
 {"ts": "2026-10-09T03:53:36.451173+00:00", "action": "awaiting_approval", "thread_id": "test-2.3"}
 {"ts": "2026-10-09T03:53:36.506664+00:00", "action": "approval_received", "thread_id": "test-2.3"}
 {"ts": "2026-10-09T03:53:36.650833+00:00", "action": "cycle_completed", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T04:04:13.268493+00:00", "action": "cycle_started", "thread_id": "test-7.2", "instruction": "发布审批流测试内容"}
+{"ts": "2026-10-09T04:04:13.320519+00:00", "action": "awaiting_approval", "thread_id": "test-7.2"}
+{"ts": "2026-10-09T04:04:27.848692+00:00", "action": "cycle_started", "thread_id": "test-7.2", "instruction": "发布审批流测试内容"}
+{"ts": "2026-10-09T04:04:27.906364+00:00", "action": "awaiting_approval", "thread_id": "test-7.2"}
+{"ts": "2026-10-09T04:04:46.592510+00:00", "action": "cycle_started", "thread_id": "test-7.2", "instruction": "发布审批流测试内容"}
+{"ts": "2026-10-09T04:04:46.651300+00:00", "action": "awaiting_approval", "thread_id": "test-7.2"}
+{"ts": "2026-10-09T04:05:04.104486+00:00", "action": "cycle_started", "thread_id": "test-7.2", "instruction": "发布审批流测试内容"}
+{"ts": "2026-10-09T04:05:04.165291+00:00", "action": "awaiting_approval", "thread_id": "test-7.2"}
+{"ts": "2026-10-09T04:06:13.916330+00:00", "action": "cycle_started", "thread_id": "test-7.2", "instruction": "发布审批流测试内容"}
+{"ts": "2026-10-09T04:06:14.005713+00:00", "action": "awaiting_approval", "thread_id": "test-7.2"}
+{"ts": "2026-10-09T04:06:14.164536+00:00", "action": "approval_received", "thread_id": "test-7.2"}
+{"ts": "2026-10-09T04:06:14.165090+00:00", "action": "cycle_completed", "thread_id": "test-7.2"}

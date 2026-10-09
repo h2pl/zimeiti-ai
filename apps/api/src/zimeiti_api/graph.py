@@ -20,6 +20,19 @@ SYSTEM_PROMPT = (
 )
 
 
+def build_minimal_agent_sync(model, checkpointer):
+    """同步变体：供 FastAPI sync 端点使用（审批 resume）。"""
+    from deepagents import create_deep_agent
+
+    return create_deep_agent(
+        model=model,
+        tools=[publish_tool],
+        system_prompt=SYSTEM_PROMPT,
+        interrupt_on={"publish": True},
+        checkpointer=checkpointer,
+    )
+
+
 def build_minimal_agent(
     model: BaseChatModel,
     tools: Sequence | None = None,

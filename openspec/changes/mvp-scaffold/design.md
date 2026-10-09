@@ -69,6 +69,14 @@ canonical_spec: openspec
 ## D9：审批通知 = 仅 Web 审批页（T3 已确认）
 首版待审批项通过 apps/web 查看/确认，无 IM/邮件推送。推送能力进 ROADMAP。
 
+## D11：前端 = Vite + React + TS（用户确认 2026-10-08，修订知识库提案）
+
+知识库原提案为 Next.js，经选型讨论修订为 Vite + React + TypeScript（Easel 前端同款）：
+① 首版为自用审批工具，无 SSR/SEO 需求，Next.js 核心卖点用不上；
+② 非前端专家友好，SPA 心智模型最简；
+③ Easel 工作台（E:/Projects/Easel/web/frontend/src/，11 页面 + SSE 对话）可整结构借鉴。
+商业化阶段如需营销官网，单独建 Next.js 项目，应用保持 SPA（业界常见拆分）。
+
 ## D7：合规审查为系统级闸门
 出站内容审查实现为独立模块，创作→审批链路强制经过；命中规则即阻断（fail-closed），不做 prompt 级软约束。
 
@@ -87,3 +95,4 @@ canonical_spec: openspec
 # Open Questions
 
 - 账号画像文件的具体 schema（字段级）在实现任务中细化，原则见 `account-profile` spec
+- 【已知问题 8.2 排查】真模型（DeepSeek）resume 返回 400：assistant tool_calls 后缺 ToolMessage——fake 模型下审批→resume 流程正常，疑似 deepagents 中断恢复与同步 saver/真模型的兼容差异。API 流程已用 fake 模型验证通过；真模型 resume 修复后 8.2 真账号验收前必须解决
