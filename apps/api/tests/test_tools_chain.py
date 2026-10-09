@@ -8,7 +8,9 @@ import json
 import uuid
 from pathlib import Path
 
+from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage
+from langchain_core.outputs import ChatGeneration, ChatResult
 
 from zimeiti_api.checkpoints import get_checkpointer
 from zimeiti_api.credentials import encrypt_secret
@@ -50,10 +52,6 @@ BAD_JSON = json.dumps(
     },
     ensure_ascii=False,
 )
-
-
-from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.outputs import ChatGeneration, ChatResult
 
 
 class SeqModel(BaseChatModel):
@@ -222,7 +220,6 @@ async def _compliance_block(tmp_path, monkeypatch):
 
 def test_selection_gate_blocks_creation():
     """未挑选选题时 create_drafts 工具必须阻断（C4 闸门）。"""
-    from zimeiti_api.publisher import PublishExecutor
     from zimeiti_api.tools import build_default_tools
 
     model = SeqModel(responses=[AIMessage(content="{}")])
@@ -230,7 +227,7 @@ def test_selection_gate_blocks_creation():
         PROFILE,
         model,
         PublishExecutor(allowed_accounts={"xhs-main"}),
-        tmp_path_c := Path("outputs/_chain_test"),
+        Path("outputs/_chain_test"),
     )
     create = {t.name: t for t in tools}["create_drafts"]
     result = create.invoke({})
