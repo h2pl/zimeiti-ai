@@ -2,6 +2,7 @@
 change: ops-metrics-collection
 design-doc: openspec/changes/ops-metrics-collection/design.md
 base-ref: 1cee0e6fbb6ed7a5508fda933906f9494a0f7b57
+archived-with: 2026-10-09-ops-metrics-collection
 ---
 
 <!-- comet-task-authority: openspec/changes/ops-metrics-collection/tasks.md -->
