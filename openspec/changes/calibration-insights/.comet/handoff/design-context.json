@@ -1,0 +1,16 @@
+{
+  "change": "calibration-insights",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "a2859966e759b723a6905a8c5f69fe756fd9f2ecd9d8806397e8ef3e8ee8f312",
+  "files": [
+    { "path": "openspec/changes/calibration-insights/proposal.md", "sha256": "546d4f7aa60b5a976295d0b34a8abf76e0765edf7d3c5176427ca83acfee3426" },
+    { "path": "openspec/changes/calibration-insights/design.md", "sha256": "ec5084962073c98348f8ea7b74182a7e13a23a15e25dbd5890691dfdb7958bd8" },
+    { "path": "openspec/changes/calibration-insights/tasks.md", "sha256": "bc3340fd96190361a904e4b8977f791cdae105124a52988984a91983891f307f" },
+    { "path": "openspec/changes/calibration-insights/.openspec.yaml", "sha256": "e61703315c59969805e021ec521ca189369aaf8ea902d52c5e39c7fbc603598f" },
+    { "path": "openspec/changes/calibration-insights/specs/content-calibration/spec.md", "sha256": "d7f8eb9cd233a58a2d7339da0888faae8944221c49642ae6759e294892922b30" }
+  ]
+}
