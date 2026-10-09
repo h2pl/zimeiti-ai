@@ -34,7 +34,9 @@ data/metrics/published.db
 ## D2 取数实现
 
 - **gzh**：`platforms/gzh.py` 新增 datacube 取数入口，直接调用**已 vendor** 的 `wechat_mp.client` datacube 方法（`get_user_summary` / `get_user_read` / `get_article_read` / `get_article_share`），零新增协议代码
-- **xhs**：`platforms/xhs.py` 复用现有 `_open_page` 登录态打开创作者中心，解析每篇笔记行的标题与指标列（列头动态映射，避免硬编码列序）；**不引入第三方采集项目**——MediaCrawler（46k stars）许可证为 NON-COMMERCIAL LEARNING LICENSE 1.1，与 PRD 订阅 SaaS 商业化路径冲突，故不采用，改走自有 DOM 通道
+- **xhs**：`platforms/xhs.py` 复用现有 `_open_page` 登录态打开创作者中心首页，解析**数据看板**的「标签→值」文本对（曝光数/观看数/点赞数/评论数/收藏数/分享数/净涨粉/新增关注/取消关注，含近 7 日/近 30 日周期切换）与账号概览（关注数/粉丝数/获赞与收藏）
+  - **不引入第三方采集项目**：MediaCrawler（46k stars）许可证为 NON-COMMERCIAL LEARNING LICENSE 1.1，与 PRD 订阅 SaaS 商业化路径冲突，故不采用
+  - **单篇明细不采集（范围收敛）**：笔记管理页每篇的 5 个数字列**无列头文本、无 title 属性**（仅 svg 图标 + 数字），列语义无法可靠确定；按零假阳性铁律不猜列序，改为只采集账号级指标。待真账号走查人工比对列序后，留作后续变更
 
 ## D3 只读消费
 

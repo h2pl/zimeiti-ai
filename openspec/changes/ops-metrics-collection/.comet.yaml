@@ -24,7 +24,7 @@ archived: false
 bound_branch: comet/ops-metrics-collection
 direct_override: null
 handoff_context: openspec/changes/ops-metrics-collection/.comet/handoff/design-context.json
-handoff_hash: 7e1eb11197da92b32cdf08d9481d0f9b8a741c4f229af5d2737f2e02b8143c8c
+handoff_hash: 24523baaa6ce16c29b7bd74362052c6396c0fe78bd012492b0bd76e2624bc6d5
 classic_profile: full
 classic_migration: 1
 run_id: cec0e319-9c61-4bfc-91ab-f07a7674ad6b

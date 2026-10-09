@@ -3,7 +3,7 @@
 - Change: ops-metrics-collection
 - Phase: design
 - Mode: compact
-- Context hash: 7e1eb11197da92b32cdf08d9481d0f9b8a741c4f229af5d2737f2e02b8143c8c
+- Context hash: 24523baaa6ce16c29b7bd74362052c6396c0fe78bd012492b0bd76e2624bc6d5
 
 Generated-by: comet-handoff.sh
 Task hash policy: task-content-v1. Read tasks.md for live completion; excerpts are design-time context.
@@ -58,8 +58,8 @@ OpenSpec remains the canonical capability spec. This handoff is a deterministic,
 ## openspec/changes/ops-metrics-collection/design.md
 
 - Source: openspec/changes/ops-metrics-collection/design.md
-- Lines: 1-61
-- SHA256: 6c922e72d6380febaf362e4f8ebf937cd3943ba2f5d67d19b79fa146eb13e51f
+- Lines: 1-63
+- SHA256: 3a392c823cca9f96ea0eca2cd27a4715da4433c268f5e32ebaae13ac190c2360
 
 ```md
 ---
@@ -98,7 +98,9 @@ data/metrics/published.db
 ## D2 取数实现
 
 - **gzh**：`platforms/gzh.py` 新增 datacube 取数入口，直接调用**已 vendor** 的 `wechat_mp.client` datacube 方法（`get_user_summary` / `get_user_read` / `get_article_read` / `get_article_share`），零新增协议代码
-- **xhs**：`platforms/xhs.py` 复用现有 `_open_page` 登录态打开创作者中心，解析每篇笔记行的标题与指标列（列头动态映射，避免硬编码列序）；**不引入第三方采集项目**——MediaCrawler（46k stars）许可证为 NON-COMMERCIAL LEARNING LICENSE 1.1，与 PRD 订阅 SaaS 商业化路径冲突，故不采用，改走自有 DOM 通道
+- **xhs**：`platforms/xhs.py` 复用现有 `_open_page` 登录态打开创作者中心首页，解析**数据看板**的「标签→值」文本对（曝光数/观看数/点赞数/评论数/收藏数/分享数/净涨粉/新增关注/取消关注，含近 7 日/近 30 日周期切换）与账号概览（关注数/粉丝数/获赞与收藏）
+  - **不引入第三方采集项目**：MediaCrawler（46k stars）许可证为 NON-COMMERCIAL LEARNING LICENSE 1.1，与 PRD 订阅 SaaS 商业化路径冲突，故不采用
+  - **单篇明细不采集（范围收敛）**：笔记管理页每篇的 5 个数字列**无列头文本、无 title 属性**（仅 svg 图标 + 数字），列语义无法可靠确定；按零假阳性铁律不猜列序，改为只采集账号级指标。待真账号走查人工比对列序后，留作后续变更
 
 ## D3 只读消费
 
@@ -130,7 +132,7 @@ data/metrics/published.db
 
 - Source: openspec/changes/ops-metrics-collection/tasks.md
 - Lines: 1-19
-- SHA256: 6fbbfc92fa940017767154e2d4d497877d1223dcb86b4fc260e95a7faf163b06
+- SHA256: 37b9dbe7d01036fcc3818061f4a5d7b931c8306f6ebe6c92f54e1cc17e8846e6
 
 ```md
 # Tasks
@@ -139,7 +141,7 @@ data/metrics/published.db
 
 - [ ] 1.1 SQLite 数据层：publish_events / metric_snapshots / collection_errors 三表 + upsert 去重键（platform+source_folder+publish_date）+ 失败留痕；验证：单测覆盖幂等 upsert 与失败不覆盖历史 <!-- comet-task:8d8c204c-c3b9-4bc2-8fe5-dc688914368f -->
 - [ ] 1.2 gzh datacube 取数入口：调用已 vendor 的 wechat_mp.client datacube 方法，写入快照（source=datacube）；验证：单测 mock 解析 + 日期跨度越界显式报错 <!-- comet-task:395260eb-f627-4aad-8eee-6120a3a7ae12 -->
-- [ ] 1.3 xhs 创作者中心取数：复用登录态解析笔记行指标（列头动态映射）；验证：单测覆盖列解析与列缺失落 collection_errors <!-- comet-task:75778886-c690-4d6f-92c2-1f9046edacde -->
+- [ ] 1.3 xhs 数据看板取数：复用登录态解析创作者中心首页「标签→值」文本对（曝光/观看/点赞/评论/收藏/分享/净涨粉等）+ 账号概览；验证：单测覆盖标签解析与缺失标签落 collection_errors <!-- comet-task:75778886-c690-4d6f-92c2-1f9046edacde -->
 
 ## 2. 只读消费
 
@@ -147,7 +149,7 @@ data/metrics/published.db
 
 ## 3. 真账号走查
 
-- [ ] 3.1 双平台真实取数一次并与后台数值人工比对；验证：快照落盘 + 人工核对一致 <!-- comet-task:563f8837-3e25-4909-9ddf-7c12db00f8f4 -->
+- [ ] 3.1 双平台真实取数一次并与后台数值人工比对；验证：快照落盘 + 人工核对一致（并人工确认笔记管理页 5 列数字语义，供后续单篇指标变更） <!-- comet-task:563f8837-3e25-4909-9ddf-7c12db00f8f4 -->
 
 ## 4. 收尾
 
