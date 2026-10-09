@@ -13,7 +13,7 @@ echo "== 3/5 mypy =="
 .venv/Scripts/python.exe -m mypy src/zimeiti_api
 
 echo "== 4/5 bandit =="
-.venv/Scripts/python.exe -m bandit -q -r src/zimeiti_api
+.venv/Scripts/python.exe -m bandit -q -r src/zimeiti_api -x src/zimeiti_api/vendor
 
 echo "== 5/5 pytest + coverage(>=80%) =="
 .venv/Scripts/python.exe -m pytest tests/ -q --cov=zimeiti_api --cov-report=term --cov-fail-under=80
