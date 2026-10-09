@@ -1,6 +1,8 @@
 """Task 6.2/6.3 验收：公众号草稿箱上传（vendor my-tools 排版管线）+ 小红书发布框架读回。"""
 
-from zimeiti_api.creation import GzhDraft
+from pathlib import Path
+
+from zimeiti_api.creation import GzhDraft, XhsDraft
 
 
 class TestGzh:
@@ -139,7 +141,7 @@ class _FakeLocator:
         self._actions.append(("upload", self.sel, files))
 
     def click(self, timeout=None):
-        if "发布笔记" in self.sel or ".publishBtn" in self.sel:
+        if "btn-wrapper" in self.sel or "发布笔记" in self.sel or ".publishBtn" in self.sel:
             self._actions.append(("click_publish", self.sel))
         elif "creator-tab" in self.sel:
             self._actions.append(("click_tab", self.sel))
@@ -172,6 +174,21 @@ class _FakePage:
         self._body = body
         self._tabs_visible = tabs_visible
 
+    def on(self, event, handler):
+        """模拟站点响应回调（发布请求立即成功返回）。"""
+
+        class _R:
+            url = "https://edith.xiaohongshu.com/web_api/sns/v2/note"
+            status = 200
+
+            def text(self):
+                return (
+                    '{"success":true,"msg":"","data":{"id":"NOTE_X","score":10},'
+                    '"share_link":"https://www.xiaohongshu.com/discovery/item/NOTE_X"}'
+                )
+
+        handler(_R())
+
     def goto(self, url):
         self._actions.append(("goto", url))
 
@@ -198,70 +215,124 @@ class _FakePage:
 
 
 class TestXhs:
+    """XhsPublisher = xiaohongshu-mcp 本地服务的 API 客户端。"""
+
     def test_parse_readback_found(self):
         from zimeiti_api.platforms.xhs import parse_readback
 
         assert parse_readback(["AI 提效指南", "其他"], "AI 提效指南") == "verified"
         assert parse_readback(["其他"], "AI 提效指南") == "unverified"
 
-    def test_publish_draft_flow_order(self, tmp_path):
-        """DOM 存草稿流程：切图文 tab → 上传封面 → 等编辑器 → 标题 → 正文 → 存草稿。"""
-        from zimeiti_api.creation import XhsDraft
-        from zimeiti_api.platforms.xhs import XhsPublisher, make_cover_png
-
-        actions = []
-        fake = _FakePage(actions)
-        cover = make_cover_png(tmp_path / "cover.png")
-        pub = XhsPublisher(storage_state=str(tmp_path / "state.json"))
-        outcome = pub.publish_draft(
-            XhsDraft(title="标" * 30, body="第一行\n第二行"),
-            page=fake,
-            cover_path=str(cover),
-        )
-        assert outcome == "submitted_private"
-        kinds = [a[0] for a in actions]
-        assert kinds.index("click_tab") < kinds.index("upload") < kinds.index("fill")
-        # 私密发布序列：可见性切换 → 仅自己可见 → 发布
-        assert "click_visibility" in kinds and "click_private" in kinds
-        assert "click_publish" in kinds
-        assert kinds.index("click_private") < kinds.index("click_publish")
-        fill = next(a for a in actions if a[0] == "fill")
-        assert len(fill[2]) <= 20  # 标题截断到 20 字
-        typed = "".join(a[1] for a in actions if a[0] == "type")
-        assert "第一行" in typed and "第二行" in typed
-
-    def test_publish_flow_clicks_publish_button(self, tmp_path):
-        from zimeiti_api.creation import XhsDraft
-        from zimeiti_api.platforms.xhs import XhsPublisher, make_cover_png
-
-        actions = []
-        fake = _FakePage(actions)
-        cover = make_cover_png(tmp_path / "cover.png")
-        pub = XhsPublisher(storage_state=str(tmp_path / "state.json"))
-        outcome = pub.publish(XhsDraft(title="t", body="b"), page=fake, cover_path=str(cover))
-        assert outcome == "submitted"
-        assert actions[-2][0] == "click_publish"
-        assert "发布笔记" in actions[-2][1] or ".publishBtn" in actions[-2][1]
-
-    def test_publish_missing_image_tab_raises(self, tmp_path):
-        from zimeiti_api.creation import XhsDraft
-        from zimeiti_api.platforms.xhs import XhsPublisher, make_cover_png
-
-        actions = []
-        fake = _FakePage(actions, tabs_visible=False)
-        cover = make_cover_png(tmp_path / "cover.png")
-        pub = XhsPublisher(storage_state=str(tmp_path / "state.json"))
-        try:
-            pub.publish_draft(XhsDraft(title="t", body="b"), page=fake, cover_path=str(cover))
-            raise AssertionError("应抛 RuntimeError")
-        except RuntimeError as exc:
-            assert "上传图文" in str(exc)
-
-    def test_readback_with_fake_page(self, tmp_path):
+    def _pub(self, tmp_path):
         from zimeiti_api.platforms.xhs import XhsPublisher
 
-        actions = []
-        fake = _FakePage(actions, body="草稿箱列表：把选题到发布交给了一个Agent")
-        pub = XhsPublisher(storage_state=str(tmp_path / "state.json"))
-        assert pub.readback("把选题到发布交给了一个Agent", page=fake) == "verified"
-        assert pub.readback("不存在的标题", page=fake) == "unverified"
+        return XhsPublisher(
+            base_url="http://localhost:18060",
+            token="T",
+            storage_state=str(tmp_path / "state.json"),
+        )
+
+    def test_publish_draft_calls_mcp_api_with_private_visibility(self, tmp_path, monkeypatch):
+        from zimeiti_api.platforms.xhs import make_cover_png
+
+        cover = make_cover_png(tmp_path / "cover.png")
+        seen = {}
+
+        class FakeResp:
+            def json(self):
+                return {
+                    "success": True,
+                    "message": "发布成功",
+                    "data": {"status": "success", "title": "x"},
+                }
+
+        def fake_post(url, json=None, headers=None, timeout=None):
+            seen.update(url=url, payload=json, headers=headers)
+            return FakeResp()
+
+        monkeypatch.setattr("zimeiti_api.platforms.xhs.requests.post", fake_post)
+        pub = self._pub(tmp_path)
+        res = pub.publish_draft(
+            XhsDraft(title="标" * 30, body="正文", tags=["t1", "t2"]),
+            cover_path=str(cover),
+        )
+        assert seen["url"].endswith("/api/v1/publish")
+        assert seen["payload"]["visibility"] == "仅自己可见"  # 宪法 I
+        assert len(seen["payload"]["title"]) <= 20
+        assert seen["payload"]["images"] == [str(Path(cover).resolve())]
+        assert seen["payload"]["tags"] == ["t1", "t2"]
+        assert seen["headers"]["Authorization"] == "Bearer T"
+        assert res["raw"]["success"] is True
+
+    def test_publish_public_visibility(self, tmp_path, monkeypatch):
+        seen = {}
+
+        class FakeResp:
+            def json(self):
+                return {"success": True, "data": {"status": "success"}}
+
+        def fake_post(url, json=None, headers=None, timeout=None):
+            seen.update(payload=json)
+            return FakeResp()
+
+        monkeypatch.setattr("zimeiti_api.platforms.xhs.requests.post", fake_post)
+        self._pub(tmp_path).publish(
+            XhsDraft(title="t", body="b"), cover_path=str(tmp_path / "c.png")
+        )
+        assert seen["payload"]["visibility"] == "公开可见"
+
+    def test_publish_accepts_dict_draft(self, tmp_path, monkeypatch):
+        seen = {}
+
+        class FakeResp:
+            def json(self):
+                return {"success": True, "data": {}}
+
+        def fake_post(url, json=None, headers=None, timeout=None):
+            seen.update(payload=json)
+            return FakeResp()
+
+        monkeypatch.setattr("zimeiti_api.platforms.xhs.requests.post", fake_post)
+        self._pub(tmp_path).publish_draft(
+            {"title": "标题", "body": "正文"}, cover_path=str(tmp_path / "c.png")
+        )
+        assert seen["payload"]["title"] == "标题"
+
+    def test_publish_failure_raises(self, tmp_path, monkeypatch):
+        class FakeResp:
+            def json(self):
+                return {"success": False, "message": "发布失败", "error": "标题超限"}
+
+        monkeypatch.setattr(
+            "zimeiti_api.platforms.xhs.requests.post",
+            lambda url, json=None, headers=None, timeout=None: FakeResp(),
+        )
+        try:
+            self._pub(tmp_path).publish_draft(
+                XhsDraft(title="t", body="b"), cover_path=str(tmp_path / "c.png")
+            )
+            raise AssertionError("应抛 RuntimeError")
+        except RuntimeError as exc:
+            assert "发布失败" in str(exc)
+
+    def test_readback_with_fake_page(self, tmp_path):
+        class FakeLocator:
+            def all(self):
+                return []
+
+        class FakePage:
+            def goto(self, url):
+                pass
+
+            def wait_for_timeout(self, ms):
+                pass
+
+            def locator(self, sel):
+                return FakeLocator()
+
+            def inner_text(self, sel):
+                return "笔记管理：我把选题到发布交给了一个AI助手"
+
+        pub = self._pub(tmp_path)
+        assert pub.readback("我把选题到发布交给了一个AI助手", page=FakePage()) == "verified"
+        assert pub.readback("不存在的标题", page=FakePage()) == "unverified"

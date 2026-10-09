@@ -1,63 +1,51 @@
 """小红书发布（Task 6.2，宪法原则 III：风控护栏）。
 
-生产路线：DOM 自动化创作者中心，复用开源 aki66938/xhs-toolkit v1.3.0
-（MIT，https://github.com/aki66938/xhs-toolkit）实测验证的选择器与流程，
-移植到本项目既有 Playwright 栈。支持存草稿/发布二态。
+生产路线：调用本地 xiaohongshu-mcp 服务（xpzouying/xiaohongshu-mcp v2.5.5，
+Go + rod，2026-10 活跃维护）的 HTTP API 完成发布。登录态管理、Tiptap 编辑器
+适配、拟人化输入、反检测、发布成功判定（URL 跳离发布页）全部由该成熟项目
+负责，本项目只做薄客户端。
 
-为何不用 API 逆向路线（A3 走查实测记录）：edith 域对外部签名一律风控拒绝
-（-100 无登录信息 / -1 签名失败，x-s/x-t、x-s-common、页内 fetch 均试过），
-creator 域 /web_api/sns/v2/note 返回 404；且 creator 假阳性 success（data 空，
-平台实际未建笔记）。站点自己的签名/风控只信真实前端环境——DOM 自动化即复用
-站点自身逻辑，不再逆向。
+A3 走查记录（为何弃自研方案）：
+- edith API 逆向：风控拒外部签名；creator 域 success:true 为假阳性（笔记未落库）
+- 自研 DOM：站点改版频繁（Quill→Tiptap、按钮重排），选择器维护成本高
+- web 草稿箱：浏览器 localStorage 存储，App 不可见，无产品价值
 
-登录态：首跑扫码一次持久化 storage_state，后续复用；
-频控/白名单在 publisher 执行器层强制，本模块只做单次动作。
-读回对账：笔记管理页（草稿 tab）正文含标题 → verified。
+服务部署（apps/api/data/tools/，gitignored）：
+  1. xiaohongshu-login-windows-amd64.exe   # 首次扫码登录（一次持久化）
+  2. xiaohongshu-mcp-windows-amd64.exe -headless  # 常驻 :18060
+配置：XHS_MCP_BASE_URL（默认 http://localhost:18060）、XHS_MCP_TOKEN（可选）。
+
+读回对账：创作者中心笔记管理页（DOM，复用持久化登录态 storage_state）。
 """
 
+import os
 import struct
 import zlib
 from pathlib import Path
 from typing import Any
 
+import requests
 from playwright.sync_api import TimeoutError, sync_playwright
 
-# 选择器与 URL 集中管理（来源：xhs-toolkit src/xiaohongshu/constants.py 实测值），
-# 平台改版只改这里
+# 平台硬约束（xiaobei/AiToEarn 实测对齐；xiaohongshu-mcp 服务端亦校验）
+XHS_TITLE_LIMIT = 20
+XHS_DESC_LIMIT = 1000
+
+# 读回选择器（笔记管理页，A3 实测；/publish/note 已 404）
 SELECTORS: dict[str, str] = {
-    "publish_page": "https://creator.xiaohongshu.com/publish/publish?from=menu",
     "login_url": "https://creator.xiaohongshu.com/login",
-    "creator_tab": ".creator-tab",  # 发布页默认落上传视频 tab，必须切「上传图文」（A3 实测）
-    "file_input": "input[type='file']",
-    "title_input": "[placeholder*='标题']",
-    "title_input_alt": ".d-text",
-    "content_editor": ".tiptap.ProseMirror",  # 正文富文本编辑器（Tiptap，A3 实测；
-    # 旧版 Quill .ql-editor 已被站点替换，xhs-toolkit 的 .ql-editor 选择器过时）
-    # 发布按钮（A3 实测新版按钮文本为「发布笔记」，.publishBtn 为旧版类名兜底）
-    "publish_button": "text=发布笔记",
-    "publish_button_alt": ".publishBtn",
-    "visibility_entry": "text=公开可见",
-    "visibility_private": "text=仅自己可见",
-    # 旧 /publish/note 已 404（A3 实测）
     "note_list_url": "https://creator.xiaohongshu.com/new/note-manager",
     "draft_tab": "text=草稿",
 }
 
-# 平台硬约束（xiaobei/AiToEarn 实测对齐）
-XHS_TITLE_LIMIT = 20
-XHS_DESC_LIMIT = 1000
 
-
-def parse_readback(note_titles: list[str], title: str) -> str:
-    """读回对账纯函数：页面列表含标题 → verified，否则 unverified。"""
-    return "verified" if title in note_titles else "unverified"
+def parse_readback(page_texts: list[str], title: str) -> str:
+    """读回对账纯函数：页面文本含标题 → verified，否则 unverified。"""
+    return "verified" if title in page_texts else "unverified"
 
 
 def make_cover_png(path: str | Path, width: int = 1080, height: int = 1440) -> Path:
-    """纯标准库生成 3:4 纯色封面 PNG（图文笔记至少需要 1 张图）。
-
-    参考: scripts/walkthrough_a3_gzh.py make_png（本项目既有实现）
-    """
+    """纯标准库生成 3:4 纯色封面 PNG（图文笔记至少需要 1 张图）。"""
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
 
@@ -81,199 +69,82 @@ def make_cover_png(path: str | Path, width: int = 1080, height: int = 1440) -> P
 
 
 class XhsPublisher:
-    """小红书发布器（DOM 自动化）。page 可注入（测试用 FakePage）。
+    """小红书发布器：xiaohongshu-mcp 本地服务的 API 客户端（薄封装）。
 
-    存草稿（publish_draft）与发布（publish）共用填表流程，仅末端按钮不同；
-    默认内部启动 Playwright 并复用持久化登录态。
+    publish_draft：私密发布（仅自己可见）——宪法 I 的 xhs 落地形态，
+    人工确认后公开化；publish：公开发布。真实结果以 readback 为准。
     """
 
-    def __init__(self, storage_state: str | None = None, selectors: dict[str, str] | None = None):
+    def __init__(
+        self,
+        base_url: str | None = None,
+        token: str | None = None,
+        storage_state: str | None = None,
+        selectors: dict[str, str] | None = None,
+    ):
+        self.base_url = (
+            base_url or os.environ.get("XHS_MCP_BASE_URL") or "http://localhost:18060"
+        ).rstrip("/")
+        self.token = token or os.environ.get("XHS_MCP_TOKEN", "")
         if storage_state is None:
             from zimeiti_api.config import LOGIN_STATE_PATH
 
             storage_state = str(LOGIN_STATE_PATH)
-        self.storage_state = storage_state
+        self.storage_state = storage_state  # 读回 DOM 用
         self.selectors = selectors or SELECTORS
 
-    # ─── 发布/存草稿 ────────────────────────────────────────────────
+    def _headers(self) -> dict[str, str]:
+        h = {"Content-Type": "application/json"}
+        if self.token:
+            h["Authorization"] = f"Bearer {self.token}"
+        return h
 
-    def publish_draft(
-        self,
-        draft: Any,
-        page: Any = None,
-        cover_path: str | None = None,
-        debug_dir: str | None = None,
-    ) -> str:
-        """私密发布（仅自己可见），返回 submitted_private（真实结果以 readback/页面为准）。
-
-        A3 实测事实：
-        - web 端图文模式无「存草稿」按钮；且 web 草稿箱是浏览器 localStorage
-          （「草稿存储于当前使用的浏览器本地」），非服务端，App 不可见——对产品
-          无价值，故不走草稿路线；
-        - 「仅自己可见」发布是「先暂存、人工确认后再公开」的最接近形态；
-        - 点击发布后可能弹 redcaptcha 风控验证码，无人处理则发布中止（假阳性
-          submitted 的根因）——需有头浏览器由人工完成验证码，或积累会话信任后
-          静默通过。
-
-        page 只在此处开一次并传给 _fill_note——若各自开 Playwright 实例，
-        第二个实例会在第一个的 greenlet 循环内启动而报 asyncio 冲突（A3 实测）。
-        """
-        page = page or self._open_page()
-        self._fill_note(draft, page=page, cover_path=cover_path, debug_dir=debug_dir)
-        sel = self.selectors
-        if debug_dir:
-            Path(debug_dir).mkdir(parents=True, exist_ok=True)
-            (Path(debug_dir) / "publish_page.html").write_text(page.content(), encoding="utf-8")
-        # 可见性：公开可见 → 仅自己可见
-        for el in page.locator(sel["visibility_entry"]).all():
-            try:
-                if el.is_visible():
-                    el.click()
-                    break
-            except Exception:  # noqa: BLE001  # nosec B112 - 隐藏重复项容错
-                continue
-        page.wait_for_timeout(1_000)
-        page.locator(sel["visibility_private"]).first.click()
-        # 发布
-        clicked = False
-        for selector in (sel["publish_button"], sel["publish_button_alt"]):
-            try:
-                page.locator(selector).first.click(timeout=10_000)
-                clicked = True
-                break
-            except Exception:  # noqa: BLE001  # nosec B112 - 多选择器轮询容错
-                continue
-        if not clicked:
-            raise RuntimeError("未找到发布按钮（站点可能改版，检查 SELECTORS）")
-        page.wait_for_timeout(5_000)
-        return "submitted_private"
-
-    def publish(
-        self,
-        draft: Any,
-        page: Any = None,
-        cover_path: str | None = None,
-        debug_dir: str | None = None,
-    ) -> str:
-        """正式发布图文笔记，返回 submitted（真实结果以 readback 为准）。"""
-        page = page or self._open_page()
-        self._fill_note(draft, page=page, cover_path=cover_path, debug_dir=debug_dir)
-        sel = self.selectors
-        clicked = False
-        for selector in (sel["publish_button"], sel["publish_button_alt"]):
-            try:
-                page.locator(selector).first.click(timeout=10_000)
-                clicked = True
-                break
-            except Exception:  # noqa: BLE001  # nosec B112 - 多选择器轮询（xhs-toolkit 同款容错）
-                continue
-        if not clicked:
-            raise RuntimeError("未找到发布按钮（站点可能改版，检查 SELECTORS）")
-        page.wait_for_timeout(5_000)
-        return "submitted"
-
-    def _fill_note(
-        self,
-        draft: Any,
-        page: Any = None,
-        cover_path: str | None = None,
-        debug_dir: str | None = None,
-    ) -> None:
-        """填表流程（xhs-toolkit 实测顺序）：上传封面 → 等编辑器 → 标题 → 正文。
-
-        draft：XhsDraft 或 dict（发布审批进程从 drafts.json 读回的是 dict）。
-        """
+    def _publish(self, draft: Any, visibility: str, cover_path: str | None) -> dict:
         title = draft["title"] if isinstance(draft, dict) else draft.title
         body = draft["body"] if isinstance(draft, dict) else draft.body
-        if page is None:
-            # 由 publish/publish_draft 统一开启传入，避免重复开 Playwright 实例
-            raise RuntimeError("page 未注入：请经由 publish/publish_draft 调用")
-        sel = self.selectors
-
-        page.goto(sel["publish_page"])
-        page.wait_for_selector(sel["creator_tab"], timeout=20_000)
-
-        # 0. 切到「上传图文」tab（发布页默认落上传视频 tab，A3 走查实测；
-        #    tab 有多个隐藏重复项，必须点可见的那个；SPA 渲染需重试）
-        switched = False
-        for _ in range(5):
-            for tab in page.locator(sel["creator_tab"]).all():
-                try:
-                    if tab.is_visible() and "上传图文" in tab.inner_text():
-                        tab.click()
-                        switched = True
-                        break
-                except Exception:  # noqa: BLE001  # nosec B112 - 隐藏重复项点击容错
-                    continue
-            if switched:
-                break
-            page.wait_for_timeout(1_000)
-        if not switched:
-            raise RuntimeError("未找到可见的「上传图文」tab（站点可能改版，检查 SELECTORS）")
-
-        # 1. 封面上传（图文笔记至少 1 张图；默认生成 3:4 纯色 PNG）
+        tags = (
+            draft.get("tags") if isinstance(draft, dict) else getattr(draft, "tags", None)
+        ) or []
+        # 含空格的话题无法命中联想下拉（A3 实测：「AI Agent」等待超时），过滤
+        clean_tags = [str(t).strip() for t in tags if str(t).strip() and " " not in str(t).strip()]
         cover = (
             Path(cover_path)
             if cover_path
             else make_cover_png(Path("data/outputs/xhs-main") / "cover.png")
         )
-        # 取图片 file input（accept 为扩展名列表 .jpg/.jpeg/.png/.webp；A3 实测
-        # 上传控件本身隐藏 visible=False 但 set_input_files 可用；视频 input 的
-        # accept 是 .mp4 等视频扩展名）
-        _IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".webp")
-        file_input = None
-        deadline = 20_000
-        waited = 0
-        while file_input is None and waited < deadline:
-            for inp in page.locator(sel["file_input"]).all():
-                try:
-                    accept = (inp.get_attribute("accept") or "").lower()
-                    if any(ext in accept for ext in _IMAGE_EXTS):
-                        file_input = inp
-                        break
-                except Exception:  # noqa: BLE001  # nosec B112
-                    continue
-            if file_input is None:
-                page.wait_for_timeout(1_000)
-                waited += 1_000
-        if file_input is None:
-            raise RuntimeError("未找到图文上传入口（站点可能改版，检查 SELECTORS）")
-        file_input.set_input_files(str(cover))
+        payload = {
+            "title": title[:XHS_TITLE_LIMIT],
+            "content": body[:XHS_DESC_LIMIT],
+            "images": [str(cover.resolve())],
+            "tags": clean_tags[:10],
+            "visibility": visibility,
+        }
+        resp = requests.post(
+            f"{self.base_url}/api/v1/publish",
+            json=payload,
+            headers=self._headers(),
+            timeout=600,  # 服务端含图片上传+拟人化输入+话题联想，耗时较长
+        )
+        result = resp.json()
+        if not result.get("success"):
+            raise RuntimeError(
+                f"发布失败: {result.get('message', '')} {str(result.get('error', ''))[:200]}"
+            )
+        data = result.get("data") or {}
+        return {"status": data.get("status", ""), "title": data.get("title", ""), "raw": result}
 
-        # 2. 等素材上传完成（上传完成后 Quill 编辑器才出现）
-        page.wait_for_selector(sel["content_editor"], timeout=60_000)
+    def publish_draft(self, draft: Any, cover_path: str | None = None, **_: Any) -> dict[str, str]:
+        """私密发布（仅自己可见）。真实结果以 readback 为准。"""
+        return self._publish(draft, "仅自己可见", cover_path)
 
-        # 3. 标题（多选择器轮询，xhs-toolkit 同款容错）
-        filled = False
-        for selector in (sel["title_input"], sel["title_input_alt"]):
-            try:
-                loc = page.locator(selector).first
-                loc.click(timeout=5_000)
-                loc.fill(title[:XHS_TITLE_LIMIT])
-                filled = True
-                break
-            except Exception:  # noqa: BLE001  # nosec B112
-                continue
-        if not filled:
-            raise RuntimeError("标题输入框未找到（站点可能改版，检查 SELECTORS）")
-
-        # 4. 正文：Quill 编辑器点击聚焦 → 全选删除 → 逐行键入（xhs-toolkit 同款）
-        editor = page.locator(sel["content_editor"]).first
-        editor.click()
-        page.keyboard.press("Control+a")
-        page.keyboard.press("Delete")
-        for line in body[:XHS_DESC_LIMIT].split("\n"):
-            page.keyboard.type(line)
-            page.keyboard.press("Enter")
-
-        if debug_dir:
-            Path(debug_dir).mkdir(parents=True, exist_ok=True)
-            (Path(debug_dir) / "filled_page.html").write_text(page.content(), encoding="utf-8")
+    def publish(self, draft: Any, cover_path: str | None = None, **_: Any) -> dict[str, str]:
+        """公开发布。真实结果以 readback 为准。"""
+        return self._publish(draft, "公开可见", cover_path)
 
     # ─── 读回对账 ────────────────────────────────────────────────────
 
     def readback(self, title: str, page: Any = None, debug_dir: str | None = None) -> str:
-        """读回笔记管理列表对账（草稿/发布同页不同 tab）；异常 MUST unverified。"""
+        """读回笔记管理列表对账；接口异常 MUST 返回 unverified（不冒报成功）。"""
         page = page or self._open_page()
         sel = self.selectors
         try:
@@ -284,7 +155,7 @@ class XhsPublisher:
                     tab.click()
                     page.wait_for_timeout(2_000)
                     break
-                except Exception:  # noqa: BLE001  # nosec B112 - tab 点击失败降级为全文搜索
+                except Exception:  # noqa: BLE001  # nosec B112
                     continue
             body = page.inner_text("body")
             if debug_dir:
@@ -294,14 +165,39 @@ class XhsPublisher:
         except Exception:  # noqa: BLE001 - 观测层异常降级为 unverified（不冒报成功）
             return "unverified"
 
-    # ─── 登录态 ──────────────────────────────────────────────────────
+    # ─── 读回用浏览器（复用持久化登录态） ─────────────────────────────
+
+    def _launch(self, pw: Any, headless: bool = False) -> Any:
+        """启动带反检测的浏览器（参考 xhs-toolkit 的 Selenium 反检测思路）。"""
+        try:
+            browser = pw.chromium.launch(
+                channel="chrome",
+                headless=headless,
+                ignore_default_args=["--enable-automation"],
+                args=["--disable-blink-features=AutomationControlled"],
+            )
+        except Exception:  # noqa: BLE001 - 未装 Chrome 时回退 chromium
+            browser = pw.chromium.launch(
+                headless=headless,
+                ignore_default_args=["--enable-automation"],
+                args=["--disable-blink-features=AutomationControlled"],
+            )
+        return browser
+
+    @staticmethod
+    def _stealth(context: Any) -> None:
+        """注入 navigator.webdriver 反检测补丁。"""
+        context.add_init_script(
+            "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+        )
 
     def _open_page(self) -> Any:
         """真实浏览器打开（复用持久化登录态）。仅生产路径使用，单测注入 FakePage。"""
         pw = sync_playwright().start()
-        browser = pw.chromium.launch(headless=False)
+        browser = self._launch(pw, headless=False)
         state = self.storage_state if Path(self.storage_state).exists() else None
         context = browser.new_context(storage_state=state)
+        self._stealth(context)
         page = context.new_page()
 
         def _on_close(_: Any) -> None:
@@ -313,19 +209,16 @@ class XhsPublisher:
         return page
 
     def login_interactive(self) -> None:
-        """首跑扫码登录（Task 1.4）：打开登录页等待扫码，成功后持久化登录态。
-
-        失效引导重扫：登录态失效时由调用方触发本方法重新扫码——MUST NOT 伪造登录。
-        """
+        """首跑扫码登录（读回 DOM 用登录态）。MUST NOT 伪造登录。"""
         sel = self.selectors
         with sync_playwright() as pw:
-            browser = pw.chromium.launch(headless=False)
+            browser = self._launch(pw, headless=False)
             context = browser.new_context()
+            self._stealth(context)
             page = context.new_page()
             page.goto(sel["login_url"])
 
-            # 扫码成功判定：离开登录页回到创作者中心任意页（真实站点登录后落
-            # /new/home，不跳 publish/publish——A3 走查实测），不能硬等固定跳转 URL
+            # 扫码成功判定：离开登录页回到创作者中心任意页（A3 实测落 /new/home）
             def _logged_in(url: Any) -> bool:
                 u = str(url)
                 return "creator.xiaohongshu.com" in u and "/login" not in u
@@ -333,11 +226,9 @@ class XhsPublisher:
             try:
                 page.wait_for_url(_logged_in, timeout=180_000)
             except TimeoutError:
-                # 超时兜底：用户实际已登录（URL 已离开登录页）也要持久化登录态，
-                # 否则扫了码却白扫（A3 走查踩坑：等待 URL 错误导致登录态丢失）
                 if not _logged_in(page.url):
                     raise
-            # storage_state 写文件前必须确保父目录存在（A3 走查踩坑：目录缺失丢失登录态）
+            # 目录必须存在（A3 走查踩坑：目录缺失丢失登录态）
             Path(self.storage_state).parent.mkdir(parents=True, exist_ok=True)
             context.storage_state(path=self.storage_state)
             browser.close()

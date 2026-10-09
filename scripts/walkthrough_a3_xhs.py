@@ -1,7 +1,11 @@
-"""Task 2.3 真账号走查 A3-xhs（DOM 草稿路线）：扫码登录 → 真实创作 → 合规 → 存草稿 → 读回。
+"""Task 2.3 真账号走查 A3-xhs（xiaohongshu-mcp API 路线）。
 
-复用 xhs-toolkit 实测流程（创作者中心发布页，存草稿按钮），登录态复用。
-证据落盘：data/outputs/xhs-main/<slug>/drafts.json + 审计 JSONL + debug 目录。
+前置（一次性）：
+  1. data/tools/xiaohongshu-login-windows-amd64.exe   # 扫码登录一次
+  2. data/tools/xiaohongshu-mcp-windows-amd64.exe -headless  # 常驻 :18060
+发布由 xiaohongshu-mcp 执行（visibility=仅自己可见，宪法 I）；读回走
+创作者中心笔记管理页（DOM，独立线程隔离事件循环）。
+证据落盘：data/outputs/xhs-main/<slug>/drafts.json + 审计 JSONL。
 """
 
 import json
@@ -14,6 +18,9 @@ sys.path.insert(0, str(ROOT / "apps/api"))
 import os
 
 os.chdir(ROOT / "apps/api")
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 from dotenv import load_dotenv
 
@@ -33,17 +40,16 @@ TOPIC_TITLE = "记录：我用一个 AI Agent 跑通自媒体选题到发布的�
 
 
 def main() -> int:
-    print("[A3-xhs] 开始真账号走查（DOM 草稿路线）")
-    audit.record("walkthrough_a3_xhs_started", slug=SLUG, mode="dom_draft")
+    print("[A3-xhs] 开始真账号走查（xiaohongshu-mcp API 路线）")
+    audit.record("walkthrough_a3_xhs_started", slug=SLUG, mode="mcp_api")
 
     profile = load_profile("xhs-main")
     topic = select_topic(
         {
             "title": TOPIC_TITLE,
             "reason": "A3 验收走查（用户确认执行）",
-            "direction": "以 zimeiti-ai 真实使用体验为主线的小红书图文。"
-            "合规硬约束：只描述操作步骤与事实；禁止出现「跑通/轻松/高效/提效/"
-            "收益/赚钱/秒/翻倍」等承诺性、夸大性词汇；标题平实陈述即可",
+            "direction": "以 zimeiti-ai 真实使用体验为主线的小红书图文；"
+            "只记录流程与事实，不承诺收益、不夸大效果（合规要求）",
         }
     )
 
@@ -73,66 +79,54 @@ def main() -> int:
         encoding="utf-8",
     )
 
-    pub = XhsPublisher()
-    if not Path(pub.storage_state).exists():
-        print("[登录] 无登录态，浏览器将弹出，请用小红书 App 扫码……")
-        audit.record("xhs_login_started", slug=SLUG)
-        pub.login_interactive()
-        audit.record("xhs_login_saved", slug=SLUG)
-        print("[登录] 扫码成功，登录态已持久化")
-    else:
-        print(f"[登录] 复用已有登录态：{pub.storage_state}")
-
     cover = str(make_cover_png(OUT_DIR / "cover.png"))
     debug_dir = str(OUT_DIR / "debug")
+    pub = XhsPublisher()
 
-    # 模型 invoke（litellm）可能在当前线程残留事件循环，导致 sync Playwright 报
-    # 「Sync API inside the asyncio loop」——浏览器操作放进独立线程隔离执行
-    # （生产接线同理：async 上下文内用 asyncio.to_thread 调 sync Playwright）
-    import threading
+    # 发布走 API（requests 不受事件循环影响）
+    print("[发布] 调用 xiaohongshu-mcp API 私密发布……")
+    result = pub.publish_draft(drafts.xhs, cover_path=cover)
+    print(f"[发布] 结果：{json.dumps(result, ensure_ascii=False, default=str)[:200]}")
+    audit.record("xhs_mcp_published", account="xhs-main", slug=SLUG, result=result)
 
-    box: dict = {}
+    # 读回走 DOM 子进程（litellm 残留事件循环会污染 sync Playwright，A3 实测）
+    import subprocess
 
-    def _browser_flow() -> None:
-        page = None
-        try:
-            page = pub._open_page()  # 整个流程复用同一 Playwright 实例（A3 踩坑）
-            print("[草稿] 打开创作者中心发布页填表并私密发布……")
-            box["publish"] = pub.publish_draft(
-                drafts.xhs, page=page, cover_path=cover, debug_dir=debug_dir
-            )
-            print("[读回] 笔记管理页对账……")
-            box["readback"] = pub.readback(
-                drafts.xhs.title[:20], page=page, debug_dir=debug_dir
-            )
-        except Exception as exc:  # noqa: BLE001 - 异常带回主线程处理
-            box["error"] = exc
-        finally:
-            if page is not None:
-                page.close()
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "zimeiti_api.xhs_readback",
+            "--title",
+            drafts.xhs.title[:20],
+            "--debug-dir",
+            debug_dir,
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        cwd=str(ROOT / "apps/api"),
+    )
+    try:
+        readback = json.loads(proc.stdout.strip().splitlines()[-1])["outcome"]
+    except (ValueError, IndexError, KeyError):
+        print("[读回] 子进程输出异常:", proc.stdout[-200:], proc.stderr[-200:])
+        readback = "unverified"
 
-    worker = threading.Thread(target=_browser_flow)
-    worker.start()
-    worker.join()
-    if "error" in box:
-        raise box["error"]
-    platform_result = box["publish"]
-    print(f"[草稿] 提交结果：{platform_result}")
-    readback = box["readback"]
     audit.record(
         "published",
         account="xhs-main",
         outcome=readback,
-        platform_result=platform_result,
-        drill="a3_xhs_dom_draft",
+        platform_result=result.get("status", ""),
+        drill="a3_xhs_mcp",
         slug=SLUG,
     )
     print(f"[读回] outcome={readback}")
 
     if readback == "verified":
-        print("[A3-xhs] 验证通过（verified）——请到小红书 App 草稿箱人工确认内容")
+        print("[A3-xhs] 验证通过（verified）——请到小红书 App 确认笔记（仅自己可见）")
         return 0
-    print("[A3-xhs] 读回未核实：debug 目录已落盘页面快照，检查选择器/登录态")
+    print("[A3-xhs] 读回未核实：检查 debug/note_list.txt 与审计")
     return 1
 
 

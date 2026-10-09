@@ -143,6 +143,9 @@ class TestXhsLoginFlow:
                 pass
 
         class FakeContext:
+            def add_init_script(self, script):
+                actions.append(("init_script",))
+
             def new_page(self):
                 return FakePage()
 
@@ -152,11 +155,11 @@ class TestXhsLoginFlow:
                     Path_(path).write_text("{}", encoding="utf-8")
 
         class FakeBrowser:
-            def new_context(self, storage_state=None):
+            def new_context(self, storage_state=None, **kw):
                 actions.append(("context", storage_state))
                 return FakeContext()
 
-            def launch(self, headless=False):
+            def launch(self, headless=False, **kw):
                 actions.append(("launch",))
                 return self
 
