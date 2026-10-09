@@ -1,0 +1,112 @@
+F...........F................                                            [100%]
+================================== FAILURES ===================================
+___________________________ test_approvals_api_flow ___________________________
+
+    def test_approvals_api_flow():
+        import asyncio
+    
+        from fastapi.testclient import TestClient
+    
+        from zimeiti_api.app import create_app
+    
+>       asyncio.run(_start_cycle_with_pending_approval())
+
+tests\test_approvals_api.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+E:\Dev\Python314\Lib\asyncio\runners.py:204: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+E:\Dev\Python314\Lib\asyncio\runners.py:127: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E:\Dev\Python314\Lib\asyncio\base_events.py:719: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests\test_approvals_api.py:35: in _start_cycle_with_pending_approval
+    result = await run_hosted_cycle(agent, "test-7.2", "������������������")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src\zimeiti_api\hosted.py:53: in run_hosted_cycle
+    _add_pending(thread_id, instruction)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+thread_id = 'test-7.2', instruction = '������������������'
+
+    def _add_pending(thread_id: str, instruction: str) -> None:
+>       PENDING_PATH.parent.mkdir(parents=True, exist_ok=True)
+        ^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'str' object has no attribute 'parent'
+
+src\zimeiti_api\hosted.py:27: AttributeError
+_______________ test_hosted_cycle_interrupt_recovery_and_audit ________________
+
+    async def test_hosted_cycle_interrupt_recovery_and_audit():
+        from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
+        from langchain_core.messages import AIMessage
+    
+        from zimeiti_api import hosted
+        from zimeiti_api import tools as tz
+        from zimeiti_api.checkpoints import get_checkpointer
+        from zimeiti_api.graph import build_minimal_agent
+    
+        tz.publish_calls.clear()
+    
+        class FakeToolModel(FakeMessagesListChatModel):
+            def bind_tools(self, tools, **kwargs):
+                return self
+    
+        model = FakeToolModel(
+            responses=[
+                AIMessage(
+                    content="",
+                    tool_calls=[
+                        {
+                            "name": "publish",
+                            "args": {"topic": "�ϵ�ָ�", "content": "����"},
+                            "id": "c1",
+                        }
+                    ],
+                ),
+                AIMessage(content="�ѷ���"),
+            ]
+        )
+    
+        async with get_checkpointer() as saver:
+            # ��һ�����У�ʵ�� 1��ģ����� A��
+            agent_a = build_minimal_agent(model=model, checkpointer=saver)
+            thread_id = "test-2.3"
+>           result = await hosted.run_hosted_cycle(agent_a, thread_id, "�����ϵ�ָ�����")
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_hosted.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\zimeiti_api\hosted.py:53: in run_hosted_cycle
+    _add_pending(thread_id, instruction)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+thread_id = 'test-2.3', instruction = '�����ϵ�ָ�����'
+
+    def _add_pending(thread_id: str, instruction: str) -> None:
+>       PENDING_PATH.parent.mkdir(parents=True, exist_ok=True)
+        ^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'str' object has no attribute 'parent'
+
+src\zimeiti_api\hosted.py:27: AttributeError
+============================== warnings summary ===============================
+tests\conftest.py:13
+tests\conftest.py:13
+  E:\Projects\zimeiti-ai\apps\api\tests\conftest.py:13: DeprecationWarning: 'asyncio.WindowsSelectorEventLoopPolicy' is deprecated and slated for removal in Python 3.16
+    from asyncio import WindowsSelectorEventLoopPolicy
+
+tests\conftest.py:15
+  E:\Projects\zimeiti-ai\apps\api\tests\conftest.py:15: DeprecationWarning: 'asyncio.set_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())
+
+tests/test_approvals_api.py::test_approvals_api_flow
+  tests\test_approvals_api.py:39: PytestWarning: The test <Function test_approvals_api_flow> is marked with '@pytest.mark.asyncio' but it is not an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.
+    def test_approvals_api_flow():
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_approvals_api.py::test_approvals_api_flow - AttributeError:...
+FAILED tests/test_hosted.py::test_hosted_cycle_interrupt_recovery_and_audit
+2 failed, 27 passed, 4 warnings in 11.76s

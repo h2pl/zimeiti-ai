@@ -1,6 +1,6 @@
 workflow: full
 language: zh-CN
-phase: build
+phase: verify
 context_compression: off
 build_mode: autonomous
 build_pause: null
@@ -28,4 +28,4 @@ handoff_hash: 5fdd4c13be9b263a1203739c9df32349fda8cdf1eca6174f41991801a79dc857
 classic_profile: full
 classic_migration: 1
 run_id: a8657719-ef22-4610-9fd7-70ecd1c77a7b
-check_epoch: 2
+check_epoch: 3
