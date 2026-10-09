@@ -19,6 +19,7 @@ from langchain_core.tools import tool
 from zimeiti_api import audit
 from zimeiti_api.compliance import ComplianceGate
 from zimeiti_api.creation import create_drafts as _create_drafts
+from zimeiti_api.ops_metrics import MetricsDB
 from zimeiti_api.publisher import PublishExecutor
 from zimeiti_api.topics import discover_topics as _discover_topics
 from zimeiti_api.topics import select_topic as _select_topic
@@ -98,6 +99,29 @@ def build_default_tools(
         if not f.exists():
             raise ValueError(f"账号 {account} 无已存凭证（{f}）。请先完成平台登录并加密保存。")
         return f.read_text(encoding="utf-8").strip()
+
+    def _record_publish_event(
+        state: dict,
+        status: str,
+        notes: str = "",
+        publish_url: str = "",
+    ) -> None:
+        """发布成功/失败均记录事件（ops-metrics 数据源，spec 要求不静默丢弃）。"""
+        try:
+            selected = state.get("selected") or {}
+            MetricsDB().record_event(
+                platform=account,
+                title=selected.get("title", ""),
+                source_folder=cdir.name,
+                publish_date=datetime.now().strftime("%Y-%m-%d"),
+                profile=profile.get("account", ""),
+                topic_direction=selected.get("direction", ""),
+                status=status,
+                notes=notes,
+                publish_url=publish_url,
+            )
+        except Exception as exc:  # noqa: BLE001 - 数据层异常不影响发布结果返回
+            audit.record("metrics_record_failed", account=account, error=str(exc))
 
     cdir = Path(cycle_dir)
     out_root = Path(output_root or os.environ.get("ZIMEITI_OUTPUT_DIR", "outputs"))
@@ -193,9 +217,16 @@ def build_default_tools(
             )
         except Exception as exc:
             audit.record("publish_failed", account=account, error=str(exc))
+            _record_publish_event(state, status="failed", notes=str(exc))
             return f"发布被护栏拒绝：{exc}"
         publish_calls.append(state["selected"]["title"])
         audit.record("published", account=account, outcome=result["readback"])
+        _record_publish_event(
+            state,
+            status="ok",
+            notes=f"outcome={result['readback']}",
+            publish_url=str(result.get("platform_result", "")),
+        )
         return f"发布结果：{result}"
 
     return [discover_topics, select_topic, create_drafts, publish]

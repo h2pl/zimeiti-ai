@@ -1,0 +1,470 @@
+"""运营数据：发布事件 + 指标快照 + 只读归因（SQLite）。
+
+设计来源（对标调研，非自创）：
+- xiaobei `published-track`：SQLite 单库按平台分表、发布记录 upsert（去重键
+  source_folder+publish_date）、采集失败留痕
+- Easel 数据三层：发布事件与时序快照**分离表存储**（单一事实来源）、消费层
+  **只读不回写**、确定性脚本聚合（模型只写洞察）、内容生命周期分类
+
+数据落盘：data/metrics/published.db（gitignored）
+CLI：uv run python -m zimeiti_api.ops_metrics {record|pull|report}
+"""
+
+import argparse
+import json
+import sqlite3
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any
+
+# xhs 创作者中心数据看板的指标标签（页面文本为「标签 | 值」相邻对）
+XHS_DASHBOARD_LABELS = (
+    "关注数",
+    "粉丝数",
+    "获赞与收藏",
+    "曝光数",
+    "观看数",
+    "点赞数",
+    "评论数",
+    "收藏数",
+    "分享数",
+    "净涨粉",
+    "新增关注",
+    "取消关注",
+)
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS publish_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    platform TEXT NOT NULL,
+    title TEXT,
+    content_type TEXT DEFAULT '',
+    source_folder TEXT NOT NULL,
+    publish_date TEXT NOT NULL,
+    publish_url TEXT DEFAULT '',
+    profile TEXT DEFAULT '',
+    topic_direction TEXT DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'ok',
+    notes TEXT DEFAULT '',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(platform, source_folder, publish_date)
+);
+CREATE TABLE IF NOT EXISTS metric_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    event_id INTEGER,
+    platform TEXT NOT NULL,
+    metric TEXT NOT NULL,
+    value REAL NOT NULL,
+    source TEXT NOT NULL,
+    captured_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS collection_errors (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    platform TEXT NOT NULL,
+    scope TEXT NOT NULL,
+    error TEXT NOT NULL,
+    occurred_at TEXT NOT NULL
+);
+"""
+
+
+class MetricsDB:
+    """SQLite 运营数据层（事件 upsert + 快照 + 失败留痕 + 只读归因）。"""
+
+    def __init__(self, path: str | Path = "data/metrics/published.db"):
+        self.path = Path(path)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self._conn() as conn:
+            conn.executescript(SCHEMA)
+
+    def _conn(self) -> sqlite3.Connection:
+        conn = sqlite3.connect(str(self.path))
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    # ─── 写入侧 ────────────────────────────────────────────────────
+
+    def record_event(
+        self,
+        platform: str,
+        title: str,
+        source_folder: str,
+        publish_date: str,
+        profile: str = "",
+        topic_direction: str = "",
+        status: str = "ok",
+        notes: str = "",
+        publish_url: str = "",
+        content_type: str = "",
+    ) -> int:
+        """记录发布事件；同 platform+source_folder+publish_date 时更新既有行（xiaobei upsert）。"""
+        now = datetime.now().isoformat(timespec="seconds")
+        with self._conn() as conn:
+            conn.execute(
+                """
+                INSERT INTO publish_events
+                    (platform, title, content_type, source_folder, publish_date,
+                     publish_url, profile, topic_direction, status, notes,
+                     created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(platform, source_folder, publish_date) DO UPDATE SET
+                    title=excluded.title,
+                    content_type=excluded.content_type,
+                    publish_url=excluded.publish_url,
+                    profile=excluded.profile,
+                    topic_direction=excluded.topic_direction,
+                    status=excluded.status,
+                    notes=excluded.notes,
+                    updated_at=excluded.updated_at
+                """,
+                (
+                    platform,
+                    title,
+                    content_type,
+                    source_folder,
+                    publish_date,
+                    publish_url,
+                    profile,
+                    topic_direction,
+                    status,
+                    notes,
+                    now,
+                    now,
+                ),
+            )
+            row = conn.execute(
+                "SELECT id FROM publish_events"
+                " WHERE platform=? AND source_folder=? AND publish_date=?",
+                (platform, source_folder, publish_date),
+            ).fetchone()
+            return int(row["id"])
+
+    def record_snapshot(
+        self, event_id: int | None, platform: str, metric: str, value: float, source: str
+    ) -> int:
+        """写入指标快照（账号级指标 event_id 可为 None）。"""
+        with self._conn() as conn:
+            cur = conn.execute(
+                "INSERT INTO metric_snapshots"
+                " (event_id, platform, metric, value, source, captured_at)"
+                " VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    event_id,
+                    platform,
+                    metric,
+                    value,
+                    source,
+                    datetime.now().isoformat(timespec="seconds"),
+                ),
+            )
+            return int(cur.lastrowid or 0)
+
+    def record_error(self, platform: str, scope: str, error: str) -> int:
+        """采集失败留痕（不写零值覆盖历史，spec 要求）。"""
+        with self._conn() as conn:
+            cur = conn.execute(
+                "INSERT INTO collection_errors (platform, scope, error, occurred_at)"
+                " VALUES (?, ?, ?, ?)",
+                (platform, scope, str(error)[:500], datetime.now().isoformat(timespec="seconds")),
+            )
+            return int(cur.lastrowid or 0)
+
+    # ─── 读取侧 ────────────────────────────────────────────────────
+
+    def list_events(self, platform: str | None = None) -> list[dict]:
+        with self._conn() as conn:
+            if platform:
+                rows = conn.execute(
+                    "SELECT * FROM publish_events WHERE platform=? ORDER BY publish_date DESC",
+                    (platform,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT * FROM publish_events ORDER BY publish_date DESC"
+                ).fetchall()
+            return [dict(r) for r in rows]
+
+    def list_snapshots(self, platform: str | None = None) -> list[dict]:
+        with self._conn() as conn:
+            if platform:
+                rows = conn.execute(
+                    "SELECT * FROM metric_snapshots WHERE platform=? ORDER BY captured_at",
+                    (platform,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT * FROM metric_snapshots ORDER BY captured_at"
+                ).fetchall()
+            return [dict(r) for r in rows]
+
+    def list_errors(self, platform: str | None = None) -> list[dict]:
+        with self._conn() as conn:
+            if platform:
+                rows = conn.execute(
+                    "SELECT * FROM collection_errors WHERE platform=? ORDER BY occurred_at DESC",
+                    (platform,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT * FROM collection_errors ORDER BY occurred_at DESC"
+                ).fetchall()
+            return [dict(r) for r in rows]
+
+    def report(self, platform: str | None = None, profile: str | None = None) -> dict:
+        """只读归因：趋势 + 内容生命周期判定（确定性规则，不回写）。"""
+        with self._conn() as conn:
+            events = [
+                dict(r)
+                for r in conn.execute(
+                    "SELECT * FROM publish_events ORDER BY publish_date"
+                ).fetchall()
+            ]
+            snaps = [
+                dict(r)
+                for r in conn.execute(
+                    "SELECT * FROM metric_snapshots ORDER BY captured_at"
+                ).fetchall()
+            ]
+        if platform:
+            events = [e for e in events if e["platform"] == platform]
+            snaps = [s for s in snaps if s["platform"] == platform]
+        if profile:
+            events = [e for e in events if e["profile"] == profile]
+
+        # 趋势：每个 metric 的首末值与增量
+        trend: dict[str, dict] = {}
+        for s in snaps:
+            t = trend.setdefault(
+                s["metric"], {"first": s["value"], "last": s["value"], "delta": 0.0}
+            )
+            t["last"] = s["value"]
+            t["delta"] = round(t["last"] - t["first"], 4)
+
+        # 内容生命周期：按 event 的 read 序列判定
+        notes = []
+        for e in events:
+            series = [
+                s["value"] for s in snaps if s["event_id"] == e["id"] and s["metric"] == "read"
+            ]
+            notes.append(
+                {
+                    "event_id": e["id"],
+                    "title": e["title"],
+                    "platform": e["platform"],
+                    "publish_date": e["publish_date"],
+                    "lifecycle": classify_lifecycle(series),
+                }
+            )
+        return {
+            "platform": platform or "all",
+            "profile": profile or "all",
+            "events": len(events),
+            "snapshots": len(snaps),
+            "trend": trend,
+            "notes": notes,
+            "errors": len(self.list_errors(platform)) if platform else len(self.list_errors()),
+        }
+
+
+def classify_lifecycle(series: list[float]) -> str:
+    """内容生命周期判定（确定性规则，来源：Easel 内容生命周期分类思路）。
+
+    - 数据不足：<2 个采样点
+    - 速爆型：首点已占终值 ≥80%，且后续增量 <10%
+    - 稳增型：终值/首值 ≥1.5
+    - 长尾型：其余
+    """
+    if len(series) < 2:
+        return "数据不足"
+    first, last = series[0], series[-1]
+    if last <= 0:
+        return "长尾型"
+    if first / last >= 0.8 and (last - first) / last < 0.1:
+        return "速爆型"
+    if last / max(first, 1e-9) >= 1.5:
+        return "稳增型"
+    return "长尾型"
+
+
+# ─── 解析（纯函数，便于单测） ────────────────────────────────────────────
+
+
+def parse_gzh_datacube(raw: dict) -> dict[str, float]:
+    """解析公众号 datacube 响应（{"list":[{ref_date,...}]}）→ 数值指标（去掉日期字段）。"""
+    if not raw:
+        return {}
+    items = raw.get("list") or []
+    if not items:
+        return {}
+    latest = items[-1]
+    out: dict[str, float] = {}
+    for k, v in latest.items():
+        if k in ("ref_date",):
+            continue
+        if isinstance(v, (int, float)):
+            out[k] = float(v)
+    return out
+
+
+def _numeric(token: str) -> float | None:
+    """解析数值 token；非数值（如「环比-」）返回 None（不写零，零假阳性）。"""
+    if not token:
+        return None
+    try:
+        return float(token.rstrip("%").replace(",", ""))
+    except ValueError:
+        return None
+
+
+def parse_xhs_dashboard(body_text: str) -> dict[str, float]:
+    """解析创作者中心首页数据看板文本 → 指标。
+
+    实测两种排版并存（A3 真账号走查，否则指标会错位一位）：
+    - 账号概览区：值在前、标签在后 →「6 | 关注数 | 212 | 粉丝数 | 5281 | 获赞与收藏」
+    - 笔记数据总览区：标签在前、值在后 →「曝光数 | 0 | 环比- | 观看数 | 0」
+
+    以「笔记数据总览」为界分区解析；缺失或非数值不写零。
+    """
+    if not body_text:
+        return {}
+    # 页面文本统一按分隔符切分（真实页面换行/竖线混排）
+    tokens = [t.strip() for t in body_text.replace("\n", "|").split("|") if t.strip()]
+    boundary = next((i for i, t in enumerate(tokens) if "笔记数据总览" in t), None)
+    out: dict[str, float] = {}
+    for i, tok in enumerate(tokens):
+        if tok not in XHS_DASHBOARD_LABELS:
+            continue
+        if boundary is not None and i < boundary:
+            value = _numeric(tokens[i - 1]) if i > 0 else None  # 值在前
+        else:
+            value = _numeric(tokens[i + 1]) if i + 1 < len(tokens) else None
+        if value is not None:
+            out[tok] = value
+    return out
+
+
+# ─── 采集 ────────────────────────────────────────────────────────────────
+
+
+def pull_gzh(db: MetricsDB, begin_date: str, end_date: str) -> dict:
+    """公众号 datacube 取数（调用已 vendor 的 wechat_mp.client）。"""
+    from zimeiti_api.credentials import load_account_credentials
+    from zimeiti_api.platforms.gzh import GzhClient
+
+    creds = load_account_credentials("gzh-main")
+    client = GzhClient(creds["app_id"], creds["app_secret"])
+    try:
+        raw = client.datacube("getusersummary", begin_date, end_date)
+    except Exception as exc:  # noqa: BLE001 - 采集失败留痕（不写零）
+        db.record_error("gzh-main", f"datacube:{begin_date}~{end_date}", str(exc))
+        return {"ok": False, "error": str(exc)}
+    metrics = parse_gzh_datacube(raw)
+    if not metrics:
+        db.record_error("gzh-main", f"datacube:{begin_date}~{end_date}", "空响应")
+        return {"ok": False, "error": "空响应"}
+    for metric, value in metrics.items():
+        db.record_snapshot(None, "gzh-main", metric, value, source="datacube")
+    return {"ok": True, "metrics": metrics}
+
+
+def pull_xhs(db: MetricsDB, page: Any = None) -> dict:
+    """小红书数据看板取数（复用登录态打开创作者中心首页）。
+
+    注意：sync Playwright 需干净的事件循环环境——托管流程内请在独立进程调用本模块。
+    """
+    from zimeiti_api.platforms.xhs import XhsPublisher
+
+    pub = XhsPublisher()
+    own_page = page is None
+    page = page or pub._open_page()
+    try:
+        page.goto(pub.selectors.get("home_url", "https://creator.xiaohongshu.com/new/home"))
+        page.wait_for_timeout(6_000)
+        body = page.inner_text("body")
+    except Exception as exc:  # noqa: BLE001
+        db.record_error("xhs-main", "dashboard:home", str(exc))
+        return {"ok": False, "error": str(exc)}
+    finally:
+        if own_page:
+            page.close()
+
+    metrics = parse_xhs_dashboard(body)
+    if not metrics:
+        db.record_error("xhs-main", "dashboard:home", "未解析到指标")
+        return {"ok": False, "error": "未解析到指标"}
+    for metric, value in metrics.items():
+        db.record_snapshot(None, "xhs-main", metric, value, source="creator-center")
+    return {"ok": True, "metrics": metrics}
+
+
+# ─── CLI ─────────────────────────────────────────────────────────────────
+
+
+def _db_path() -> str:
+    from zimeiti_api.config import DATA_DIR
+
+    return str(Path(DATA_DIR) / "metrics" / "published.db")
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="运营数据：事件记录/取数/只读归因")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+
+    p_pull = sub.add_parser("pull", help="回收指标快照")
+    p_pull.add_argument("--platform", default="all", choices=["all", "gzh", "xhs"])
+    p_pull.add_argument("--begin", default=None, help="gzh datacube 起始日期 YYYY-MM-DD")
+    p_pull.add_argument("--end", default=None, help="gzh datacube 结束日期 YYYY-MM-DD")
+
+    p_rec = sub.add_parser("record", help="记录发布事件")
+    p_rec.add_argument("--platform", required=True)
+    p_rec.add_argument("--title", required=True)
+    p_rec.add_argument("--source-folder", required=True)
+    p_rec.add_argument("--publish-date", required=True)
+    p_rec.add_argument("--profile", default="")
+    p_rec.add_argument("--topic-direction", default="")
+    p_rec.add_argument("--status", default="ok", choices=["ok", "failed"])
+    p_rec.add_argument("--notes", default="")
+    p_rec.add_argument("--publish-url", default="")
+
+    p_rep = sub.add_parser("report", help="只读归因查询")
+    p_rep.add_argument("--platform", default=None)
+    p_rep.add_argument("--profile", default=None)
+
+    args = parser.parse_args(argv)
+    db = MetricsDB(_db_path())
+
+    if args.cmd == "record":
+        event_id = db.record_event(
+            platform=args.platform,
+            title=args.title,
+            source_folder=args.source_folder,
+            publish_date=args.publish_date,
+            profile=args.profile,
+            topic_direction=args.topic_direction,
+            status=args.status,
+            notes=args.notes,
+            publish_url=args.publish_url,
+        )
+        print(json.dumps({"event_id": event_id, "status": args.status}, ensure_ascii=False))
+        return 0
+
+    if args.cmd == "pull":
+        out: dict[str, Any] = {}
+        if args.platform in ("all", "gzh"):
+            # datacube 仅提供 T-1 及以前数据（A3 实测），默认取过去 7 天
+            today = datetime.now().date()
+            end = args.end or (today - timedelta(days=1)).strftime("%Y-%m-%d")
+            begin = args.begin or (today - timedelta(days=7)).strftime("%Y-%m-%d")
+            out["gzh"] = pull_gzh(db, begin, end)
+        if args.platform in ("all", "xhs"):
+            out["xhs"] = pull_xhs(db)
+        print(json.dumps(out, ensure_ascii=False, default=str))
+        return 0
+
+    print(json.dumps(db.report(args.platform, args.profile), ensure_ascii=False, default=str))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

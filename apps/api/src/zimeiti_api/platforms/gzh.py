@@ -11,6 +11,7 @@ update_draft 时 thumb_media_id/content 实为必填），此处不重复实现�
 （vendor/wechatfmt）：Markdown → 微信兼容 HTML（内联样式/代码高亮/列表转 div）。
 """
 
+import json
 import os
 from pathlib import Path
 from typing import Any
@@ -55,6 +56,26 @@ class GzhClient:
     def draft_count(self) -> int:
         """草稿总数（读回对账用）。"""
         return self._client.count_drafts()
+
+    def datacube(self, path: str, begin_date: str, end_date: str) -> dict:
+        """数据统计接口（datacube）。
+
+        差异说明（勿改 vendor）：上游 wechat_mp._post 固定拼 `/cgi-bin` 前缀，
+        而 datacube 接口在 `https://api.weixin.qq.com/datacube/<path>`（A3 实测，
+        /cgi-bin 前缀返回非 JSON 页面），故在适配层单独实现，逻辑照抄 _post。
+        """
+        import requests
+
+        resp = requests.post(
+            f"https://api.weixin.qq.com/datacube/{path}",
+            params={"access_token": self.get_access_token()},
+            data=json.dumps(
+                {"begin_date": begin_date, "end_date": end_date}, ensure_ascii=False
+            ).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            timeout=30,
+        )
+        return json.loads(resp.content.decode("utf-8"))
 
     def draft_list(self, count: int = 10) -> list[str]:
         """拉取草稿列表标题（读回对账依据）。"""
