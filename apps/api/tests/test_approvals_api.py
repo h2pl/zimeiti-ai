@@ -19,10 +19,17 @@ async def _start_cycle_with_pending_approval():
     from zimeiti_api.hosted import run_hosted_cycle
 
     tz.publish_calls.clear()
-    model = FakeToolModel(responses=[
-        AIMessage(content="", tool_calls=[{"name": "publish", "args": {"topic": "审批流", "content": "正文"}, "id": "c1"}]),
-        AIMessage(content="已发布"),
-    ])
+    model = FakeToolModel(
+        responses=[
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {"name": "publish", "args": {"topic": "审批流", "content": "正文"}, "id": "c1"}
+                ],
+            ),
+            AIMessage(content="已发布"),
+        ]
+    )
     async with get_checkpointer() as saver:
         agent = build_minimal_agent(model=model, checkpointer=saver)
         result = await run_hosted_cycle(agent, "test-7.2", "发布审批流测试内容")
@@ -43,6 +50,7 @@ def test_approvals_api_flow():
         return FakeToolModel(responses=[AIMessage(content="已发布")])
 
     import zimeiti_api.models as models_mod
+
     monkeypatch = pytest.MonkeyPatch()
     monkeypatch.setattr(models_mod, "get_model", fake_model)
 

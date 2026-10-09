@@ -1,4 +1,3 @@
-
 """模型解析：按环境变量选择 provider（Task 7.2 前置）。"""
 
 from langchain_core.language_models.chat_models import BaseChatModel

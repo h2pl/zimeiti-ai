@@ -39,8 +39,8 @@
 
 ## 7. Web 最小界面（apps/web）
 
-- [ ] 7.1 Next.js 初始化与审批列表/状态查看页；验证：`pnpm dev` 打开页面可见待审批项与发布状态 <!-- comet-task:2b61ca8b-bc91-407c-a8fa-f9105f2f0fa8 -->
-- [ ] 7.2 审批确认动作对接执行图 resume；验证：界面确认后执行图从 interrupt 处继续 <!-- comet-task:6261e12c-f3ef-44b1-af8f-6e0d533a34c2 -->
+- [x] 7.1 Next.js 初始化与审批列表/状态查看页；验证：`pnpm dev` 打开页面可见待审批项与发布状态 <!-- comet-task:2b61ca8b-bc91-407c-a8fa-f9105f2f0fa8 -->
+- [x] 7.2 审批确认动作对接执行图 resume；验证：界面确认后执行图从 interrupt 处继续 <!-- comet-task:6261e12c-f3ef-44b1-af8f-6e0d533a34c2 -->
 
 ## 8. 验证与收尾
 

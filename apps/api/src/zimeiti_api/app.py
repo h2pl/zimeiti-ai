@@ -34,6 +34,7 @@ def create_app() -> FastAPI:
         with PostgresSaver.from_conn_string(DATABASE_URL) as saver:
             saver.setup()
             from zimeiti_api.graph import build_minimal_agent_sync
+
             agent = build_minimal_agent_sync(get_model(), checkpointer=saver)
             result = agent.invoke(
                 Command(resume={"decisions": [{"type": "approve"}]}),
