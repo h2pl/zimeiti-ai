@@ -1,0 +1,10 @@
+{
+  "openspec_proposal": "openspec/changes/ops-metrics-collection/proposal.md",
+  "openspec_design": "openspec/changes/ops-metrics-collection/design.md",
+  "openspec_tasks": "openspec/changes/ops-metrics-collection/tasks.md",
+  "openspec_delta_spec": "openspec/changes/ops-metrics-collection/specs/ops-metrics/spec.md",
+  "design_document": "openspec/changes/ops-metrics-collection/design.md",
+  "build_plan": "docs/superpowers/plans/2026-10-09-ops-metrics-collection.md",
+  "handoff_context": "openspec/changes/ops-metrics-collection/.comet/handoff/design-context.json",
+  "handoff_markdown": "openspec/changes/ops-metrics-collection/.comet/handoff/design-context.md"
+}
