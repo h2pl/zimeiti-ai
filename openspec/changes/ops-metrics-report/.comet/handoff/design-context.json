@@ -1,0 +1,16 @@
+{
+  "change": "ops-metrics-report",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "c75dc8a49858403ffb0e8f4652a0ecbc98029b91bac91c7dff9b07e16475694a",
+  "files": [
+    { "path": "openspec/changes/ops-metrics-report/proposal.md", "sha256": "0c1f0772a82bcd1ff801725a30d7783089def3af20ae5efc5ed44af384b084f6" },
+    { "path": "openspec/changes/ops-metrics-report/design.md", "sha256": "1a87b8bf873132c5be959c06d6a243c05d45cb1b8ccfeed13a28b31cdd6df1b0" },
+    { "path": "openspec/changes/ops-metrics-report/tasks.md", "sha256": "3ecffffa4b50fa7c48c6d3f809ae640b58b74ce1875f3e10162908179815459a" },
+    { "path": "openspec/changes/ops-metrics-report/.openspec.yaml", "sha256": "e61703315c59969805e021ec521ca189369aaf8ea902d52c5e39c7fbc603598f" },
+    { "path": "openspec/changes/ops-metrics-report/specs/ops-metrics/spec.md", "sha256": "525e745eb6aa5a0ca53a263de8e554b531133b07d17e24c2b52f465b5eb9bbe6" }
+  ]
+}

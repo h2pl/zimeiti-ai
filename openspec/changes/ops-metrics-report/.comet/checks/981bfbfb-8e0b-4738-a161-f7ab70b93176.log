@@ -1,0 +1,28 @@
+bash scripts/check-api.sh
+== 1/5 ruff format ==
+42 files left unchanged
+== 2/5 ruff lint ==
+E501 Line too long (101 > 100)
+  --> src\zimeiti_api\ops_report_page.py:66:101
+   |
+64 |         label = _esc(f"{s['captured_at']} {s['value']:g}")
+65 |         circles.append(
+66 |             f"<circle cx='{x:.1f}' cy='{y:.1f}' r='3' fill='#e84393'><title>{label}</title></circle>"
+   |                                                                                                     ^
+67 |         )
+68 |     polyline = (
+   |
+
+E501 Line too long (106 > 100)
+   --> src\zimeiti_api\ops_report_page.py:149:101
+    |
+147 |         by_metric.setdefault(s["metric"], []).append(s)
+148 |     trend_parts = [
+149 |         f"<div style='margin-bottom:16px'>{_svg_line(sorted(v, key=lambda x: x['captured_at']), k)}</div>"
+    |                                                                                                     ^^^^^^
+150 |         for k, v in sorted(by_metric.items())
+151 |         if len(v) >= 2
+    |
+
+Found 2 errors.
+make: *** [check] ���� 1
