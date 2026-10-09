@@ -14,7 +14,7 @@ Your AI 自媒体人——社媒内容创作与获客 agent。
 ```bash
 docker compose up -d          # Postgres + pgvector
 cd apps/api && uv sync        # 后端环境（Python 3.12）
-uv run uvicorn app.main:app --reload
+uv run uvicorn zimeiti_api.app:app --port 8000 --reload
 cd apps/web && pnpm install && pnpm dev
 ```
 

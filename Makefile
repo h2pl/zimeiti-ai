@@ -18,7 +18,7 @@ dev:
 
 # run API only (hot reload)
 api:
-	cd apps/api && .venv/Scripts/python.exe -m uvicorn app.main:app --port 8000 --reload
+	cd apps/api && .venv/Scripts/python.exe -m uvicorn zimeiti_api.app:app --port 8000 --reload
 
 # run web only (hot reload)
 web:

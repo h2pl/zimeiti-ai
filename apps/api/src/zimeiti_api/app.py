@@ -50,3 +50,7 @@ def create_app() -> FastAPI:
         return audit.list_entries()
 
     return app
+
+
+# uvicorn 入口：zimeiti_api.app:app
+app = create_app()
