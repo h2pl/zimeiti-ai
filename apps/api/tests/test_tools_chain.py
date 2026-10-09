@@ -218,7 +218,7 @@ async def _compliance_block(tmp_path, monkeypatch):
         assert "不可发布" in str([m.content for m in final["messages"]])
 
 
-def test_selection_gate_blocks_creation():
+def test_selection_gate_blocks_creation(tmp_path):
     """未挑选选题时 create_drafts 工具必须阻断（C4 闸门）。"""
     from zimeiti_api.tools import build_default_tools
 
@@ -227,7 +227,7 @@ def test_selection_gate_blocks_creation():
         PROFILE,
         model,
         PublishExecutor(allowed_accounts={"xhs-main"}),
-        Path("outputs/_chain_test"),
+        tmp_path / "cycle",
     )
     create = {t.name: t for t in tools}["create_drafts"]
     result = create.invoke({})
