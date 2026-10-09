@@ -33,8 +33,8 @@
 ## 6. 平台发布（platform-publishing）
 
 - [x] 6.1 发布执行器框架（确定性脚本 + 频控/白名单入口强制）；验证：超频控任务被拒绝且无平台侧调用（测试断言） <!-- comet-task:146a56df-1d9b-497c-8b02-a31399ff3a2c -->
-- [ ] 6.2 小红书发布脚本 + 读回对账；验证：测试账号小流量发布后读回状态，返回 verified/unverified/failed 之一 <!-- comet-task:5df30b6a-cc1e-4ef5-99bc-8dc77426086a -->
-- [ ] 6.3 公众号发布脚本（草稿箱/发布）+ 读回对账；验证：同上 <!-- comet-task:8f0e9db9-e476-4adb-88c6-6fbc67c08ee0 -->
+- [x] 6.2 小红书发布脚本 + 读回对账；验证：测试账号小流量发布后读回状态，返回 verified/unverified/failed 之一 <!-- comet-task:5df30b6a-cc1e-4ef5-99bc-8dc77426086a -->
+- [x] 6.3 公众号发布脚本（草稿箱/发布）+ 读回对账；验证：同上 <!-- comet-task:8f0e9db9-e476-4adb-88c6-6fbc67c08ee0 -->
 - [ ] 6.4 凭证加密存储模块；验证：加密落库后明文不出现在存储与日志中（测试断言） <!-- comet-task:d2c1d792-2927-4520-acd8-9e4f337761a8 -->
 
 ## 7. Web 最小界面（apps/web）
