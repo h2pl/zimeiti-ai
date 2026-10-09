@@ -5,7 +5,6 @@
    超时则以明确报错失败——而不是抛出晦涩的连接异常。
 """
 
-import asyncio
 import sys
 import time
 

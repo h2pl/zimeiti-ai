@@ -9,12 +9,13 @@ pytestmark = pytest.mark.asyncio
 
 
 async def test_hosted_cycle_interrupt_recovery_and_audit():
-    from zimeiti_api import tools as tz
+    from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
+    from langchain_core.messages import AIMessage
+
     from zimeiti_api import hosted
+    from zimeiti_api import tools as tz
     from zimeiti_api.checkpoints import get_checkpointer
     from zimeiti_api.graph import build_minimal_agent
-    from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
-    from langchain_core.messages import AIMessage, HumanMessage
 
     tz.publish_calls.clear()
 
@@ -22,10 +23,21 @@ async def test_hosted_cycle_interrupt_recovery_and_audit():
         def bind_tools(self, tools, **kwargs):
             return self
 
-    model = FakeToolModel(responses=[
-        AIMessage(content="", tool_calls=[{"name": "publish", "args": {"topic": "断点恢复", "content": "正文"}, "id": "c1"}]),
-        AIMessage(content="已发布"),
-    ])
+    model = FakeToolModel(
+        responses=[
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "name": "publish",
+                        "args": {"topic": "断点恢复", "content": "正文"},
+                        "id": "c1",
+                    }
+                ],
+            ),
+            AIMessage(content="已发布"),
+        ]
+    )
 
     async with get_checkpointer() as saver:
         # 第一次运行：实例 1（模拟进程 A）

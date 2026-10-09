@@ -12,9 +12,9 @@ pytestmark = pytest.mark.asyncio
 
 
 async def test_publish_interrupt_and_resume():
-    from zimeiti_api.graph import build_minimal_agent
-    from zimeiti_api.checkpoints import get_checkpointer
     from zimeiti_api import tools as tz
+    from zimeiti_api.checkpoints import get_checkpointer
+    from zimeiti_api.graph import build_minimal_agent
 
     tz.publish_calls.clear()
     calls = tz.publish_calls
@@ -24,10 +24,21 @@ async def test_publish_interrupt_and_resume():
         def bind_tools(self, tools, **kwargs):
             return self
 
-    model = FakeToolModel(responses=[
-        AIMessage(content="", tool_calls=[{"name": "publish", "args": {"topic": "测试", "content": "正文"}, "id": "call_1"}]),
-        AIMessage(content="已发布"),
-    ])
+    model = FakeToolModel(
+        responses=[
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "name": "publish",
+                        "args": {"topic": "测试", "content": "正文"},
+                        "id": "call_1",
+                    }
+                ],
+            ),
+            AIMessage(content="已发布"),
+        ]
+    )
 
     async with get_checkpointer() as saver:
         agent = build_minimal_agent(model=model, checkpointer=saver)
@@ -39,6 +50,8 @@ async def test_publish_interrupt_and_resume():
         assert calls == []  # 未审批，不产生真实发布
 
         # 用户批准 → resume
-        result2 = await agent.ainvoke(Command(resume={"decisions": [{"type": "approve"}]}), config=config)
+        result2 = await agent.ainvoke(
+            Command(resume={"decisions": [{"type": "approve"}]}), config=config
+        )
         assert calls == ["测试"]
         assert result2["messages"][-1].content == "已发布"

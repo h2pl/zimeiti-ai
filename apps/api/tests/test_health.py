@@ -3,6 +3,7 @@
 
 def test_health_returns_ok():
     from fastapi.testclient import TestClient
+
     from zimeiti_api.app import create_app
 
     client = TestClient(create_app())

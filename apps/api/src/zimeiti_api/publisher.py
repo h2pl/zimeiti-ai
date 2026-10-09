@@ -4,7 +4,6 @@
 platform_call 由上层注入（真实脚本 / 测试 mock），执行器绝不直接碰平台。
 """
 
-import os
 from dataclasses import dataclass, field
 from datetime import date
 
@@ -47,8 +46,9 @@ class PublishExecutor:
         if account not in self.allowed_accounts:
             raise AccountNotAllowed(f"账号 {account} 不在发布白名单")
         if self._published_today.get(account, 0) >= self.daily_limit:
+            published = self._published_today[account]
             raise RateLimitExceeded(
-                f"账号 {account} 今日已发布 {self._published_today[account]} 篇，达到上限 {self.daily_limit}"
+                f"账号 {account} 今日已发布 {published} 篇，达到上限 {self.daily_limit}"
             )
         if credentials_sealed:
             decrypt_secret(credentials_sealed)  # 凭证无效会在此时抛异常

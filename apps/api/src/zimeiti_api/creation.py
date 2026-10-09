@@ -63,4 +63,7 @@ def _parse_drafts(text: str) -> DraftSet:
 def create_drafts(model: BaseChatModel, topic: SelectedTopic, profile: dict[str, Any]) -> DraftSet:
     """调用模型产出双平台草稿并解析。"""
     result = model.invoke(build_creation_prompt(topic, profile))
-    return _parse_drafts(result.content)
+    content = result.content
+    if not isinstance(content, str):
+        raise TypeError(f"模型返回了非文本内容: {type(content).__name__}")
+    return _parse_drafts(content)

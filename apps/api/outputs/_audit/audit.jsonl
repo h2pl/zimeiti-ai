@@ -30,3 +30,19 @@
 {"ts": "2026-10-09T03:30:02.293819+00:00", "action": "awaiting_approval", "thread_id": "test-2.3"}
 {"ts": "2026-10-09T03:30:02.320303+00:00", "action": "approval_received", "thread_id": "test-2.3"}
 {"ts": "2026-10-09T03:30:02.367710+00:00", "action": "cycle_completed", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T03:33:01.182203+00:00", "action": "cycle_started", "thread_id": "test-2.3", "instruction": "发布断点恢复内容"}
+{"ts": "2026-10-09T03:33:01.231409+00:00", "action": "awaiting_approval", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T03:33:01.260528+00:00", "action": "approval_received", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T03:33:01.308292+00:00", "action": "cycle_completed", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T03:42:37.814171+00:00", "action": "cycle_started", "thread_id": "test-2.3", "instruction": "发布断点恢复内容"}
+{"ts": "2026-10-09T03:42:37.861704+00:00", "action": "awaiting_approval", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T03:42:37.892402+00:00", "action": "approval_received", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T03:42:37.942723+00:00", "action": "cycle_completed", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T03:43:25.692868+00:00", "action": "cycle_started", "thread_id": "test-2.3", "instruction": "发布断点恢复内容"}
+{"ts": "2026-10-09T03:43:25.740177+00:00", "action": "awaiting_approval", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T03:43:25.767862+00:00", "action": "approval_received", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T03:43:25.814044+00:00", "action": "cycle_completed", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T03:44:43.002476+00:00", "action": "cycle_started", "thread_id": "test-2.3", "instruction": "发布断点恢复内容"}
+{"ts": "2026-10-09T03:44:43.048441+00:00", "action": "awaiting_approval", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T03:44:43.074534+00:00", "action": "approval_received", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T03:44:43.119378+00:00", "action": "cycle_completed", "thread_id": "test-2.3"}

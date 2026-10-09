@@ -6,10 +6,10 @@
 
 from collections.abc import Sequence
 
+from deepagents import create_deep_agent
 from langchain_core.language_models.chat_models import BaseChatModel
 from langgraph.checkpoint.base import BaseCheckpointSaver
-
-from deepagents import create_deep_agent
+from langgraph.graph.state import CompiledStateGraph
 
 from zimeiti_api.tools import publish_tool
 
@@ -24,7 +24,7 @@ def build_minimal_agent(
     model: BaseChatModel,
     tools: Sequence | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
-) -> "CompiledStateGraph":  # noqa: F821
+) -> CompiledStateGraph:
     """构建最小闭环 agent：选题/创作工具 + 发布审批（interrupt_on）。"""
     all_tools = [publish_tool, *(tools or [])]
     return create_deep_agent(

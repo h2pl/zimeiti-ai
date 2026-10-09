@@ -37,6 +37,7 @@ def test_gate_itself_failing_is_fail_closed(gate, monkeypatch):
     # 审查器自身出错时必须阻断（fail-closed），不能放行
     def boom(text):
         raise RuntimeError("审查服务挂了")
+
     monkeypatch.setattr(gate, "_check_rules", boom)
     r = gate.review("普通内容")
     assert r["passed"] is False

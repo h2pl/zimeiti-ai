@@ -7,7 +7,7 @@ Fernet 对称加密，主密钥来自环境变量 ZIMEITI_MASTER_KEY；
 import base64
 import os
 
-from cryptography.fernet import Fernet, InvalidToken
+from cryptography.fernet import Fernet
 
 _MASTER_KEY_ENV = "ZIMEITI_MASTER_KEY"
 
@@ -21,7 +21,8 @@ def _load_master_key() -> bytes:
     if not key:
         raise RuntimeError(
             "未设置主密钥：请设置 ZIMEITI_MASTER_KEY 环境变量"
-            "（可用 python -c \"import os,base64;print(base64.urlsafe_b64encode(os.urandom(32)).decode())\" 生成）"
+            '（生成方式：python -c "import os,base64;'
+            'print(base64.urlsafe_b64encode(os.urandom(32)).decode())"）'
         )
     # 允许用户直接粘贴 Fernet key（44 字符 urlsafe base64）
     try:

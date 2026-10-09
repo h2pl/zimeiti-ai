@@ -4,15 +4,15 @@ import base64
 import os
 
 import pytest
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
+
+from zimeiti_api.credentials import decrypt_secret, encrypt_secret
+from zimeiti_api.publisher import AccountNotAllowed, PublishExecutor, RateLimitExceeded
 
 
 @pytest.fixture(autouse=True)
 def _master_key(monkeypatch):
     monkeypatch.setenv("ZIMEITI_MASTER_KEY", Fernet.generate_key().decode())
-
-from zimeiti_api.publisher import PublishExecutor, RateLimitExceeded, AccountNotAllowed
-from zimeiti_api.credentials import encrypt_secret, decrypt_secret
 
 
 @pytest.fixture
@@ -38,8 +38,11 @@ class TestExecutor:
         # 白名单拒绝时，平台调用函数绝不能被执行
         called = []
         with pytest.raises(AccountNotAllowed):
-            executor.publish("unknown-account", {"title": "t", "body": "b"},
-                             platform_call=lambda d: called.append(d) or "ok")
+            executor.publish(
+                "unknown-account",
+                {"title": "t", "body": "b"},
+                platform_call=lambda d: called.append(d) or "ok",
+            )
         assert called == []
 
 
@@ -47,8 +50,8 @@ class TestCredentials:
     def test_encrypt_decrypt_roundtrip(self):
         token = "a2f5c=XhS2C9ozz3cup8IZBpZ8; web_session=abc123"
         sealed = encrypt_secret(token)
-        assert sealed != token                      # 密文不等于明文
-        assert token not in sealed                 # 明文不出现在密文中
+        assert sealed != token  # 密文不等于明文
+        assert token not in sealed  # 明文不出现在密文中
         assert decrypt_secret(sealed) == token
 
     def test_sealed_text_is_not_plain_base64_of_secret(self):
@@ -58,5 +61,5 @@ class TestCredentials:
         assert sealed != base64.b64encode(token.encode()).decode()
         # 换一把主密钥必须解不开
         os.environ["ZIMEITI_MASTER_KEY"] = Fernet.generate_key().decode()
-        with pytest.raises(Exception):
+        with pytest.raises(InvalidToken):
             decrypt_secret(sealed)
