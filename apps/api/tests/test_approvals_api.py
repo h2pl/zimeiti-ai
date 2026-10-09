@@ -30,8 +30,9 @@ async def _start_cycle_with_pending_approval():
             AIMessage(content="已发布"),
         ]
     )
-    from zimeiti_api.publisher import PublishExecutor
     from langchain_core.tools import tool as lc_tool
+
+    from zimeiti_api.publisher import PublishExecutor
 
     calls: list[str] = []
 

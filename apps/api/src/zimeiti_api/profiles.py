@@ -10,8 +10,9 @@ from typing import Any
 
 import yaml
 
-REQUIRED_FIELDS = ("positioning", "style", "audience", "platform_rules", "preferences")
 from zimeiti_api.config import PROFILES_DIR
+
+REQUIRED_FIELDS = ("positioning", "style", "audience", "platform_rules", "preferences")
 
 DEFAULT_BASE_DIR = Path(PROFILES_DIR)
 

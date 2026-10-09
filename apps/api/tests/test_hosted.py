@@ -6,9 +6,8 @@ publish 为 stub 工具（记录调用）；真实平台脚本在 platforms 层�
 
 import pytest
 from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage
 from langchain_core.tools import tool as lc_tool
-from langgraph.types import Command
 
 from zimeiti_api import hosted
 from zimeiti_api.checkpoints import get_checkpointer

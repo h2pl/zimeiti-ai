@@ -6,11 +6,10 @@
 import pytest
 from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
 from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.tools import tool as lc_tool
 from langgraph.types import Command
 
 from zimeiti_api.publisher import PublishExecutor
-
-from langchain_core.tools import tool as lc_tool
 
 calls: list[str] = []
 
@@ -26,7 +25,6 @@ pytestmark = pytest.mark.asyncio
 
 
 async def test_publish_interrupt_and_resume():
-    from zimeiti_api import tools as tz
     from zimeiti_api.checkpoints import get_checkpointer
     from zimeiti_api.graph import build_minimal_agent
 

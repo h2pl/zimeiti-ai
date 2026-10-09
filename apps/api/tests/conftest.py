@@ -8,6 +8,7 @@ import asyncio
 import os
 import sys
 import tempfile
+from pathlib import Path as _P
 
 if sys.platform == "win32":
     from asyncio import WindowsSelectorEventLoopPolicy
@@ -19,8 +20,7 @@ _TEST_STATE = tempfile.mkdtemp(prefix="zimeiti-test-")
 os.environ["AUDIT_PATH"] = os.path.join(_TEST_STATE, "audit.jsonl")
 os.environ.setdefault("ZIMEITI_MASTER_KEY", "test-master-key-not-production")
 
-import zimeiti_api.hosted as _hosted  # noqa: E402
 
-from pathlib import Path as _P
+import zimeiti_api.hosted as _hosted  # noqa: E402  # 有意后置：需先设置测试环境变量
 
 _hosted.PENDING_PATH = _P(_TEST_STATE) / "pending_approvals.json"

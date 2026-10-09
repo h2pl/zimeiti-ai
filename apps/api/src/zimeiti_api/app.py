@@ -31,8 +31,8 @@ def create_app() -> FastAPI:
 
         from zimeiti_api.graph import build_minimal_agent
         from zimeiti_api.models import get_model
-        from zimeiti_api.publisher import PublishExecutor
         from zimeiti_api.profiles import load_profile
+        from zimeiti_api.publisher import PublishExecutor
 
         executor = PublishExecutor(daily_limit=2, allowed_accounts={"xhs-main", "gzh-main"})
         profile = load_profile("xhs-main")
@@ -62,6 +62,7 @@ def create_app() -> FastAPI:
         from zimeiti_api.graph import build_minimal_agent
         from zimeiti_api.models import get_model
         from zimeiti_api.profiles import load_profile
+        from zimeiti_api.publisher import PublishExecutor
 
         executor = PublishExecutor(daily_limit=2, allowed_accounts={"xhs-main", "gzh-main"})
         profile = load_profile("xhs-main")
