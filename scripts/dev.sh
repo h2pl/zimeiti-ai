@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# 一键开发环境：Postgres + API + Web（Ctrl+C 全部退出）
+# dev env: Postgres + API + Web (Ctrl+C to stop)
 set -e
 cd "$(dirname "$0")/.."
 
 docker compose up -d
 
 cleanup() {
-  echo "正在停止服务..."
+  echo "stopping services..."
   kill 0 2>/dev/null
 }
 trap cleanup EXIT
