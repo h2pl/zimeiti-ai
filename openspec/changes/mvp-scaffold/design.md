@@ -94,5 +94,7 @@ canonical_spec: openspec
 
 # Open Questions
 
+- 【已知轻微项（R2 终审记录，随归档保留）】① app.py confirm/reject 硬编码 load_profile("xhs-main")——gzh-main 接入 API 审批前必须改为按 thread 查账号；② credentials.load_for_account 为死代码（tools.py 内部 _account_credentials 承担该职责）——二选一清理；③ state.json 原子写不防并发丢更新（W7 单进程约束下可接受）；④ 链路测试 outputs/_chain_test 相对路径无清理（测试卫生）
+
 - 账号画像文件的具体 schema（字段级）在实现任务中细化，原则见 `account-profile` spec
 - 【已解决 2026-10-08】真模型 resume 400 根因 = **thread_id 跨运行复用导致 checkpoint 状态污染**（fake 模型残留的 assistant tool_calls 无对应 ToolMessage，真模型 resume 读到损坏历史被 DeepSeek 拒绝）。修复：run_hosted_cycle 未传 thread_id 时自动生成唯一 ID（hosted.py）；诊断工具 scripts/debug_resume.py 保留。deepagents + 同步 saver + 真模型的完整审批恢复链路已实测通过（干净 thread 下 INTERRUPTED→RESUME OK→发布执行）

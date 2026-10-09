@@ -1,6 +1,6 @@
 workflow: full
 language: zh-CN
-phase: build
+phase: archive
 context_compression: off
 build_mode: autonomous
 build_pause: null
@@ -13,13 +13,13 @@ auto_transition: true
 base_ref: dd9ed8f86143a7ea0cc079e6e84b1998b5015432
 design_doc: openspec/changes/mvp-scaffold/design.md
 plan: docs/superpowers/plans/2026-10-08-mvp-scaffold.md
-verify_result: fail
-verify_failures: 1
-verification_report: null
+verify_result: pass
+verify_failures: 0
+verification_report: docs/superpowers/reports/2026-10-09-mvp-scaffold-verify.md
 branch_status: pending
 created_at: 2026-10-08
-verified_at: null
-archive_confirmation: null
+verified_at: 2026-10-09
+archive_confirmation: pending
 archived: false
 bound_branch: mvp-scaffold
 direct_override: null
@@ -28,4 +28,4 @@ handoff_hash: 5fdd4c13be9b263a1203739c9df32349fda8cdf1eca6174f41991801a79dc857
 classic_profile: full
 classic_migration: 1
 run_id: a8657719-ef22-4610-9fd7-70ecd1c77a7b
-check_epoch: 4
+check_epoch: 6

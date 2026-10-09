@@ -1,0 +1,16 @@
+................................                                         [100%]
+============================== warnings summary ===============================
+apps\api\tests\conftest.py:14
+apps\api\tests\conftest.py:14
+  E:\Projects\zimeiti-ai\apps\api\tests\conftest.py:14: DeprecationWarning: 'asyncio.WindowsSelectorEventLoopPolicy' is deprecated and slated for removal in Python 3.16
+    from asyncio import WindowsSelectorEventLoopPolicy
+
+apps\api\tests\conftest.py:16
+  E:\Projects\zimeiti-ai\apps\api\tests\conftest.py:16: DeprecationWarning: 'asyncio.set_event_loop_policy' is deprecated and slated for removal in Python 3.16
+    asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())
+
+tests/test_approvals_api.py::test_approvals_api_flow
+  tests\test_approvals_api.py:58: PytestWarning: The test <Function test_approvals_api_flow> is marked with '@pytest.mark.asyncio' but it is not an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+32 passed, 4 warnings in 14.39s
