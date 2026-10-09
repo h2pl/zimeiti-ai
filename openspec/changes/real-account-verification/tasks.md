@@ -22,7 +22,7 @@
 - [x] 2.5 走查 A6：频控边界验证（日限 2 篇后第三篇被拒）；验证：审计记录 <!-- comet-task:c1c1ee7a-2128-4e1c-b07b-cfcff64a8ad5 -->
   - 证据（2026-10-09）：scripts/walkthrough_a5_rate_limit.py——2 篇真实上传 verified，第三篇 RateLimitExceeded 且平台零调用（草稿数 247→247）；审计 publish_failed 留痕
   - 缺陷修复：A5 演练暴露 executor.publish 硬编码 readback=unverified（生产审计永远 unverified，W1 复发）→ 已透传路由器三档 outcome + 2 个回归单测（test_publisher.py）
-- [x] 2.6 遗留修复：审批端点 profile 硬编码 xhs-main → pending 记录 account，恢复端点按记录加载画像（gzh 接入 API 审批前置项，归档 design ①）；验证：test_approvals_api spy 断言 loaded_accounts
+- [x] 2.6 遗留修复：审批端点 profile 硬编码 xhs-main → pending 记录 account，恢复端点按记录加载画像（gzh 接入 API 审批前置项，归档 design ①）；验证：test_approvals_api spy 断言 loaded_accounts <!-- comet-task:cd818919-de53-49aa-bf96-a7b9627aa2b7 -->
 
 ## 3. 收尾
 
