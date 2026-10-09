@@ -95,4 +95,4 @@ canonical_spec: openspec
 # Open Questions
 
 - 账号画像文件的具体 schema（字段级）在实现任务中细化，原则见 `account-profile` spec
-- 【已知问题 8.2 排查】真模型（DeepSeek）resume 返回 400：assistant tool_calls 后缺 ToolMessage——fake 模型下审批→resume 流程正常，疑似 deepagents 中断恢复与同步 saver/真模型的兼容差异。API 流程已用 fake 模型验证通过；真模型 resume 修复后 8.2 真账号验收前必须解决
+- 【已解决 2026-10-08】真模型 resume 400 根因 = **thread_id 跨运行复用导致 checkpoint 状态污染**（fake 模型残留的 assistant tool_calls 无对应 ToolMessage，真模型 resume 读到损坏历史被 DeepSeek 拒绝）。修复：run_hosted_cycle 未传 thread_id 时自动生成唯一 ID（hosted.py）；诊断工具 scripts/debug_resume.py 保留。deepagents + 同步 saver + 真模型的完整审批恢复链路已实测通过（干净 thread 下 INTERRUPTED→RESUME OK→发布执行）

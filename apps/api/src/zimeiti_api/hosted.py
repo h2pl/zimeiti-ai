@@ -5,6 +5,7 @@
 """
 
 import json
+import uuid
 from pathlib import Path
 
 from langchain_core.messages import HumanMessage
@@ -36,8 +37,13 @@ def _remove_pending(thread_id: str) -> None:
     PENDING_PATH.write_text(json.dumps(pending, ensure_ascii=False), encoding="utf-8")
 
 
-async def run_hosted_cycle(agent, thread_id: str, instruction: str) -> dict:
-    """触发一轮托管循环：从新 thread 运行到审批中断点。"""
+async def run_hosted_cycle(agent, thread_id: str | None, instruction: str) -> dict:
+    """触发一轮托管循环：从新 thread 运行到审批中断点。
+
+    thread_id 不传时自动生成唯一 ID——严禁跨运行复用 thread_id，
+    否则残留中断态会污染消息历史（见 design.md 已知问题）。
+    """
+    thread_id = thread_id or f"cycle-{uuid.uuid4().hex[:12]}"
     audit.record("cycle_started", thread_id=thread_id, instruction=instruction)
     result = await agent.ainvoke(
         {"messages": [HumanMessage(instruction)]},
