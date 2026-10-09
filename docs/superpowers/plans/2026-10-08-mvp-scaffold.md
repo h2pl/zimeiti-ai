@@ -2,6 +2,7 @@
 change: mvp-scaffold
 design-doc: openspec/changes/mvp-scaffold/design.md
 base-ref: b681d3128aab1db5cae9ab08108efbbe72c0cdca
+archived-with: 2026-10-09-mvp-scaffold
 ---
 
 <!-- comet-task-authority: openspec/changes/mvp-scaffold/tasks.md -->

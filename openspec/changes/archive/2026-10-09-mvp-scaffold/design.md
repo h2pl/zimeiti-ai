@@ -2,6 +2,8 @@
 comet_change: mvp-scaffold
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-09-mvp-scaffold
+status: final
 ---
 
 

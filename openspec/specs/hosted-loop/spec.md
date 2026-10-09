@@ -1,0 +1,27 @@
+# hosted-loop Specification
+
+## Purpose
+TBD - created by archiving change mvp-scaffold. Update Purpose after archive.
+
+## Requirements
+
+### Requirement: 托管循环骨架
+系统 SHALL 支持以定时/事件方式触发最小自治循环（选题→创作→等待审批），审批点 MUST 自动阻断等待人工确认；循环执行状态 MUST 持久化，进程重启后 MUST 可从断点恢复。
+
+#### Scenario: 审批点自动阻断
+- **GIVEN** 托管循环运行至发布审批节点
+- **WHEN** 无人确认
+- **THEN** 循环在该节点持久化等待，不执行发布
+
+#### Scenario: 断点恢复
+- **GIVEN** 托管循环在执行中被中断
+- **WHEN** 进程重启并恢复循环
+- **THEN** 从中断前的持久化状态继续执行，已完成步骤不重复执行
+
+### Requirement: 执行审计
+托管循环的每次自动动作 MUST 留存审计记录（触发时间、动作、结果），供用户事后查看。
+
+#### Scenario: 审计可查
+- **GIVEN** 托管循环执行过若干自动动作
+- **WHEN** 用户查看执行历史
+- **THEN** 每个动作的时间、类型与结果可查

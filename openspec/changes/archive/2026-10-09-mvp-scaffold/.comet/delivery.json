@@ -1,0 +1,9 @@
+{
+  "action": "push",
+  "targetBranch": "mvp-scaffold",
+  "remote": "origin",
+  "schemaVersion": 1,
+  "changeIdentity": "run:a8657719-ef22-4610-9fd7-70ecd1c77a7b",
+  "authorizationId": "1e039b03-718a-438a-998f-d2d912444c86",
+  "authorizedRemoteUrl": "git@github.com:h2pl/zimeiti-ai.git"
+}
