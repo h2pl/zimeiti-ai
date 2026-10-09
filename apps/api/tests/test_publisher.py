@@ -22,13 +22,19 @@ def executor():
 
 class TestExecutor:
     def test_publish_within_limit_succeeds(self, executor):
-        result = executor.publish("xhs-main", {"title": "t", "body": "b"})
+        result = executor.publish(
+            "xhs-main", {"title": "t", "body": "b"}, credentials_sealed=encrypt_secret("cookie")
+        )
         assert result["platform_result"] == "submitted"  # mock 平台返回 submitted
 
     def test_rate_limit_blocks_second_publish_same_day(self, executor):
-        executor.publish("xhs-main", {"title": "t1", "body": "b"})
+        executor.publish(
+            "xhs-main", {"title": "t1", "body": "b"}, credentials_sealed=encrypt_secret("c1")
+        )
         with pytest.raises(RateLimitExceeded):
-            executor.publish("xhs-main", {"title": "t2", "body": "b"})
+            executor.publish(
+                "xhs-main", {"title": "t2", "body": "b"}, credentials_sealed=encrypt_secret("c2")
+            )
 
     def test_account_not_in_whitelist_denied(self, executor):
         with pytest.raises(AccountNotAllowed):

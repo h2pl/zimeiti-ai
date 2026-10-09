@@ -22,4 +22,5 @@ os.environ.setdefault("ZIMEITI_MASTER_KEY", "test-master-key-not-production")
 import zimeiti_api.hosted as _hosted  # noqa: E402
 
 from pathlib import Path as _P
+
 _hosted.PENDING_PATH = _P(_TEST_STATE) / "pending_approvals.json"

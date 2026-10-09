@@ -44,11 +44,19 @@ async def run_hosted_cycle(agent, thread_id: str | None, instruction: str) -> di
     否则残留中断态会污染消息历史（见 design.md 已知问题）。
     """
     thread_id = thread_id or f"cycle-{uuid.uuid4().hex[:12]}"
+    if not thread_id:
+        import uuid
+
+        thread_id = f"cycle-{uuid.uuid4().hex[:12]}"
     audit.record("cycle_started", thread_id=thread_id, instruction=instruction)
-    result = await agent.ainvoke(
-        {"messages": [HumanMessage(instruction)]},
-        config={"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}},
-    )
+    try:
+        result = await agent.ainvoke(
+            {"messages": [HumanMessage(instruction)]},
+            config={"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}},
+        )
+    except Exception as exc:
+        audit.record("cycle_failed", thread_id=thread_id, error=str(exc))
+        raise
     if "__interrupt__" in result:
         _add_pending(thread_id, instruction)
         audit.record("awaiting_approval", thread_id=thread_id)

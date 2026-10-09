@@ -35,7 +35,7 @@ class PublishExecutor:
         account: str,
         draft: dict,
         platform_call=None,
-        credentials_sealed: str | None = None,
+        credentials_sealed: str = "",
     ) -> dict:
         """发布一个草稿。返回 {"platform_result": ..., "readback": ...}。
 
@@ -50,8 +50,9 @@ class PublishExecutor:
             raise RateLimitExceeded(
                 f"账号 {account} 今日已发布 {published} 篇，达到上限 {self.daily_limit}"
             )
-        if credentials_sealed:
-            decrypt_secret(credentials_sealed)  # 凭证无效会在此时抛异常
+        if not credentials_sealed:
+            raise ValueError("缺少加密凭证：发布前必须提供平台凭证（宪法 II fail-closed）")
+        decrypt_secret(credentials_sealed)  # 凭证无效会在此时抛异常
 
         platform_call = platform_call or self._default_platform_call
         platform_result = platform_call(draft)

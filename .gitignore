@@ -25,3 +25,8 @@ Thumbs.db
 # 本地密钥与环境配置（勿提交）
 .env
 apps/api/.env
+
+# 平台登录态与凭证（宪法 II：不落明文入库）
+outputs/
+.wechat_token_cache.json
+*.wechat_token_cache.json

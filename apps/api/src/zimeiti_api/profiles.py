@@ -11,7 +11,9 @@ from typing import Any
 import yaml
 
 REQUIRED_FIELDS = ("positioning", "style", "audience", "platform_rules", "preferences")
-DEFAULT_BASE_DIR = Path("profiles")
+from zimeiti_api.config import PROFILES_DIR
+
+DEFAULT_BASE_DIR = Path(PROFILES_DIR)
 
 
 def validate_profile(data: dict[str, Any]) -> bool:

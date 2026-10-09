@@ -1,49 +1,51 @@
-"""最小执行图（Task 2.2）。
+"""最小执行图（双形态共用，T1 定案）。
 
-工作台与托管两形态共用：create_deep_agent 配置完全相同，
-差别只在触发方式（Web 交互 / 定时任务）与 interrupt 等待介质（design T1）。
+工作台形态：用户 Web/对话逐环节驱动（Easel 式交互）。
+托管形态：定时/事件触发 + 主 agent 编排 + 审批 interrupt（xiaobei 式治理）。
+差别只在「谁触发」与「interrupt 等待的介质」；工具/subagent/审批配置完全共用。
 """
 
-from collections.abc import Sequence
+from pathlib import Path
+from typing import Any
 
 from deepagents import create_deep_agent
 from langchain_core.language_models.chat_models import BaseChatModel
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph.state import CompiledStateGraph
 
-from zimeiti_api.tools import publish_tool
+from zimeiti_api.tools import build_default_tools
 
 SYSTEM_PROMPT = (
     "你是 zimeiti-ai 自媒体运营 agent。"
     "按用户/托管循环的指示完成选题、创作与发布。"
-    "发布动作会自动进入人工审批。"
+    "选题与发布都需要人工参与：选题要等用户挑选，发布动作会自动进入人工审批。"
 )
-
-
-def build_minimal_agent_sync(model, checkpointer):
-    """同步变体：供 FastAPI sync 端点使用（审批 resume）。"""
-    from deepagents import create_deep_agent
-
-    return create_deep_agent(
-        model=model,
-        tools=[publish_tool],
-        system_prompt=SYSTEM_PROMPT,
-        interrupt_on={"publish": True},
-        checkpointer=checkpointer,
-    )
 
 
 def build_minimal_agent(
     model: BaseChatModel,
-    tools: Sequence | None = None,
-    checkpointer: BaseCheckpointSaver | None = None,
+    checkpointer: BaseCheckpointSaver,
+    profile: dict[str, Any],
+    executor: Any,
+    cycle_dir: Path | str,
+    tools: list | None = None,
+    output_root: Path | str | None = None,
 ) -> CompiledStateGraph:
-    """构建最小闭环 agent：选题/创作工具 + 发布审批（interrupt_on）。"""
-    all_tools = [publish_tool, *(tools or [])]
+    """构建最小闭环 agent。
+
+    tools 为 None 时使用默认工具集（含合规/执行器/闸门全接线，评审 C1-C4 修复）；
+    测试可显式传入精简工具集（如仅 stub publish）验证循环语义。
+    """
+    all_tools = (
+        tools
+        if tools is not None
+        else build_default_tools(profile, model, executor, cycle_dir, output_root)
+    )
     return create_deep_agent(
         model=model,
-        tools=all_tools,
+        tools=list(all_tools),
         system_prompt=SYSTEM_PROMPT,
-        interrupt_on={"publish": True},
+        # 选题与发布都是人工闸门（宪法 I；PRD A1/A3）
+        interrupt_on={"publish": True, "select_topic": True},
         checkpointer=checkpointer,
     )

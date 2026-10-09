@@ -30,8 +30,26 @@ async def _start_cycle_with_pending_approval():
             AIMessage(content="已发布"),
         ]
     )
+    from zimeiti_api.publisher import PublishExecutor
+    from langchain_core.tools import tool as lc_tool
+
+    calls: list[str] = []
+
+    @lc_tool
+    def publish(topic: str, content: str) -> str:
+        """stub publish。"""
+        calls.append(topic)
+        return f"published: {topic}"
+
     async with get_checkpointer() as saver:
-        agent = build_minimal_agent(model=model, checkpointer=saver)
+        agent = build_minimal_agent(
+            model=model,
+            checkpointer=saver,
+            profile={"account": "xhs-main", "positioning": "测试"},
+            executor=PublishExecutor(allowed_accounts={"xhs-main"}),
+            cycle_dir="outputs/xhs-main/test-7.2",
+            tools=[publish],
+        )
         result = await run_hosted_cycle(agent, "test-7.2", "发布审批流测试内容")
     assert "__interrupt__" in result
 
