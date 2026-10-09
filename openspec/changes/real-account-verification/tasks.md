@@ -2,20 +2,20 @@
 
 ## 1. 真实平台接线
 
-- [ ] 1.1 平台路由器：按账号名前缀路由 gzh/xhs 平台调用；验证：单测断言 gzh-main→GzhClient、xhs-main→XhsPublisher
-- [ ] 1.2 公众号读回对账：draft/count+list 匹配标题 → 三档；验证：单测（mock 响应）三档各一
-- [ ] 1.3 小红书发布+读回：创作者中心笔记列表解析 → 三档；验证：FakePage 单测
-- [ ] 1.4 小红书扫码登录流程（storage_state 持久化/复用/失效引导）；验证：FakePage 单测流程断言
-- [ ] 1.5 W1 回归：占位钩子仅保留单测路径，生产路径不再触达；验证：grep + 单测
+- [x] 1.1 平台路由器：按账号名前缀路由 gzh/xhs 平台调用；验证：单测断言 gzh-main→GzhClient、xhs-main→XhsPublisher <!-- comet-task:b936b77f-ffd9-48b4-8f2e-8214b305c2d7 -->
+- [x] 1.2 公众号读回对账：draft/count+list 匹配标题 → 三档；验证：单测（mock 响应）三档各一 <!-- comet-task:166f1fdf-eec4-4783-8353-f80d756c6338 -->
+- [x] 1.3 小红书发布+读回：创作者中心笔记列表解析 → 三档；验证：FakePage 单测 <!-- comet-task:7af24f4f-5bf5-4a3b-a69f-918eba02425e -->
+- [x] 1.4 小红书扫码登录流程（storage_state 持久化/复用/失效引导）；验证：FakePage 单测流程断言 <!-- comet-task:c8e966bf-8198-4627-92ee-9afb3b83afe9 -->
+- [ ] 1.5 W1 回归：占位钩子仅保留单测路径，生产路径不再触达；验证：grep + 单测 <!-- comet-task:c5dd86c4-2439-422a-b7cd-f5cfd69fe3ab -->
 
 ## 2. 端到端与真账号验收
 
-- [ ] 2.1 全量测试回归（现有 32 + 新增）；验证：check-api.sh 全绿
-- [ ] 2.2 真账号走查 A3：gzh 草稿箱上传 + 读回 verified（日限内）；验证：审计+平台截图
-- [ ] 2.3 真账号走查 A3：xhs 扫码登录 + 发布 + 读回 verified；验证：同上
-- [ ] 2.4 真账号走查 A4：人为制造读回失败场景 → unverified 留痕；验证：审计记录
-- [ ] 2.5 走查 A6：频控边界验证（日限 2 篇后第三篇被拒）；验证：审计记录
+- [ ] 2.1 全量测试回归（现有 32 + 新增）；验证：check-api.sh 全绿 <!-- comet-task:ed38fb2e-fcaf-4338-a54d-9ae8977a3577 -->
+- [ ] 2.2 真账号走查 A3：gzh 草稿箱上传 + 读回 verified（日限内）；验证：审计+平台截图 <!-- comet-task:bf4a10de-84ba-4abb-ad85-2c21c40a7e32 -->
+- [ ] 2.3 真账号走查 A3：xhs 扫码登录 + 发布 + 读回 verified；验证：同上 <!-- comet-task:563dfc99-f265-4318-ac4f-6aed8e7505d6 -->
+- [ ] 2.4 真账号走查 A4：人为制造读回失败场景 → unverified 留痕；验证：审计记录 <!-- comet-task:04bd800a-0db2-4b20-87cc-143570f31d6a -->
+- [ ] 2.5 走查 A6：频控边界验证（日限 2 篇后第三篇被拒）；验证：审计记录 <!-- comet-task:c1c1ee7a-2128-4e1c-b07b-cfcff64a8ad5 -->
 
 ## 3. 收尾
 
-- [ ] 3.1 测试报告与缺陷记录更新（verify report 增补）；验证：文档存在且与证据一致
+- [ ] 3.1 测试报告与缺陷记录更新（verify report 增补）；验证：文档存在且与证据一致 <!-- comet-task:4951b428-40ed-4bda-8c9d-99fcf0d5d984 -->

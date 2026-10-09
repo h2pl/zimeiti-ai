@@ -55,11 +55,11 @@ class PublishExecutor:
         decrypt_secret(credentials_sealed)  # 凭证无效会在此时抛异常
 
         platform_call = platform_call or self._default_platform_call
-        platform_result = platform_call(draft)
+        platform_result = platform_call(account, draft)
         self._published_today[account] = self._published_today.get(account, 0) + 1
         return {"platform_result": platform_result, "readback": "unverified"}
 
     @staticmethod
-    def _default_platform_call(draft: dict) -> str:
-        # 真实平台脚本在 Phase E 后续任务注入；默认占位仅供测试
+    def _default_platform_call(account: str, draft: dict) -> str:
+        # 真实平台脚本在 real-account-verification 接线；默认占位仅供测试
         return "submitted"

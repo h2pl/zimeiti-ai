@@ -9,8 +9,11 @@
 from pathlib import Path
 from typing import Any
 
+from playwright.sync_api import sync_playwright
+
 SELECTORS: dict[str, str] = {
     "creator_url": "https://creator.xiaohongshu.com/publish/publish",
+    "login_url": "https://creator.xiaohongshu.com/login",
     "note_list_url": "https://creator.xiaohongshu.com/publish/note",
     "title_input": "#title-textarea",
     "content_editor": "#post-textarea",
@@ -58,14 +61,33 @@ class XhsPublisher:
         return parse_readback(titles, title)
 
     def _open_page(self) -> Any:
-        """真实浏览器打开（登录态持久化）。仅生产路径使用，单测注入 FakePage。"""
-        from playwright.sync_api import sync_playwright
-
+        """真实浏览器打开（复用持久化登录态）。仅生产路径使用，单测注入 FakePage。"""
         pw = sync_playwright().start()
         browser = pw.chromium.launch(headless=False)
-        context = browser.new_context()
-        if Path(self.storage_state).exists():
-            context = browser.new_context(storage_state=self.storage_state)
+        state = self.storage_state if Path(self.storage_state).exists() else None
+        context = browser.new_context(storage_state=state)
         page = context.new_page()
-        page.on("close", lambda _: (context.close(), browser.close(), pw.stop()))
+
+        def _on_close(_: Any) -> None:
+            context.close()
+            browser.close()
+            pw.stop()
+
+        page.on("close", _on_close)
         return page
+
+    def login_interactive(self) -> None:
+        """首跑扫码登录（Task 1.4）：打开登录页等待扫码，成功后持久化登录态。
+
+        失效引导重扫：登录态失效时由调用方触发本方法重新扫码——MUST NOT 伪造登录。
+        """
+        sel = self.selectors
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(headless=False)
+            context = browser.new_context()
+            page = context.new_page()
+            page.goto(sel["login_url"])
+            # 等待扫码成功：登录完成后跳转创作者中心
+            page.wait_for_url(f"{sel['creator_url']}**", timeout=180_000)
+            context.storage_state(path=self.storage_state)
+            browser.close()

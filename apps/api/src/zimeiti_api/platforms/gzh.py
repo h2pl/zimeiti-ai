@@ -76,6 +76,22 @@ class GzhClient:
         resp = httpx.get(f"{BASE_URL}/draft/count", params={"access_token": token}, timeout=15)
         return resp.json().get("total_count", 0)
 
+    def draft_list(self, count: int = 10) -> list[str]:
+        """拉取草稿列表标题（读回对账依据）。"""
+        token = self.get_access_token()
+        resp = httpx.post(
+            f"{BASE_URL}/draft/batch_get",
+            params={"access_token": token},
+            json={"offset": 0, "count": count, "no_content": 1},
+            timeout=15,
+        )
+        data = resp.json()
+        titles: list[str] = []
+        for item in data.get("items", []):
+            for news in item.get("content", {}).get("news_item", []):
+                titles.append(news.get("title", ""))
+        return titles
+
 
 def publish_gzh_draft(client: GzhClient, draft: Any) -> dict[str, str]:
     """上传草稿箱并读回对账，返回三档 outcome。
@@ -94,3 +110,15 @@ def publish_gzh_draft(client: GzhClient, draft: Any) -> dict[str, str]:
     count = client.draft_count()
     readback = "verified" if count > 0 else "unverified"
     return {"platform_result": media_id, "readback": readback}
+
+
+def readback_gzh_draft(client: "GzhClient", title: str, count: int = 10) -> str:
+    """读回对账（Task 1.2，W1 修复）：草稿列表含标题 → verified；否则 unverified。
+
+    接口异常 MUST 返回 unverified（spec：读回异常返回 unverified）。
+    """
+    try:
+        titles = client.draft_list(count=count)
+        return "verified" if title in titles else "unverified"
+    except Exception:  # noqa: BLE001 - 观测层异常降级为 unverified（不冒报成功）
+        return "unverified"

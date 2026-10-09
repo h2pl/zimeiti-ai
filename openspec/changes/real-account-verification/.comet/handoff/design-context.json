@@ -1,0 +1,16 @@
+{
+  "change": "real-account-verification",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "2e3801ca721a623a678a2a4e2f21e670bdd3955a8a346d073aa332bdfc9e3f24",
+  "files": [
+    { "path": "openspec/changes/real-account-verification/proposal.md", "sha256": "907fd85bbaa957ce99c1175cc4f88fa6db08e4325d9e8e84e043253ba7282e8d" },
+    { "path": "openspec/changes/real-account-verification/design.md", "sha256": "b949a507ac5d0081cc31a2f218c1a50c868ea331ef4634513467b0e38e082735" },
+    { "path": "openspec/changes/real-account-verification/tasks.md", "sha256": "74463ac92693c9d78461947a90a36095cbc7bf33b3a3b21eb2db204439592862" },
+    { "path": "openspec/changes/real-account-verification/.openspec.yaml", "sha256": "8ba8273010ceb66cd0ab320b2f49de179fac6fd6f648317c2cc129442eea7dc0" },
+    { "path": "openspec/changes/real-account-verification/specs/platform-publishing/spec.md", "sha256": "71d799d1362658d7c7407664247716294f44f06aa8102c3b461f1d6d63629ecf" }
+  ]
+}

@@ -30,16 +30,18 @@ def build_minimal_agent(
     cycle_dir: Path | str,
     tools: list | None = None,
     output_root: Path | str | None = None,
+    platform_router: Any | None = None,
 ) -> CompiledStateGraph:
     """构建最小闭环 agent。
 
     tools 为 None 时使用默认工具集（含合规/执行器/闸门全接线，评审 C1-C4 修复）；
+    platform_router 可注入平台调用路由（默认 real_platform_router，测试注入记录型）；
     测试可显式传入精简工具集（如仅 stub publish）验证循环语义。
     """
     all_tools = (
         tools
         if tools is not None
-        else build_default_tools(profile, model, executor, cycle_dir, output_root)
+        else build_default_tools(profile, model, executor, cycle_dir, output_root, platform_router)
     )
     return create_deep_agent(
         model=model,

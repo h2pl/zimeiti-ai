@@ -15,6 +15,7 @@ dependencies = [
     "langgraph>=0.4",
     "langgraph-checkpoint-postgres>=3.1.1",
     "litellm>=1.104.2",
+    "playwright>=1.63.0",
     "psycopg[binary]>=3.3.6",
     "pyyaml>=6.0.3",
     "uvicorn[standard]>=0.30",

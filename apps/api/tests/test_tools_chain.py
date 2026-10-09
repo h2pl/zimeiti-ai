@@ -6,7 +6,6 @@
 
 import json
 import uuid
-from pathlib import Path
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage
@@ -82,7 +81,7 @@ class SeqModel(BaseChatModel):
         return self._generate(messages)
 
 
-def _agent(model, checkpointer, tmp_path):
+def _agent(model, checkpointer, tmp_path, platform_router):
     executor = PublishExecutor(daily_limit=5, allowed_accounts={"xhs-main"})
     return build_minimal_agent(
         model=model,
@@ -91,7 +90,7 @@ def _agent(model, checkpointer, tmp_path):
         executor=executor,
         cycle_dir=tmp_path / "cycle",
         output_root=tmp_path / "outputs",
-        tools=None,  # ★ 默认工具集（被测对象）
+        platform_router=platform_router,  # 注入记录型路由器（生产默认 real_platform_router）
     )
 
 
@@ -104,13 +103,26 @@ def test_full_chain_happy_path(tmp_path, monkeypatch):
 async def _full_chain_happy_path(tmp_path, monkeypatch):
     """默认工具集全链：选题发现→人工挑选→创作→合规通过→审批→发布。"""
     platform_calls: list[str] = []
-    import zimeiti_api.tools as tools_mod
 
-    monkeypatch.setattr(
-        tools_mod,
-        "default_platform_call",
-        lambda draft: (platform_calls.append(draft["title"]), "submitted")[1],
-    )
+    import zimeiti_api.platforms.xhs as xhs_mod
+
+    class FakeXhsPub:
+        def __init__(self, storage_state=None, selectors=None):
+            pass
+
+        def publish(self, draft, page=None):
+            return "submitted"
+
+        def readback(self, title, page=None):
+            return "verified"
+
+    monkeypatch.setattr(xhs_mod, "XhsPublisher", FakeXhsPub)
+
+    def recording_router(account, draft):
+        title = draft["title"] if isinstance(draft, dict) else draft.title
+        platform_calls.append(title)
+        return {"platform_result": "submitted", "readback": "verified"}
+
     model = SeqModel(
         responses=[
             AIMessage(
@@ -143,7 +155,7 @@ async def _full_chain_happy_path(tmp_path, monkeypatch):
     async with get_checkpointer() as saver:
         # platform_stub 通过 monkeypatch 注入 PublishExecutor 默认平台调用？
         # 否——直接在 executor 层替换：这里改用子类记录
-        agent = _agent(model, saver, tmp_path)
+        agent = _agent(model, saver, tmp_path, recording_router)
         thread_id = f"chain-1-{uuid.uuid4().hex[:8]}"
         cycle = await run_hosted_cycle(agent, thread_id, "做一期 AI 提效内容并发布")
         # 选题与发布都是人工闸门：首轮应停在 select_topic 中断
@@ -174,13 +186,26 @@ def test_compliance_block_prevents_publish(tmp_path, monkeypatch):
 async def _compliance_block(tmp_path, monkeypatch):
     """合规未通过的草稿：publish 工具必须拒绝执行。"""
     platform_calls: list[str] = []
-    import zimeiti_api.tools as tools_mod
 
-    monkeypatch.setattr(
-        tools_mod,
-        "default_platform_call",
-        lambda draft: (platform_calls.append(draft["title"]), "submitted")[1],
-    )
+    import zimeiti_api.platforms.xhs as xhs_mod
+
+    class FakeXhsPub:
+        def __init__(self, storage_state=None, selectors=None):
+            pass
+
+        def publish(self, draft, page=None):
+            return "submitted"
+
+        def readback(self, title, page=None):
+            return "verified"
+
+    monkeypatch.setattr(xhs_mod, "XhsPublisher", FakeXhsPub)
+
+    def recording_router(account, draft):
+        title = draft["title"] if isinstance(draft, dict) else draft.title
+        platform_calls.append(title)
+        return {"platform_result": "submitted", "readback": "verified"}
+
     model = SeqModel(
         responses=[
             AIMessage(
@@ -209,7 +234,7 @@ async def _compliance_block(tmp_path, monkeypatch):
     monkeypatch.setenv("ZIMEITI_CREDENTIALS_DIR", str(cred_dir))
 
     async with get_checkpointer() as saver:
-        agent = _agent(model, saver, tmp_path)
+        agent = _agent(model, saver, tmp_path, recording_router)
         thread_id = f"chain-2-{uuid.uuid4().hex[:8]}"
         await run_hosted_cycle(agent, thread_id, "做一期暴富内容并发布")
         final = await resume_after_approval(agent, thread_id, approved=True)

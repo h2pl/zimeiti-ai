@@ -28,9 +28,28 @@ logger = logging.getLogger(__name__)
 publish_calls: list[str] = []  # 兼容观测口（真实发布时记录）
 
 
-def default_platform_call(draft: dict) -> str:
-    """平台调用钩子：默认占位（MVP），真实平台脚本 8.2 替换；测试可 monkeypatch 观测。"""
-    return "submitted"
+def real_platform_router(account: str, draft: dict) -> dict:
+    """真实平台路由器（Task 1.1，D1）：按账号前缀路由到真实平台调用并读回。
+
+    返回 {"platform_result": ..., "readback": ...}；未知账号 fail-closed 拒绝。
+    """
+    title = draft["title"] if isinstance(draft, dict) else draft.title
+    if account.startswith("gzh"):
+        import os
+
+        from zimeiti_api.platforms.gzh import GzhClient, publish_gzh_draft, readback_gzh_draft
+
+        client = GzhClient(os.environ["WECHAT_MP_APPID"], os.environ["WECHAT_MP_APPSECRET"])
+        outcome = publish_gzh_draft(client, draft)
+        outcome["readback"] = readback_gzh_draft(client, title)
+        return outcome
+    if account.startswith("xhs"):
+        from zimeiti_api.platforms.xhs import XhsPublisher
+
+        pub = XhsPublisher()
+        platform_result = pub.publish(draft)
+        return {"platform_result": platform_result, "readback": pub.readback(title)}
+    raise ValueError(f"未知平台账号: {account}")
 
 
 def _load_state(cycle_dir: Path) -> dict:
@@ -55,13 +74,18 @@ def build_default_tools(
     executor: PublishExecutor,
     cycle_dir: Path | str,
     output_root: Path | str | None = None,
+    platform_router: Any | None = None,
 ) -> list:
     """按账号画像构建工具集。
+
+    platform_router：平台调用路由（默认 real_platform_router；测试注入记录型）。
+
 
     cycle_dir：本轮变更的会话目录（跨进程共享状态）；
     output_root：草稿/产物根目录（默认 outputs/，测试可用环境变量重定向）。
     """
     account = profile["account"]
+    router = platform_router or real_platform_router
     gate = ComplianceGate()
 
     def _account_credentials() -> str:
@@ -163,7 +187,7 @@ def build_default_tools(
             result = executor.publish(
                 account,
                 drafts["xhs"],
-                platform_call=default_platform_call,
+                platform_call=router,
                 credentials_sealed=_account_credentials(),
             )
         except Exception as exc:
