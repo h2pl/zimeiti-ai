@@ -27,8 +27,9 @@
 **来源覆盖**：
 
 - 产品知识库文档：`E:/Projects/multi-agent-manager/knowledge/domains/dev/content-agent/README.md`（定位/能力地图/技术栈/待决策项）
-- Easel 调研（`E:/Projects/Easel`）：五阶段 pipeline、skill 体系、画像六维、发布读回对账、content_guard
-- xiaobei 调研（`E:/Projects/xiaobei`）：获客闭环、crew 治理、微信 IM、Docker 交付、风控事故教训
+- **Easel（`E:/Projects/Easel`，重点参考项目）**：五阶段 pipeline、skill 体系、画像六维、发布读回对账、content_guard——工作流形态的实现对标来源
+- **xiaobei（`E:/Projects/xiaobei`，重点参考项目）**：获客闭环、crew 治理、24h 托管运营、微信 IM、Docker 交付、风控事故教训——托管形态与运营侧的对标来源
+- my-tools 资产盘点（`E:/Projects/my-tools`，第一方私有仓）：wechat-mp-toolkit（公众号全量 API 客户端：token 缓存/素材/草稿/发布/群发/留言/菜单/用户标签/二维码/客服/JS-SDK/OAuth2/datacube 统计）+ wechat-mp-manage（Markdown→微信 HTML 排版产线：mistune 内联样式 + Pygments 高亮 + 主题拼接封面 + 摘要提取），已在 real-account-verification/gzh-typesetting-pipeline 两变更中 vendor 复用；**后续所有公众号/内容运营相关功能 MUST 优先复用该资产，禁止重复实现**
 - my-tools 资产盘点（`E:/Projects/my-tools`，第一方私有仓）：wechat-mp-toolkit（公众号全量 API 客户端：token 缓存/素材/草稿/发布/群发/留言/菜单/用户标签/二维码/客服/JS-SDK/OAuth2/datacube 统计）+ wechat-mp-manage（Markdown→微信 HTML 排版产线：mistune 内联样式 + Pygments 高亮 + 主题拼接封面 + 摘要提取），已在 real-account-verification/gzh-typesetting-pipeline 两变更中 vendor 复用；**后续所有公众号/内容运营相关功能 MUST 优先复用该资产，禁止重复实现**
 - 《启示录》机会评估八问的问答记录（2026-10-08，见本文档决策栏）
 
@@ -64,6 +65,7 @@
 - 内容形态：图文起步；首发平台：小红书 + 公众号
 - 商业化路径：订阅 SaaS（多租户），首版自用验证后开放
 - 差异化依据：Easel + xiaobei 两大开源参考（不从零摸索）、多 agent 工程经验、自媒体业务经验、工作流+托管+获客的组合拳定位（现有工具都只做一半）
+- **后续开发重点参考项目（行为性约定）**：xiaobei + Easel。每个新 capability 在 Open/Design 阶段 MUST 先调研两项目中的对应实现——工作流/pipeline/发布编排对标 Easel，托管运营/获客/风控对标 xiaobei——能借鉴的借鉴，能复用的复用，确需自研时在 Design Doc 记录「两项目无对应实现或不适用」的结论；公众号领域另优先复用第一方资产 my-tools（见来源覆盖）
 - 时机依据：模型能力成熟 + skills/MCP 生态就绪 + 个人窗口期
 
 # 待解决问题
