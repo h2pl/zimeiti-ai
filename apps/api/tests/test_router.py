@@ -28,8 +28,11 @@ class TestRouter:
                 return ["测试标题"]
 
         monkeypatch.setattr(gzh_mod, "GzhClient", FakeClient)
-        monkeypatch.setenv("WECHAT_MP_APPID", "wxtest")
-        monkeypatch.setenv("WECHAT_MP_APPSECRET", "sectest")
+        # 凭证走加密存储（宪法 II），路由器从 sealed 解密注入
+        monkeypatch.setattr(
+            "zimeiti_api.credentials.load_account_credentials",
+            lambda account: {"app_id": "wxtest", "app_secret": "sectest"},
+        )
 
         result = real_platform_router("gzh-main", GzhDraft(title="测试标题", body="b", summary="s"))
         assert result["readback"] == "verified"

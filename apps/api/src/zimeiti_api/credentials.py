@@ -44,8 +44,30 @@ def decrypt_secret(sealed: str) -> str:
     return Fernet(_load_master_key()).decrypt(sealed.encode()).decode()
 
 
-def load_for_account(account: str, credentials_dir: str | None = None) -> str:
-    """读取指定账号的解密凭证（密文文件由登录/配置流程以 encrypt_secret 落盘）。"""
+def save_account_credentials(
+    account: str, payload: dict[str, str], credentials_dir: str | None = None
+) -> str:
+    """将账号凭证 dict（如 {"app_id","app_secret"}）加密落盘为 {account}.sealed。
+
+    凭证只存密文（宪法 II）；写前需已设置主密钥（_load_master_key fail-closed）。
+    """
+    import json
+    from pathlib import Path
+
+    cred_dir = Path(
+        credentials_dir
+        or os.environ.get("ZIMEITI_CREDENTIALS_DIR")
+        or __import__("zimeiti_api.config", fromlist=["CREDENTIALS_DIR"]).CREDENTIALS_DIR
+    )
+    cred_dir.mkdir(parents=True, exist_ok=True)
+    f = cred_dir / f"{account}.sealed"
+    f.write_text(encrypt_secret(json.dumps(payload, ensure_ascii=False)), encoding="utf-8")
+    return str(f)
+
+
+def load_account_credentials(account: str, credentials_dir: str | None = None) -> dict[str, str]:
+    """读取并解密账号凭证 dict（与 save_account_credentials 对称）。"""
+    import json
     from pathlib import Path
 
     cred_dir = Path(
@@ -55,5 +77,8 @@ def load_for_account(account: str, credentials_dir: str | None = None) -> str:
     )
     f = cred_dir / f"{account}.sealed"
     if not f.exists():
-        raise FileNotFoundError(f"账号 {account} 无已存凭证: {f}")
-    return decrypt_secret(f.read_text(encoding="utf-8").strip())
+        raise FileNotFoundError(
+            f"账号 {account} 无已存凭证（{f}）。"
+            "请先运行: uv run python -m zimeiti_api.seal " + account
+        )
+    return json.loads(decrypt_secret(f.read_text(encoding="utf-8").strip()))

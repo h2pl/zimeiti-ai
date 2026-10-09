@@ -35,11 +35,11 @@ def real_platform_router(account: str, draft: Any, cover_image_path: str | None 
     """
     title = draft["title"] if isinstance(draft, dict) else draft.title
     if account.startswith("gzh"):
-        import os
-
+        from zimeiti_api.credentials import load_account_credentials
         from zimeiti_api.platforms.gzh import GzhClient, publish_gzh_draft, readback_gzh_draft
 
-        client = GzhClient(os.environ["WECHAT_MP_APPID"], os.environ["WECHAT_MP_APPSECRET"])
+        creds = load_account_credentials(account)  # 宪法 II：Fernet 解密注入，不走明文 env
+        client = GzhClient(creds["app_id"], creds["app_secret"])
         outcome = publish_gzh_draft(client, draft, cover_image_path=cover_image_path)
         outcome["readback"] = readback_gzh_draft(client, title)
         return outcome
