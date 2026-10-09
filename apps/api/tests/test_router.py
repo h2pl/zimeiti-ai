@@ -44,42 +44,47 @@ class TestRouter:
 
         actions = []
 
-        class FakePage:
-            def goto(self, url):
-                actions.append(("goto", url))
-
-            def fill(self, sel, text):
-                actions.append(("fill", text))
-
-            def click(self, sel):
-                actions.append(("click",))
-
-            def query_selector_all(self, sel):
-                return [_El("AI 提效指南")]
-
-        class _El:
-            def __init__(self, t):
-                self._t = t
-
-            def text_content(self):
-                return self._t
-
         class FakePub:
             def __init__(self, storage_state=None, selectors=None):
                 pass
 
-            def publish(self, draft, page=None):
-                actions.append(("publish_flow",))
-                return "submitted"
-
-            def readback(self, title, page=None):
-                actions.append(("readback",))
-                return "verified"
+            def publish_draft(self, draft, cover_path=None):
+                actions.append(("publish_draft", cover_path))
+                return {"status": "success", "title": draft.title}
 
         monkeypatch.setattr(xhs_mod, "XhsPublisher", FakePub)
+        # 读回走子进程（litellm 事件循环隔离），单测直接打桩
+        monkeypatch.setattr("zimeiti_api.tools._xhs_readback_subprocess", lambda title: "verified")
         result = real_platform_router("xhs-main", XhsDraft(title="AI 提效指南", body="b"))
         assert result["readback"] == "verified"
-        assert ("readback",) in actions
+        assert result["platform_result"]["status"] == "success"
+        assert ("publish_draft", None) in actions  # 默认无封面
+
+    def test_xhs_router_defaults_to_private_publish(self, monkeypatch):
+        """宪法 I：xhs 生产路由必须私密发布（仅自己可见），不得公开。"""
+        import zimeiti_api.platforms.xhs as xhs_mod
+        from zimeiti_api.tools import real_platform_router
+
+        actions: list = []
+
+        class FakePub:
+            def __init__(self, *a, **k):
+                pass
+
+            def publish_draft(self, draft, cover_path=None):
+                actions.append("private")
+                return {"status": "success"}
+
+            def publish(self, draft, cover_path=None):
+                actions.append("public")
+                return {"status": "success"}
+
+        monkeypatch.setattr(xhs_mod, "XhsPublisher", FakePub)
+        monkeypatch.setattr(
+            "zimeiti_api.tools._xhs_readback_subprocess", lambda title: "unverified"
+        )
+        real_platform_router("xhs-main", XhsDraft(title="t", body="b"))
+        assert actions == ["private"]
 
     def test_unknown_account_rejected(self):
         from zimeiti_api.tools import real_platform_router

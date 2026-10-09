@@ -48,9 +48,35 @@ def real_platform_router(account: str, draft: Any, cover_image_path: str | None 
         from zimeiti_api.platforms.xhs import XhsPublisher
 
         pub = XhsPublisher()
-        platform_result = pub.publish(draft)
-        return {"platform_result": platform_result, "readback": pub.readback(title)}
+        # 私密发布（仅自己可见）——宪法 I 落地形态，人工确认后才公开
+        platform_result = pub.publish_draft(draft, cover_path=cover_image_path)
+        return {"platform_result": platform_result, "readback": _xhs_readback_subprocess(title)}
     raise ValueError(f"未知平台账号: {account}")
+
+
+def _xhs_readback_subprocess(title: str) -> str:
+    """小红书读回走独立子进程（zimeiti_api.xhs_readback CLI）。
+
+    为何必须子进程：litellm/agent 运行时残留事件循环会使主进程 sync Playwright
+    报「Sync API inside the asyncio loop」（A3 实测，线程隔离无效）。
+    参考: scripts/walkthrough_a3_xhs.py 的读回实现。
+    """
+    import subprocess  # nosec B404 - 仅调用本项目固定 CLI，无 shell
+    import sys
+
+    try:
+        proc = subprocess.run(  # nosec B603 - 参数为固定模块名+标题，无 shell 拼接
+            [sys.executable, "-m", "zimeiti_api.xhs_readback", "--title", title],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=300,
+            cwd=str(Path(__file__).resolve().parents[2]),
+        )
+        return json.loads(proc.stdout.strip().splitlines()[-1])["outcome"]
+    except Exception:  # noqa: BLE001 - 观测层异常降级为 unverified（不冒报成功）
+        logger.warning("xhs 子进程读回失败，降级 unverified", exc_info=True)
+        return "unverified"
 
 
 def _load_state(cycle_dir: Path) -> dict:
