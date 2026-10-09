@@ -2,7 +2,8 @@
 comet_change: calibration-insights
 role: technical-design
 canonical_spec: openspec
-status: draft
+archived-with: 2026-10-10-calibration-insights
+status: final
 ---
 
 # Design：calibration-insights

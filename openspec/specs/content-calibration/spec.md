@@ -19,7 +19,7 @@ TBD - created by archiving change content-strategy-calibration. Update Purpose a
 - **THEN** ops-metrics 的事件与快照数据保持不变
 
 ### Requirement: 评估报告与证据/洞察分离
-校准 MUST 产出评估报告（eval.md），报告 MUST 包含：确定性证据（脚本计算）、账号基线说明、以及留给 Agent 的「洞察」章节（由 Agent 回读证据与内容原文后撰写）。脚本 MUST NOT 输出好坏归因结论——归因是 Agent 的职责。存在无法排除的混杂因素（如账号成熟度低、样本量不足）时，相关结论 MUST 降级标记为「观察」而非「结论」。
+校准 MUST 产出评估报告（eval.md），报告 MUST 包含：确定性证据（脚本计算）、**关键发现（确定性脚本按数据排名生成 Top 3 可执行洞察）、方法论与局限性章节**、账号基线说明、以及留给 Agent 的「洞察」章节（由 Agent 回读证据与内容原文后撰写）。脚本 MUST NOT 输出好坏归因结论——归因是 Agent 的职责。存在无法排除的混杂因素（如账号成熟度低、样本量不足）时，相关结论 MUST 降级标记为「观察」而非「结论」。
 
 #### Scenario: 报告含证据与洞察留位
 - **GIVEN** 校准证据生成完成
@@ -31,6 +31,11 @@ TBD - created by archiving change content-strategy-calibration. Update Purpose a
 - **WHEN** 生成报告
 - **THEN** 报告将策略性结论标记为「观察（混杂：样本不足）」，不冒充结论
 
+#### Scenario: 关键发现由脚本确定性生成
+- **GIVEN** 校准证据包含趋势、生命周期分布与发布节奏
+- **WHEN** 生成评估报告
+- **THEN** 报告「关键发现」章节含至少一条基于数据排名的可执行洞察（如最佳发布日、生命周期占比、基线异常），并附「方法论」与「局限性」（样本量、混杂声明）章节
+
 ### Requirement: 评估产出建议不自动改画像
 评估报告 MAY 包含策略建议（如调整选题方向、发布节奏），但系统 MUST NOT 自动修改画像文件；画像调整 MUST 经用户确认后另行处理。
 
@@ -38,3 +43,16 @@ TBD - created by archiving change content-strategy-calibration. Update Purpose a
 - **GIVEN** 评估报告生成完成
 - **WHEN** 检查画像文件
 - **THEN** 画像文件未被修改
+
+### Requirement: 按量触发校准
+校准 MUST 支持按量触发模式（--auto）：自上次校准以来新收集的快照数 ≥5 时执行校准，否则输出跳过原因（含当前计数）且 MUST NOT 生成新报告；--force 手动触发 MUST 绕过该检查。
+
+#### Scenario: 达到阈值自动执行
+- **GIVEN** 自上次校准以来新收集快照 ≥5
+- **WHEN** 以 --auto 模式执行校准
+- **THEN** 正常生成报告
+
+#### Scenario: 未达阈值跳过
+- **GIVEN** 自上次校准以来新收集快照 <5
+- **WHEN** 以 --auto 模式执行校准
+- **THEN** 不生成新报告，输出跳过原因与当前计数

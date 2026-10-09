@@ -2,6 +2,7 @@
 change: calibration-insights
 design-doc: openspec/changes/calibration-insights/design.md
 base-ref: f12bfd2
+archived-with: 2026-10-10-calibration-insights
 ---
 
 <!-- comet-task-authority: openspec/changes/calibration-insights/tasks.md -->

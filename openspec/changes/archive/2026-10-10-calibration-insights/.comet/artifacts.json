@@ -5,6 +5,7 @@
   "openspec_delta_spec": "openspec/changes/calibration-insights/specs/content-calibration/spec.md",
   "design_document": "openspec/changes/calibration-insights/design.md",
   "build_plan": "docs/superpowers/plans/2026-10-09-calibration-insights.md",
-  "handoff_context": "openspec/changes/calibration-insights/.comet/handoff/design-context.json",
-  "handoff_markdown": "openspec/changes/calibration-insights/.comet/handoff/design-context.md"
+  "handoff_context": "openspec/changes/archive/2026-10-10-calibration-insights/.comet/handoff/design-context.json",
+  "handoff_markdown": "openspec/changes/archive/2026-10-10-calibration-insights/.comet/handoff/design-context.md",
+  "archive_directory": "openspec/changes/archive/2026-10-10-calibration-insights"
 }
