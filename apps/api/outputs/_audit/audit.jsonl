@@ -22,3 +22,7 @@
 {"ts": "2026-10-08T15:52:46.062217+00:00", "action": "awaiting_approval", "thread_id": "test-2.3"}
 {"ts": "2026-10-08T15:52:46.095894+00:00", "action": "approval_received", "thread_id": "test-2.3"}
 {"ts": "2026-10-08T15:52:46.146190+00:00", "action": "cycle_completed", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T03:26:48.250944+00:00", "action": "cycle_started", "thread_id": "test-2.3", "instruction": "发布断点恢复内容"}
+{"ts": "2026-10-09T03:26:48.314361+00:00", "action": "awaiting_approval", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T03:26:48.344282+00:00", "action": "approval_received", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T03:26:48.391417+00:00", "action": "cycle_completed", "thread_id": "test-2.3"}
