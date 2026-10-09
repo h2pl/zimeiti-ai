@@ -1,7 +1,5 @@
 """Task 6.2/6.3 验收：公众号草稿箱上传（my-tools 移植）+ 小红书发布框架读回。"""
 
-import pytest
-
 from zimeiti_api.creation import GzhDraft
 
 
@@ -77,8 +75,8 @@ class TestXhs:
         assert parse_readback(["其他"], "AI 提效指南") == "unverified"
 
     def test_publish_flow_order_with_fake_page(self):
-        from zimeiti_api.platforms.xhs import XhsPublisher
         from zimeiti_api.creation import XhsDraft
+        from zimeiti_api.platforms.xhs import XhsPublisher
 
         actions = []
 

@@ -46,3 +46,7 @@
 {"ts": "2026-10-09T03:44:43.048441+00:00", "action": "awaiting_approval", "thread_id": "test-2.3"}
 {"ts": "2026-10-09T03:44:43.074534+00:00", "action": "approval_received", "thread_id": "test-2.3"}
 {"ts": "2026-10-09T03:44:43.119378+00:00", "action": "cycle_completed", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T03:53:36.349504+00:00", "action": "cycle_started", "thread_id": "test-2.3", "instruction": "发布断点恢复内容"}
+{"ts": "2026-10-09T03:53:36.451173+00:00", "action": "awaiting_approval", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T03:53:36.506664+00:00", "action": "approval_received", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T03:53:36.650833+00:00", "action": "cycle_completed", "thread_id": "test-2.3"}
