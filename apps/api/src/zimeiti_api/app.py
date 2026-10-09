@@ -1,10 +1,19 @@
 """FastAPI 应用（Task 1.4 + 7.2：审批 API）。"""
 
+import re
+
 from fastapi import FastAPI, HTTPException
 from langgraph.types import Command
 
+from zimeiti_api.publisher import PublishExecutor
+
 from zimeiti_api import audit, hosted
 from zimeiti_api.checkpoints import DATABASE_URL
+
+
+# 进程级单例执行器：频控计数跨请求持久（评审 W2 升级项修复）
+EXECUTOR = PublishExecutor(daily_limit=2, allowed_accounts={"xhs-main", "gzh-main"})
+_THREAD_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 
 
 def create_app() -> FastAPI:
@@ -34,12 +43,13 @@ def create_app() -> FastAPI:
         from zimeiti_api.profiles import load_profile
         from zimeiti_api.publisher import PublishExecutor
 
-        executor = PublishExecutor(daily_limit=2, allowed_accounts={"xhs-main", "gzh-main"})
+        if not _THREAD_ID_RE.match(thread_id):
+            raise HTTPException(status_code=400, detail="非法 thread_id（允许字母数字._-）")
         profile = load_profile("xhs-main")
         cycle_dir = f"outputs/{profile['account']}/{thread_id}"
         with PostgresSaver.from_conn_string(DATABASE_URL) as saver:
             saver.setup()
-            agent = build_minimal_agent(get_model(), saver, profile, executor, cycle_dir)
+            agent = build_minimal_agent(get_model(), saver, profile, EXECUTOR, cycle_dir)
             result = agent.invoke(
                 Command(resume={"decisions": [{"type": "approve"}]}),
                 config={"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}},
@@ -64,12 +74,13 @@ def create_app() -> FastAPI:
         from zimeiti_api.profiles import load_profile
         from zimeiti_api.publisher import PublishExecutor
 
-        executor = PublishExecutor(daily_limit=2, allowed_accounts={"xhs-main", "gzh-main"})
+        if not _THREAD_ID_RE.match(thread_id):
+            raise HTTPException(status_code=400, detail="非法 thread_id（允许字母数字._-）")
         profile = load_profile("xhs-main")
         cycle_dir = f"outputs/{profile['account']}/{thread_id}"
         with PostgresSaver.from_conn_string(DATABASE_URL) as saver:
             saver.setup()
-            agent = build_minimal_agent(get_model(), saver, profile, executor, cycle_dir)
+            agent = build_minimal_agent(get_model(), saver, profile, EXECUTOR, cycle_dir)
             result = agent.invoke(
                 Command(resume={"decisions": [{"type": "reject"}]}),
                 config={"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}},

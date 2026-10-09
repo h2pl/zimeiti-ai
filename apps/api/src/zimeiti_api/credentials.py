@@ -42,3 +42,16 @@ def encrypt_secret(plaintext: str) -> str:
 def decrypt_secret(sealed: str) -> str:
     """解密凭证；密文被篡改抛 InvalidToken。"""
     return Fernet(_load_master_key()).decrypt(sealed.encode()).decode()
+
+
+def load_for_account(account: str, credentials_dir: str | None = None) -> str:
+    """读取指定账号的解密凭证（密文文件由登录/配置流程以 encrypt_secret 落盘）。"""
+    from pathlib import Path
+
+    cred_dir = Path(
+        credentials_dir or os.environ.get("ZIMEITI_CREDENTIALS_DIR", "outputs/_credentials")
+    )
+    f = cred_dir / f"{account}.sealed"
+    if not f.exists():
+        raise FileNotFoundError(f"账号 {account} 无已存凭证: {f}")
+    return decrypt_secret(f.read_text(encoding="utf-8").strip())

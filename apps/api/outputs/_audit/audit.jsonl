@@ -138,3 +138,9 @@
 {"ts": "2026-10-09T05:50:38.118633+00:00", "action": "awaiting_approval", "thread_id": "test-2.3"}
 {"ts": "2026-10-09T05:50:38.164103+00:00", "action": "approval_received", "thread_id": "test-2.3"}
 {"ts": "2026-10-09T05:50:38.244210+00:00", "action": "cycle_completed", "thread_id": "test-2.3"}
+{"ts": "2026-10-09T06:40:05.724233+00:00", "action": "cycle_started", "thread_id": "diag-1", "instruction": "做一期 AI 提效内容并发布"}
+{"ts": "2026-10-09T06:40:05.764058+00:00", "action": "topic_discovered", "account": "xhs-main", "count": 3}
+{"ts": "2026-10-09T06:40:05.814962+00:00", "action": "awaiting_approval", "thread_id": "diag-1"}
+{"ts": "2026-10-09T06:43:39.382754+00:00", "action": "cycle_started", "thread_id": "diag2-48b3fbe6", "instruction": "做一期 AI 提效内容并发布"}
+{"ts": "2026-10-09T06:43:39.472709+00:00", "action": "awaiting_approval", "thread_id": "diag2-48b3fbe6"}
+{"ts": "2026-10-09T06:56:39.875913+00:00", "action": "publish_failed", "account": "xhs-main", "error": "账号 xhs-main 无已存凭证（E:\\Projects\\zimeiti-ai\\_diag_creds\\xhs-main.sealed）。请先完成平台登录并加密保存。"}

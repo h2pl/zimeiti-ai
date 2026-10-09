@@ -18,6 +18,8 @@ from langchain_core.tools import tool
 
 from zimeiti_api import audit
 from zimeiti_api.compliance import ComplianceGate
+from zimeiti_api.creation import create_drafts as _create_drafts
+from zimeiti_api.credentials import decrypt_secret
 from zimeiti_api.publisher import PublishExecutor
 from zimeiti_api.topics import discover_topics as _discover_topics
 from zimeiti_api.topics import select_topic as _select_topic
@@ -25,6 +27,11 @@ from zimeiti_api.topics import select_topic as _select_topic
 logger = logging.getLogger(__name__)
 
 publish_calls: list[str] = []  # 兼容观测口（真实发布时记录）
+
+
+def default_platform_call(draft: dict) -> str:
+    """平台调用钩子：默认占位（MVP），真实平台脚本 8.2 替换；测试可 monkeypatch 观测。"""
+    return "submitted"
 
 
 def _load_state(cycle_dir: Path) -> dict:
@@ -35,9 +42,12 @@ def _load_state(cycle_dir: Path) -> dict:
 
 
 def _save_state(cycle_dir: Path, state: dict) -> None:
+    """原子写：tmp + replace，避免跨进程读到半截 JSON。"""
     f = Path(cycle_dir) / "state.json"
     f.parent.mkdir(parents=True, exist_ok=True)
-    f.write_text(json.dumps(state, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    tmp = f.with_suffix(".tmp")
+    tmp.write_text(json.dumps(state, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    os.replace(tmp, f)
 
 
 def build_default_tools(
@@ -54,6 +64,15 @@ def build_default_tools(
     """
     account = profile["account"]
     gate = ComplianceGate()
+
+    def _account_credentials() -> str:
+        """读取本账号密文凭证（宪法 II：密文落盘；解密由执行器单次完成）。"""
+        cred_dir = Path(os.environ.get("ZIMEITI_CREDENTIALS_DIR", "outputs/_credentials"))
+        f = cred_dir / f"{account}.sealed"
+        if not f.exists():
+            raise ValueError(f"账号 {account} 无已存凭证（{f}）。请先完成平台登录并加密保存。")
+        return f.read_text(encoding="utf-8").strip()
+
     cdir = Path(cycle_dir)
     out_root = Path(output_root or os.environ.get("ZIMEITI_OUTPUT_DIR", "outputs"))
 
@@ -91,7 +110,7 @@ def build_default_tools(
         if not selected:
             return "错误：尚未挑选选题，创作被闸门阻断"
         try:
-            drafts = create_drafts(model, _select_topic(selected), profile)
+            drafts = _create_drafts(model, _select_topic(selected), profile)
         except Exception as exc:
             audit.record("creation_failed", account=account, error=str(exc))
             return f"创作失败：{exc}"
@@ -118,7 +137,8 @@ def build_default_tools(
             ),
             encoding="utf-8",
         )
-        state["drafts"] = {"path": str(out), "compliance": compliance}
+        state["drafts"] = {"path": str(out)}
+        state["compliance"] = compliance
         _save_state(cdir, state)
         audit.record(
             "drafts_created", account=account, path=str(out), compliance=compliance["passed"]
@@ -138,7 +158,12 @@ def build_default_tools(
             "drafts"
         ]
         try:
-            result = executor.publish(account, drafts["xhs"])
+            result = executor.publish(
+                account,
+                drafts["xhs"],
+                platform_call=default_platform_call,
+                credentials_sealed=_account_credentials(),
+            )
         except Exception as exc:
             audit.record("publish_failed", account=account, error=str(exc))
             return f"发布被护栏拒绝：{exc}"

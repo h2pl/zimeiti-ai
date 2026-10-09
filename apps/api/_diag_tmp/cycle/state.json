@@ -1,0 +1,22 @@
+{
+  "cards": [
+    {
+      "title": "AI 提效指南",
+      "reason": "用户指定方向，优先级最高",
+      "direction": "围绕「AI 提效指南」展开，贴合「职场干货」定位"
+    },
+    {
+      "title": "备选选题 2（基于定位延展）",
+      "reason": "信息源不足时的兜底选题",
+      "direction": "围绕「职场干货」的核心痛点自拟角度"
+    },
+    {
+      "title": "备选选题 3（基于定位延展）",
+      "reason": "信息源不足时的兜底选题",
+      "direction": "围绕「职场干货」的核心痛点自拟角度"
+    }
+  ],
+  "selected": null,
+  "drafts": null,
+  "compliance": null
+}
