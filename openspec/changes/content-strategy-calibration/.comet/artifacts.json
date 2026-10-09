@@ -1,0 +1,10 @@
+{
+  "openspec_proposal": "openspec/changes/content-strategy-calibration/proposal.md",
+  "openspec_design": "openspec/changes/content-strategy-calibration/design.md",
+  "openspec_tasks": "openspec/changes/content-strategy-calibration/tasks.md",
+  "openspec_delta_spec": "openspec/changes/content-strategy-calibration/specs/content-calibration/spec.md",
+  "design_document": "openspec/changes/content-strategy-calibration/design.md",
+  "build_plan": "docs/superpowers/plans/2026-10-09-content-strategy-calibration.md",
+  "handoff_context": "openspec/changes/content-strategy-calibration/.comet/handoff/design-context.json",
+  "handoff_markdown": "openspec/changes/content-strategy-calibration/.comet/handoff/design-context.md"
+}
