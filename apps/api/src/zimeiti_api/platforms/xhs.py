@@ -38,7 +38,8 @@ SELECTORS: dict[str, str] = {
     "publish_button_alt": ".publishBtn",
     "visibility_entry": "text=公开可见",
     "visibility_private": "text=仅自己可见",
-    "note_list_url": "https://creator.xiaohongshu.com/new/note-manager",  # 旧 /publish/note 已 404（A3 实测）
+    # 旧 /publish/note 已 404（A3 实测）
+    "note_list_url": "https://creator.xiaohongshu.com/new/note-manager",
     "draft_tab": "text=草稿",
 }
 
@@ -103,11 +104,16 @@ class XhsPublisher:
         cover_path: str | None = None,
         debug_dir: str | None = None,
     ) -> str:
-        """私密发布（仅自己可见）——宪法 I 的 xhs 落地形态，返回 submitted_private。
+        """私密发布（仅自己可见），返回 submitted_private（真实结果以 readback/页面为准）。
 
-        A3 实测：创作者中心 web 端图文模式没有「存草稿」按钮（App 草稿箱不开放
-        web API/DOM），「仅自己可见」发布是「先暂存、人工确认后再公开」的最接近
-        形态；公开化由人工在 App/后台操作（MUST NOT 由 agent 私自公开）。
+        A3 实测事实：
+        - web 端图文模式无「存草稿」按钮；且 web 草稿箱是浏览器 localStorage
+          （「草稿存储于当前使用的浏览器本地」），非服务端，App 不可见——对产品
+          无价值，故不走草稿路线；
+        - 「仅自己可见」发布是「先暂存、人工确认后再公开」的最接近形态；
+        - 点击发布后可能弹 redcaptcha 风控验证码，无人处理则发布中止（假阳性
+          submitted 的根因）——需有头浏览器由人工完成验证码，或积累会话信任后
+          静默通过。
 
         page 只在此处开一次并传给 _fill_note——若各自开 Playwright 实例，
         第二个实例会在第一个的 greenlet 循环内启动而报 asyncio 冲突（A3 实测）。
