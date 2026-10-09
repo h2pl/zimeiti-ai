@@ -66,7 +66,10 @@ def build_default_tools(
 
     def _account_credentials() -> str:
         """读取本账号密文凭证（宪法 II：密文落盘；解密由执行器单次完成）。"""
-        cred_dir = Path(os.environ.get("ZIMEITI_CREDENTIALS_DIR", "outputs/_credentials"))
+        cred_dir = Path(
+            os.environ.get("ZIMEITI_CREDENTIALS_DIR")
+            or __import__("zimeiti_api.config", fromlist=["CREDENTIALS_DIR"]).CREDENTIALS_DIR
+        )
         f = cred_dir / f"{account}.sealed"
         if not f.exists():
             raise ValueError(f"账号 {account} 无已存凭证（{f}）。请先完成平台登录并加密保存。")

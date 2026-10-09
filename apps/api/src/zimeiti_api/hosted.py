@@ -12,8 +12,9 @@ from langchain_core.messages import HumanMessage
 from langgraph.types import Command
 
 from zimeiti_api import audit
+from zimeiti_api.config import PENDING_PATH as _CONFIG_PENDING
 
-PENDING_PATH = Path("outputs/_state/pending_approvals.json")
+PENDING_PATH = Path(_CONFIG_PENDING)
 
 
 def list_pending_approvals() -> list[dict]:

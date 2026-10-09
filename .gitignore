@@ -30,3 +30,13 @@ apps/api/.env
 outputs/
 .wechat_token_cache.json
 *.wechat_token_cache.json
+
+# 运行时数据（apps/api/data/）与缓存
+apps/api/data/
+apps/api/.coverage
+.coverage
+apps/api/.python-version
+_diag*
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/

@@ -29,9 +29,13 @@ class XhsPublisher:
 
     def __init__(
         self,
-        storage_state: str = "outputs/_login/xhs_state.json",
+        storage_state: str | None = None,
         selectors: dict[str, str] | None = None,
     ):
+        if storage_state is None:
+            from zimeiti_api.config import LOGIN_STATE_PATH
+
+            storage_state = str(LOGIN_STATE_PATH)
         self.storage_state = storage_state
         self.selectors = selectors or SELECTORS
 

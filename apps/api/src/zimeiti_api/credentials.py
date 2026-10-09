@@ -49,7 +49,9 @@ def load_for_account(account: str, credentials_dir: str | None = None) -> str:
     from pathlib import Path
 
     cred_dir = Path(
-        credentials_dir or os.environ.get("ZIMEITI_CREDENTIALS_DIR", "outputs/_credentials")
+        credentials_dir
+        or os.environ.get("ZIMEITI_CREDENTIALS_DIR")
+        or __import__("zimeiti_api.config", fromlist=["CREDENTIALS_DIR"]).CREDENTIALS_DIR
     )
     f = cred_dir / f"{account}.sealed"
     if not f.exists():

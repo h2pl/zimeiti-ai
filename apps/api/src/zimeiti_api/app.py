@@ -2,6 +2,8 @@
 
 import re
 
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
 from langgraph.types import Command
 
@@ -43,7 +45,11 @@ def create_app() -> FastAPI:
         if not _THREAD_ID_RE.match(thread_id):
             raise HTTPException(status_code=400, detail="非法 thread_id（允许字母数字._-）")
         profile = load_profile("xhs-main")
-        cycle_dir = f"outputs/{profile['account']}/{thread_id}"
+        cycle_dir = str(
+            Path(__import__("zimeiti_api.config", fromlist=["OUTPUTS_DIR"]).OUTPUTS_DIR)
+            / profile["account"]
+            / thread_id
+        )
         with PostgresSaver.from_conn_string(DATABASE_URL) as saver:
             saver.setup()
             agent = build_minimal_agent(get_model(), saver, profile, EXECUTOR, cycle_dir)
@@ -73,7 +79,11 @@ def create_app() -> FastAPI:
         if not _THREAD_ID_RE.match(thread_id):
             raise HTTPException(status_code=400, detail="非法 thread_id（允许字母数字._-）")
         profile = load_profile("xhs-main")
-        cycle_dir = f"outputs/{profile['account']}/{thread_id}"
+        cycle_dir = str(
+            Path(__import__("zimeiti_api.config", fromlist=["OUTPUTS_DIR"]).OUTPUTS_DIR)
+            / profile["account"]
+            / thread_id
+        )
         with PostgresSaver.from_conn_string(DATABASE_URL) as saver:
             saver.setup()
             agent = build_minimal_agent(get_model(), saver, profile, EXECUTOR, cycle_dir)
