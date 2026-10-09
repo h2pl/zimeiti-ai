@@ -1,6 +1,6 @@
 workflow: full
 language: zh-CN
-phase: build
+phase: verify
 context_compression: off
 build_mode: autonomous
 build_pause: null
@@ -15,7 +15,7 @@ design_doc: openspec/changes/content-strategy-calibration/design.md
 plan: docs/superpowers/plans/2026-10-09-content-strategy-calibration.md
 verify_result: pending
 verify_failures: 0
-verification_report: docs/superpowers/reports/2026-10-10-content-strategy-calibration-verify.md
+verification_report: null
 branch_status: pending
 created_at: 2026-10-09
 verified_at: null
@@ -28,4 +28,4 @@ handoff_hash: 9c733cf418e5804162080d86ba86dfbd8a0dc0cf503babd1e4e454761f810a6a
 classic_profile: full
 classic_migration: 1
 run_id: bb4faa1c-50aa-480b-bef6-732e62d6446c
-check_epoch: 2
+check_epoch: 3
