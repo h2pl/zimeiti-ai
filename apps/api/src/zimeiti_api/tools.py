@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 publish_calls: list[str] = []  # 兼容观测口（真实发布时记录）
 
 
-def real_platform_router(account: str, draft: dict) -> dict:
+def real_platform_router(account: str, draft: Any, cover_image_path: str | None = None) -> dict:
     """真实平台路由器（Task 1.1，D1）：按账号前缀路由到真实平台调用并读回。
 
     返回 {"platform_result": ..., "readback": ...}；未知账号 fail-closed 拒绝。
@@ -40,7 +40,7 @@ def real_platform_router(account: str, draft: dict) -> dict:
         from zimeiti_api.platforms.gzh import GzhClient, publish_gzh_draft, readback_gzh_draft
 
         client = GzhClient(os.environ["WECHAT_MP_APPID"], os.environ["WECHAT_MP_APPSECRET"])
-        outcome = publish_gzh_draft(client, draft)
+        outcome = publish_gzh_draft(client, draft, cover_image_path=cover_image_path)
         outcome["readback"] = readback_gzh_draft(client, title)
         return outcome
     if account.startswith("xhs"):
@@ -184,9 +184,10 @@ def build_default_tools(
             "drafts"
         ]
         try:
+            platform_draft = drafts["gzh"] if account.startswith("gzh") else drafts["xhs"]
             result = executor.publish(
                 account,
-                drafts["xhs"],
+                platform_draft,
                 platform_call=router,
                 credentials_sealed=_account_credentials(),
             )

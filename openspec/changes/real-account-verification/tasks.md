@@ -11,7 +11,7 @@
 ## 2. 端到端与真账号验收
 
 - [ ] 2.1 全量测试回归（现有 32 + 新增）；验证：check-api.sh 全绿 <!-- comet-task:ed38fb2e-fcaf-4338-a54d-9ae8977a3577 -->
-- [ ] 2.2 真账号走查 A3：gzh 草稿箱上传 + 读回 verified（日限内）；验证：审计+平台截图 <!-- comet-task:bf4a10de-84ba-4abb-ad85-2c21c40a7e32 -->
+- [x] 2.2 真账号走查 A3：gzh 草稿箱上传 + 读回 verified（日限内）；验证：审计+平台截图 <!-- comet-task:bf4a10de-84ba-4abb-ad85-2c21c40a7e32 -->
 - [ ] 2.3 真账号走查 A3：xhs 扫码登录 + 发布 + 读回 verified；验证：同上 <!-- comet-task:563dfc99-f265-4318-ac4f-6aed8e7505d6 -->
 - [ ] 2.4 真账号走查 A4：人为制造读回失败场景 → unverified 留痕；验证：审计记录 <!-- comet-task:04bd800a-0db2-4b20-87cc-143570f31d6a -->
 - [ ] 2.5 走查 A6：频控边界验证（日限 2 篇后第三篇被拒）；验证：审计记录 <!-- comet-task:c1c1ee7a-2128-4e1c-b07b-cfcff64a8ad5 -->
