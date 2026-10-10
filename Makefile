@@ -1,7 +1,7 @@
 export PYTHONUTF8 := 1
 export PYTHONIOENCODING := utf-8
 
-.PHONY: up install dev api web test check clean ops-daily
+.PHONY: up install dev api web test check clean ops-daily hosted-daily schedule-install
 
 # start Postgres (background)
 up:
@@ -40,6 +40,12 @@ clean:
 ops-daily:
 	cd apps/api && uv run python -m zimeiti_api.ops_daily
 
-# 注册/更新 Windows 计划任务（每天 08:30，仅用户登录时运行——xhs 取数需真实浏览器窗口）
+# 每日内容任务：触发托管循环（选题→创作→中断等审批）
+hosted-daily:
+	cd apps/api && uv run python -m zimeiti_api.hosted_daily
+
+# 注册/更新 Windows 计划任务（x2：07:30 托管内容触发 / 08:30 运营取数；
+# 仅用户登录时运行——xhs 取数与浏览器操作需真实窗口）
 schedule-install:
+	cmd //c "schtasks /Create /F /TN \"zimeiti-ai-hosted-daily\" /SC DAILY /ST 07:30 /TR \"E:\\Projects\\zimeiti-ai\\scripts\\run_hosted_daily.bat\""
 	cmd //c "schtasks /Create /F /TN \"zimeiti-ai-ops-daily\" /SC DAILY /ST 08:30 /TR \"E:\\Projects\\zimeiti-ai\\scripts\\run_ops_daily.bat\""
