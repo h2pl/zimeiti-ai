@@ -36,9 +36,12 @@ class DraftSet:
 
 
 def build_creation_prompt(topic: SelectedTopic, profile: dict[str, Any]) -> str:
-    """组装创作 prompt：画像上下文 + 选题 + 输出格式约定。"""
+    """组装创作 prompt：画像上下文（+风格 DNA，P1⑩） + 选题 + 输出格式约定。"""
+    from zimeiti_api.dna import inject_dna
+
+    context = inject_dna(build_profile_context(profile), profile["account"])
     return (
-        f"{build_profile_context(profile)}\n\n"
+        f"{context}\n\n"
         f"选题：{topic.title}\n方向：{topic.direction}\n\n"
         "请基于以上信息创作两个平台的图文草稿，"
         "严格遵守画像中的风格、平台规则与偏好红线。\n"

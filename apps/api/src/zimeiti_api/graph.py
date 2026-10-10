@@ -47,7 +47,8 @@ def build_minimal_agent(
         model=model,
         tools=list(all_tools),
         system_prompt=SYSTEM_PROMPT,
-        # 选题与发布都是人工闸门（宪法 I；PRD A1/A3）
-        interrupt_on={"publish": True, "select_topic": True},
+        # 选题/发布是人工闸门（宪法 I；PRD A1/A3）；ask_human 支持执行中结构化提问
+        # （P1⑧，参考: Easel gateway_questions——工具不执行，人答以 respond 决策回填）
+        interrupt_on={"publish": True, "select_topic": True, "ask_human": True},
         checkpointer=checkpointer,
     )

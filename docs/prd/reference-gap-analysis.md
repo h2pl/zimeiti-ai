@@ -1,5 +1,11 @@
 # 参考项目对齐：需求缺口分析（2026-10-10）
 
+> **实施状态（2026-10-10 深夜更新）**：P0 七项全部落地（commit 2e271aa）；
+> P1 七项全部落地（问题卡片/单篇复盘/DNA 载体与注入与建议/看板日历/模板库/
+> 排版主题化/多账号 alias）。P1 遗留子项：对标账号风格提炼（style-profiler）
+> 需爬取对标账号笔记，涉风控与输入数据，暂缓。P2 全部「按触发条件再做」
+> （见文末），不做提前实现（调研原话：提前做是过度设计）。
+
 > 调研对象：xiaobei（托管运营/获客/风控对标）、Easel（工作流/发布编排对标）。
 > 方法：两轮代码级盘点（能力清单 + 实现位置证据），对照 zimeiti-ai 现状与 PRD
 > （时间>创作>获客、先自用后订阅、图文起步、xhs+gzh 首发、发布 HITL）合成优先级。
@@ -36,15 +42,15 @@ Fernet 凭证；运营数据三表（PG）+HTML 报告+策略校准；常驻网�
 | 13 | gzh 排版主题化（主题组件库+自定义主题） | Easel | `gzh-design/SKILL.md` |
 | 14 | 多账号 alias（accounts.json+记录带 account+评估按账号归一化） | xiaobei | `wx-mp-publisher/accounts.example.json`、`published-track record --account` |
 
-## P2（远期/按 PRD 扩展触发）
+## P2（远期/按 PRD 扩展触发——触发条件未到，暂不实现）
 
-- 多平台抽象层（expert-pack 架构 + pub 分表 + 取数双链路）——第三平台出现时再做（xiaobei `published-track/SKILL.md`）
-- 评论区获客/截流、潜客挖掘、私信客服——PRD 获客排最后，且互动自动化风控成本高（xiaobei `expert-bd/SKILL.md`、`bd_record.db` 去重）
-- 视觉资产设计系统 + AI 生图（xhs 知识卡组有价值，独立里程碑）（Easel `card-xiaohongshu/`、`ai_image.py`）
-- 多格式一稿多发适配（字数硬裁剪三模式可复用为确定性脚本）（Easel `text-condenser/`）
-- UTM 短链归因（Easel `skill-short-link/`）
-- 画像记忆回写（Easel `skill-profile-manager/`）
-- SKILL 原子能力三层加载规范（架构借鉴，降常驻 token）（Easel `docs/SKILL-SPEC.md`）
+- 多平台抽象层（expert-pack 架构 + pub 分表 + 取数双链路）——**触发：接入第三平台**（xiaobei `published-track/SKILL.md`）
+- 评论区获客/截流、潜客挖掘、私信客服——**触发：PRD 获客阶段启动**；浏览器互动自动化风控成本高，自用期先人工（xiaobei `expert-bd/SKILL.md`、`bd_record.db` 去重）
+- 视觉资产设计系统 + AI 生图（xhs 知识卡组有价值，独立里程碑）——**触发：图文数据证明配图是瓶颈**（Easel `card-xiaohongshu/`、`ai_image.py`）
+- 多格式一稿多发适配（字数硬裁剪三模式可复用为确定性脚本）——**触发：扩媒介（视频/知乎）**（Easel `text-condenser/`）
+- UTM 短链归因——**触发：公开链接出现（xhs 转公开发布后）**（Easel `skill-short-link/`）
+- 画像记忆回写——已被 P1⑩ dna suggest 覆盖（建议清单+人工回写）；全自动回写违反对齐纪律（Easel `skill-profile-manager/`）
+- SKILL 原子能力三层加载规范（架构借鉴，降常驻 token）——**触发：工具数膨胀致 prompt 预算紧张**（Easel `docs/SKILL-SPEC.md`）
 
 ## 明确不对标
 

@@ -39,3 +39,41 @@ th {
   text-align: left;
   font-size: 13px;
 }
+
+/* P1⑧⑪：问题卡片 / 选项组 / 看板 */
+.card.question {
+  border-color: #e6a23c;
+}
+.options {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.options input {
+  padding: 6px 10px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+}
+button.danger {
+  border-color: #f56c6c;
+  color: #f56c6c;
+}
+.board {
+  display: flex;
+  gap: 12px;
+}
+.board .column {
+  flex: 1;
+  background: #f7f8fa;
+  border-radius: 6px;
+  padding: 8px;
+}
+.board .column h3 {
+  margin: 4px 0 8px;
+  font-size: 14px;
+}
+.card.small {
+  padding: 8px;
+  margin-bottom: 8px;
+}

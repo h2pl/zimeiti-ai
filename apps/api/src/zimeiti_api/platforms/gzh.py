@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from zimeiti_api.config import CREDENTIALS_DIR, DATA_DIR  # noqa: F401 - config 加载 .env 并锚定目录
+from zimeiti_api.themes import apply_theme
 from zimeiti_api.vendor.wechat_mp import WeChatClient
 from zimeiti_api.vendor.wechatfmt.formatting import apply_wechat_styles
 from zimeiti_api.vendor.wechatfmt.generate_cover_combined import generate_cover_combined
@@ -125,7 +126,11 @@ def publish_gzh_draft(
         {
             "title": title[:64],
             # Markdown → 微信兼容 HTML（内联样式，复用 my-tools 排版管线）
-            "content": apply_wechat_styles(convert_md_to_html(body)),
+            # 主题层（P1⑬）：色板后处理，vendor 不改动
+            "content": apply_theme(
+                apply_wechat_styles(convert_md_to_html(body)),
+                os.environ.get("ZIMEITI_GZH_THEME", "default"),
+            ),
             "digest": summary,
             "author": "zimeiti-ai",
             **({"thumb_media_id": thumb_media_id} if thumb_media_id else {}),

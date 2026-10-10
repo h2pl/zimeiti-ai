@@ -289,4 +289,13 @@ def build_default_tools(
         )
         return f"发布结果：{result}"
 
-    return [discover_topics, select_topic, create_drafts, publish]
+    @tool
+    def ask_human(question: str, options: str = "") -> str:
+        """执行中向人提问（触发人工应答中断）。
+
+        此工具体永不执行：人工回答经 respond 决策以合成 ToolMessage 注入
+        （deepagents/langchain HumanInTheLoop 协议）。options 用「|」分隔候选答案。
+        """
+        raise RuntimeError("ask_human 不应被执行——应经 respond 决策由人回答")
+
+    return [discover_topics, select_topic, create_drafts, publish, ask_human]

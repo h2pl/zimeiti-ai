@@ -24,19 +24,54 @@ def list_pending_approvals() -> list[dict]:
     return json.loads(PENDING_PATH.read_text(encoding="utf-8"))
 
 
-def _add_pending(thread_id: str, instruction: str, account: str = "") -> None:
+def _add_pending(
+    thread_id: str,
+    instruction: str,
+    account: str = "",
+    kind: str = "approval",
+    question: dict | None = None,
+) -> None:
     PENDING_PATH.parent.mkdir(parents=True, exist_ok=True)
     pending = list_pending_approvals()
     # account 随中断落盘：恢复端点据此加载正确画像（修复硬编码 xhs-main 遗留项）
-    pending.append({"thread_id": thread_id, "instruction": instruction, "account": account})
+    entry: dict = {"thread_id": thread_id, "instruction": instruction, "account": account}
+    if kind != "approval":
+        entry["kind"] = kind
+        entry.update(question or {})
+    pending.append(entry)
     PENDING_PATH.write_text(json.dumps(pending, ensure_ascii=False), encoding="utf-8")
     # 审批待办通知（P0④；未配置 webhook 时静默）
     from zimeiti_api import notify
 
-    notify.send(
-        "approval_required",
-        f"有待审批项需要处理：{thread_id}（{account or '未知账号'}）——请打开审批页确认",
-    )
+    if kind == "question":
+        q_text = (question or {}).get("question", "")
+        notify.send(
+            "question_required",
+            f"agent 有问题需要人回答：{thread_id}（{account or '未知账号'}）——{q_text}",
+        )
+    else:
+        notify.send(
+            "approval_required",
+            f"有待审批项需要处理：{thread_id}（{account or '未知账号'}）——请打开审批页确认",
+        )
+
+
+def extract_interrupt_payload(result: dict) -> dict | None:
+    """从中断结果提取 ask_human 的 question/options（P1⑧）。非提问中断返回 None。"""
+    for it in result.get("__interrupt__") or []:
+        val = getattr(it, "value", it)
+        try:
+            if isinstance(val, dict):
+                for req in val.get("action_requests") or []:
+                    if req.get("name") == "ask_human":
+                        args = req.get("args") or {}
+                        options = [
+                            o.strip() for o in str(args.get("options", "")).split("|") if o.strip()
+                        ]
+                        return {"question": str(args.get("question", "")), "options": options}
+        except AttributeError:
+            continue
+    return None
 
 
 def _remove_pending(thread_id: str) -> None:
@@ -66,7 +101,11 @@ async def run_hosted_cycle(
         audit.record("cycle_failed", thread_id=thread_id, error=str(exc))
         raise
     if "__interrupt__" in result:
-        _add_pending(thread_id, instruction, account=account)
+        payload = extract_interrupt_payload(result)
+        if payload:
+            _add_pending(thread_id, instruction, account=account, kind="question", question=payload)
+        else:
+            _add_pending(thread_id, instruction, account=account)
         audit.record("awaiting_approval", thread_id=thread_id)
     else:
         audit.record("cycle_completed", thread_id=thread_id)

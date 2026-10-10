@@ -35,16 +35,25 @@ def create_app(lifespan=None) -> FastAPI:
 
         实测缺陷（2026-10-10 托管 E2E）：单闸门测试未覆盖「一次恢复命中下一个中断」，
         旧实现只删 pending 不补登，循环在发布闸门永久卡死（审批页看不到）。
+        ask_human 提问中断（P1⑧）同样重登记为 question 类型。
         """
-        if "__interrupt__" in result:
+        if "__interrupt__" not in result:
+            return
+        payload = hosted.extract_interrupt_payload(result)
+        if payload:
+            hosted._add_pending(
+                thread_id, instruction, account=account, kind="question", question=payload
+            )
+        else:
             hosted._add_pending(thread_id, instruction, account=account)
-            audit.record("awaiting_approval", thread_id=thread_id)
+        audit.record("awaiting_approval", thread_id=thread_id)
 
-    def _resume_thread(thread_id: str, decision: str, account: str) -> dict:
+    def _resume_thread(thread_id: str, decisions: list[dict], account: str) -> dict:
         """按 pending 记录的账号恢复执行图（修复评审遗留：profile 不再硬编码 xhs-main）。
 
         同步 saver：FastAPI sync 端点内零 async loop 问题；
         中断态由 async saver 写入，表结构相同，sync saver 可读。
+        decisions：deepagents/langchain HITL 决策（approve/reject/respond…）。
         """
         from langgraph.checkpoint.postgres import PostgresSaver
 
@@ -60,7 +69,7 @@ def create_app(lifespan=None) -> FastAPI:
             saver.setup()
             agent = build_minimal_agent(get_model(), saver, profile, EXECUTOR, cycle_dir)
             return agent.invoke(
-                Command(resume={"decisions": [{"type": decision}]}),
+                Command(resume={"decisions": decisions}),
                 config={"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}},
             )
 
@@ -70,10 +79,12 @@ def create_app(lifespan=None) -> FastAPI:
         pending = [p for p in hosted.list_pending_approvals() if p["thread_id"] == thread_id]
         if not pending:
             raise HTTPException(status_code=404, detail=f"无待审批项: {thread_id}")
+        if pending[0].get("kind") == "question":
+            raise HTTPException(status_code=400, detail="提问类型请用 /api/questions/{id}/answer")
         # account 随中断记录；修复前遗留的旧记录无此字段，回退 xhs-main 保持原行为
         account = pending[0].get("account") or "xhs-main"
         instruction = pending[0].get("instruction", "")
-        result = _resume_thread(thread_id, "approve", account)
+        result = _resume_thread(thread_id, [{"type": "approve"}], account)
         hosted._remove_pending(thread_id)
         audit.record("approval_received", thread_id=thread_id)
         _rearm_pending_if_interrupted(thread_id, result, account, instruction)
@@ -89,11 +100,52 @@ def create_app(lifespan=None) -> FastAPI:
             raise HTTPException(status_code=404, detail=f"无待审批项: {thread_id}")
         account = pending[0].get("account") or "xhs-main"  # 兼容修复前遗留的旧记录
         instruction = pending[0].get("instruction", "")
-        result = _resume_thread(thread_id, "reject", account)
+        result = _resume_thread(thread_id, [{"type": "reject"}], account)
         hosted._remove_pending(thread_id)
         audit.record("approval_rejected", thread_id=thread_id)
         _rearm_pending_if_interrupted(thread_id, result, account, instruction)
         return {"thread_id": thread_id, "last_message": result["messages"][-1].content}
+
+    @app.post("/api/questions/{thread_id}/answer")
+    def answer_question(thread_id: str, body: dict) -> dict:
+        """回答 agent 的结构化提问（P1⑧）：respond 决策把人的回答注入为工具结果。"""
+        pending = [p for p in hosted.list_pending_approvals() if p["thread_id"] == thread_id]
+        if not pending:
+            raise HTTPException(status_code=404, detail=f"无待处理项: {thread_id}")
+        if pending[0].get("kind") != "question":
+            raise HTTPException(status_code=400, detail="该待处理项不是提问类型")
+        message = str(body.get("message", "")).strip()
+        if not message:
+            raise HTTPException(status_code=400, detail="回答不能为空")
+        account = pending[0].get("account") or "xhs-main"
+        instruction = pending[0].get("instruction", "")
+        result = _resume_thread(thread_id, [{"type": "respond", "message": message}], account)
+        hosted._remove_pending(thread_id)
+        audit.record("question_answered", thread_id=thread_id, message=message[:200])
+        _rearm_pending_if_interrupted(thread_id, result, account, instruction)
+        return {"thread_id": thread_id, "last_message": result["messages"][-1].content}
+
+    @app.get("/api/kanban")
+    def kanban() -> dict:
+        """选题三态看板（P1⑪，Easel IdeasPage 对标）。"""
+        from zimeiti_api.kanban import collect_cards
+
+        return collect_cards(OUTPUTS_DIR)
+
+    @app.post("/api/kanban/move")
+    def kanban_move(body: dict) -> dict:
+        from zimeiti_api.kanban import set_status
+
+        set_status(str(body.get("title", "")), str(body.get("status", "")))
+        return {"ok": True}
+
+    @app.get("/api/calendar")
+    def calendar() -> list[dict]:
+        """内容日历（P1⑪，Easel CalendarPage 对标；发布事件只读）。"""
+        from zimeiti_api.kanban import calendar_events
+        from zimeiti_api.ops_metrics import MetricsDB
+
+        return calendar_events(MetricsDB())
 
     @app.get("/api/publish-log")
     def publish_log() -> list[dict]:
