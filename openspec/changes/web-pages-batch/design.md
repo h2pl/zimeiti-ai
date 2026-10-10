@@ -30,9 +30,10 @@ operations.workbench（账号列表）。缺口是：凭证/登录态存在性�
 - **D3 设置持久化**：`core/settings.py`——`data/state/settings.json`
   （{notify_webhook_url}），get/set 带容错；notify.py 改为每次发送时读设置
   （env 优先级高于设置文件，保持向后兼容）。
-- **D4 运维触发标记文件**：`data/state/ops-trigger.json`（{"hosted_daily": ts,
-  "ops_daily": ts}）；SkillPage POST 写标记，网关 `scheduler_loop` 每轮检查
-  标记并执行对应任务后清除。API 与网关可能不同进程——标记文件是唯一安全通道。
+- **D4 运维触发标记文件**：`data/state/ops-trigger.json`（键为网关任务名
+  hosted_content/ops_data/health_check）；SkillPage POST 写标记（读-合并-写），
+  网关 lifespan 启动 30s 间隔消费循环（原子 rename 接管防竞态，评审 W1）。
+  API 与网关可能不同进程——标记文件是唯一安全通道。
 - **D5 agent 工具清单**：`runtime/tools.py` 导出 `tool_catalog()`——从
   build_default_tools 的工具名+description 生成（不含闭包执行），只读展示。
 - **D6 前端 markdown**：BreakdownPage 渲染复盘文本引入 marked+dompurify

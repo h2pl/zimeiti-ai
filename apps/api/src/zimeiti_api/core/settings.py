@@ -29,10 +29,17 @@ def get_settings(path: Path | None = None) -> dict[str, Any]:
 
 
 def update_settings(updates: dict[str, Any], path: Path | None = None) -> dict[str, Any]:
-    """白名单键更新；未知键拒绝（fail-closed）。"""
+    """白名单键更新；未知键与非法值拒绝（fail-closed，评审 C2）。
+
+    notify_webhook_url：空串合法（=关闭通知）；非空必须 http(s):// 开头
+    （将被 requests.post 直接作为目标，拒绝任意字符串）。
+    """
     unknown = [k for k in updates if k not in ALLOWED_KEYS]
     if unknown:
         raise ValueError(f"未知设置项: {unknown}")
+    url = str(updates.get("notify_webhook_url", "")).strip()
+    if url and not (url.startswith("http://") or url.startswith("https://")):
+        raise ValueError("notify_webhook_url 必须以 http:// 或 https:// 开头")
     current = get_settings(path)
     current.update(updates)
     p = path or settings_path()

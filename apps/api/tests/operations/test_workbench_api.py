@@ -173,3 +173,46 @@ class TestToolsAndTrigger:
         monkeypatch.setattr("zimeiti_api.config.DATA_DIR", str(tmp_path))
         r = client.post("/api/ops/trigger", json={"job": "nonsense"})
         assert r.status_code == 400
+
+
+class TestReviewFixes:
+    """独立评审修复项回归（W4/S3/S6）。"""
+
+    def test_toggle_regex_branch_400(self, client):
+        """W4：路径段可路由但不过 regex 的账号名 → 400（regex 分支覆盖）。"""
+        r = client.post("/api/accounts/.../toggle", json={"enabled": False})
+        assert r.status_code == 400
+
+    def test_toggle_unknown_account_404(self, client):
+        """S1：不存在的账号返回 404，不产生状态垃圾键。"""
+        r = client.post("/api/accounts/ghost-main/toggle", json={"enabled": False})
+        assert r.status_code == 404
+
+    def test_postmortem_empty_platform(self, client, metrics_db):
+        """S3：无事件账号返回空 top 而非报错。"""
+        r = client.get("/api/postmortems/xhs-main")
+        assert r.status_code == 200
+        assert r.json()["top"] == []
+
+    def test_env_overrides_runtime_setting(self, tmp_path, monkeypatch):
+        """S6：env 存在时压过运行时设置（优先级回归）。"""
+        from zimeiti_api.core import notify, settings
+
+        f = tmp_path / "settings.json"
+        monkeypatch.setattr(settings, "settings_path", lambda: f)
+        settings.update_settings({"notify_webhook_url": "https://from-settings/hook"})
+        monkeypatch.setenv("ZIMEITI_NOTIFY_WEBHOOK", "https://from-env/hook")
+        sent = []
+        monkeypatch.setattr(notify.requests, "post", lambda url, **k: sent.append(url) or type("R", (), {"status_code": 200})())
+        notify.send("e", "t")
+        assert sent == ["https://from-env/hook"]
+
+    def test_invalid_url_rejected(self, tmp_path, monkeypatch):
+        """C2 回归：非法 URL（非 http(s)）被拒绝且不落盘。"""
+        from zimeiti_api.core import settings
+
+        f = tmp_path / "settings.json"
+        monkeypatch.setattr(settings, "settings_path", lambda: f)
+        with pytest.raises(ValueError, match="http"):
+            settings.update_settings({"notify_webhook_url": "file:///etc/passwd"})
+        assert settings.get_settings() == {}

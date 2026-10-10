@@ -235,8 +235,11 @@ def create_app(lifespan=None) -> FastAPI:
 
         if not _re.match(r"^[A-Za-z0-9_-]+$", account):
             raise HTTPException(status_code=400, detail="非法账号名")
+        from zimeiti_api.content.profiles import DEFAULT_BASE_DIR as _profiles_dir
         from zimeiti_api.governance import platform_state
 
+        if not (_profiles_dir / account / "profile.yaml").exists():
+            raise HTTPException(status_code=404, detail=f"账号不存在: {account}")
         enabled = bool(body.get("enabled"))
         platform_state.set_enabled(account, enabled, reason="手动切换（账号管理页）")
         audit.record("account_toggled", account=account, enabled=enabled)
@@ -287,7 +290,14 @@ def create_app(lifespan=None) -> FastAPI:
 
         p = Path(DATA_DIR) / "state" / "ops-trigger.json"
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(_json.dumps({job: True}, ensure_ascii=False), encoding="utf-8")
+        # W1：读-合并-写（避免连续触发两个不同任务时后者覆写前者）
+        existing: dict = {}
+        try:
+            existing = _json.loads(p.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            existing = {}
+        existing[job] = True
+        p.write_text(_json.dumps(existing, ensure_ascii=False), encoding="utf-8")
         audit.record("ops_triggered", job=job)
         return {"triggered": job}
 
@@ -297,7 +307,10 @@ def create_app(lifespan=None) -> FastAPI:
         from zimeiti_api.content.profiles import load_profile
         from zimeiti_api.runtime.tools import tool_catalog
 
-        profile = load_profile("xhs-main")
+        try:
+            profile = load_profile("xhs-main")
+        except Exception:  # noqa: BLE001 - 画像缺失时返回空清单（评审 S2）
+            return []
         cycle_dir = str(Path(OUTPUTS_DIR) / profile["account"] / "_catalog")
         # model 传 None：清单只读 name/description，闭包不调用（省 LLM 客户端创建）
         return tool_catalog(profile, None, EXECUTOR, cycle_dir)

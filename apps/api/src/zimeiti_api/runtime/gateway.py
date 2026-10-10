@@ -81,22 +81,43 @@ def _trigger_path() -> Path:
 
 
 async def _consume_manual_triggers() -> list[str]:
-    """消费 SkillPage 手动触发标记（API 与网关可能不同进程，标记文件是唯一通道）。"""
+    """消费手动触发标记（API 与网关可能不同进程，标记文件是唯一通道）。
+
+    原子消费：先 rename 到 .consuming 再处理（评审 W1——避免「执行期间新触发
+    被 unlink 吞掉」的竞态窗口）；消费期间的新写入留在原文件下一轮处理。
+    """
     p = _trigger_path()
     if not p.exists():
         return []
+    consumed = p.with_suffix(".json.consuming")
     try:
-        triggers = json.loads(p.read_text(encoding="utf-8"))
+        p.replace(consumed)  # 原子接管
+    except OSError:
+        return []  # 其他进程正在消费
+    try:
+        triggers = json.loads(consumed.read_text(encoding="utf-8"))
     except (ValueError, OSError):
-        p.unlink(missing_ok=True)
+        consumed.unlink(missing_ok=True)
         return []
     ran = []
     for name in list(triggers):
         if name in _JOBS:
             await _run_job(name)
             ran.append(name)
-    p.unlink(missing_ok=True)
+    consumed.unlink(missing_ok=True)
     return ran
+
+
+async def _trigger_consumer_loop():
+    """手动触发消费循环（随 lifespan 启动，30s 间隔）。"""
+    from zimeiti_api import audit
+
+    while True:
+        try:
+            await _consume_manual_triggers()
+        except Exception:  # noqa: BLE001
+            audit.record("gateway_trigger_consumer_error")
+        await asyncio.sleep(30)
 
 
 async def _run_job(name: str) -> dict[str, Any]:

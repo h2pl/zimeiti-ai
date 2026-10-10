@@ -36,8 +36,8 @@
 
 ### Requirement: 运维操作页
 
-运维操作页展示 agent 工具清单，并提供三个触发按钮：托管循环/数据取数/
-校准——以触发标记文件落地，由常驻网关在下一调度循环消费执行。
+运维操作页展示 agent 工具清单，并提供两个触发按钮：托管循环（hosted_content）/
+数据取数+校准（ops_data）——以触发标记文件落地（网关 30s 间隔原子消费），由常驻网关在下一调度循环消费执行。
 
 #### Scenario: 触发标记被网关消费
 - **When** POST /api/ops/trigger 提交 job=hosted_content 写入标记

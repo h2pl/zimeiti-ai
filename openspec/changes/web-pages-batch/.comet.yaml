@@ -12,9 +12,9 @@ verify_mode: null
 auto_transition: true
 base_ref: b1b9d0e4ffc92d49a5b407722de1f6f7d650465d
 design_doc: openspec/changes/web-pages-batch/design.md
-plan: null
-verify_result: pending
-verify_failures: 0
+plan: docs/superpowers/plans/2026-10-10-web-pages-batch.md
+verify_result: fail
+verify_failures: 1
 verification_report: null
 branch_status: pending
 created_at: 2026-10-10
@@ -28,4 +28,4 @@ handoff_hash: f1f13d33e396c1bd6aa7f69ecbfbfcabbc185fe770ed9f5a2ddfb79054c40cb0
 classic_profile: full
 classic_migration: 1
 run_id: a2d445a8-8319-41cf-a703-8df0ef3c30be
-check_epoch: 2
+check_epoch: 4
