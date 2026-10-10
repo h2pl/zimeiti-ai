@@ -110,7 +110,7 @@ async def _consume_manual_triggers() -> list[str]:
 
 async def _trigger_consumer_loop():
     """手动触发消费循环（随 lifespan 启动，30s 间隔）。"""
-    from zimeiti_api import audit
+    from zimeiti_api.core import audit
 
     while True:
         try:

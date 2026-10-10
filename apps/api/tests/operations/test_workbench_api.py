@@ -203,7 +203,11 @@ class TestReviewFixes:
         settings.update_settings({"notify_webhook_url": "https://from-settings/hook"})
         monkeypatch.setenv("ZIMEITI_NOTIFY_WEBHOOK", "https://from-env/hook")
         sent = []
-        monkeypatch.setattr(notify.requests, "post", lambda url, **k: sent.append(url) or type("R", (), {"status_code": 200})())
+        monkeypatch.setattr(
+            notify.requests,
+            "post",
+            lambda url, **k: sent.append(url) or type("R", (), {"status_code": 200})(),
+        )
         notify.send("e", "t")
         assert sent == ["https://from-env/hook"]
 
