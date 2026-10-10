@@ -2,13 +2,15 @@
 comet_change: arch-restructure
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-10-arch-restructure
+status: final
 ---
 
 # 设计：arch-restructure
 
 ## Context
 
-`zimeiti_api` 35 个平铺模块 + 27 个平铺测试文件，导入无层次约束（任何模块可
+`zimeiti_api` 34 个平铺模块（不含 platforms/__init__） + 27 个平铺测试文件，导入无层次约束（任何模块可
 import 任何模块）。入口矩阵：8 个 `python -m` 入口、`zimeiti_api.app:app`
 （uvicorn）、`zimeiti_api.gateway`，被 Makefile/2 个 bat/6 个 scripts/*.py 引用。
 参考组织：Easel `easel/commands` 职责分包、`skills/openclaw/skill-*` 能力单元；
@@ -45,6 +47,10 @@ operations, core}`；`governance → core/platforms`；`content/operations/platf
   而非平台适配）。
 - **D2 模块改名最小化**：仅去 `ops_` 前缀（metrics/daily/calibration/report_page）
   与 `credentials_alias → core/alias`；类名/函数名不动，控制 diff 半径。
+  **实施修正（独立评审 W1）**：分层规则描述的是目标方向；现状存在函数内惰性的
+  逆向依赖（governance/queue → runtime.tools；operations/metrics → governance/
+  platforms——平铺时代的真实依赖被如实搬运，import 期无环）。待后续变更治理，
+  本变更不改行为。
 - **D3 入口全量更新不留垫片**：8 个 `python -m` 入口路径更新（seal→core.seal、
   gateway→runtime.gateway、ops_daily→operations.daily、hosted_daily→
   runtime.hosted_daily、xhs_readback→platforms.xhs_readback、templates/dna/

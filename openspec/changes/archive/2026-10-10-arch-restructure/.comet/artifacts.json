@@ -1,0 +1,8 @@
+{
+  "openspec_proposal": "openspec/changes/arch-restructure/proposal.md",
+  "openspec_design": "openspec/changes/arch-restructure/design.md",
+  "openspec_tasks": "openspec/changes/arch-restructure/tasks.md",
+  "handoff_context": "openspec/changes/archive/2026-10-10-arch-restructure/.comet/handoff/design-context.json",
+  "handoff_markdown": "openspec/changes/archive/2026-10-10-arch-restructure/.comet/handoff/design-context.md",
+  "archive_directory": "openspec/changes/archive/2026-10-10-arch-restructure"
+}

@@ -2,6 +2,7 @@
 change: arch-restructure
 design-doc: openspec/changes/arch-restructure/design.md
 base-ref: 12a98b23a5720a31abb2de8dd58a23e5b85521a4
+archived-with: 2026-10-10-arch-restructure
 ---
 
 <!-- comet-task-authority: openspec/changes/arch-restructure/tasks.md -->

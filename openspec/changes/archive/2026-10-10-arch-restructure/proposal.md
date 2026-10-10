@@ -11,9 +11,9 @@
 
 ## What Changes
 
-- `src/zimeiti_api/` 35 个平铺模块按领域移动为 6 个子包（**纯移动，零行为变更**）：
+- `src/zimeiti_api/` 34 个平铺模块（不含 platforms/__init__）按领域移动为 6 个子包（**纯移动，零行为变更**）：
   - `core/`：audit、credentials、alias（原 credentials_alias）、seal、notify、models
-  - `governance/`：compliance、risk、platform_state、preflight、publisher（执行器=护栏）
+  - `governance/`：compliance、risk、platform_state、preflight、publisher（执行器=护栏）、queue（原 publish_queue，发布排期）
   - `platforms/`：gzh、xhs、xhs_readback（移入）、themes（移入）
   - `content/`：topics、creation、dna、templates、profiles
   - `operations/`：metrics（原 ops_metrics）、daily（原 ops_daily）、calibration、report_page、postmortem、kanban
