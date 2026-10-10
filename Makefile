@@ -49,3 +49,7 @@ hosted-daily:
 schedule-install:
 	cmd //c "schtasks /Create /F /TN \"zimeiti-ai-hosted-daily\" /SC DAILY /ST 07:30 /TR \"E:\\Projects\\zimeiti-ai\\scripts\\run_hosted_daily.bat\""
 	cmd //c "schtasks /Create /F /TN \"zimeiti-ai-ops-daily\" /SC DAILY /ST 08:30 /TR \"E:\\Projects\\zimeiti-ai\\scripts\\run_ops_daily.bat\""
+
+# 常驻网关（托管主形态）：审批 API + 进程内调度器（07:30 内容/08:30 取数），一条命令无人值守
+gateway:
+	cd apps/api && .venv/Scripts/python.exe -m zimeiti_api.gateway

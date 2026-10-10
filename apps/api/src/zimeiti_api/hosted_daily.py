@@ -76,8 +76,8 @@ async def trigger_for_account(account: str) -> dict[str, Any]:
     return {"account": account, "interrupted": interrupted}
 
 
-def run_daily(accounts: list[str] | None = None) -> list[dict[str, Any]]:
-    """为全部账号触发（已有待审批的账号跳过），运行记录落 JSONL。"""
+async def run_daily_async(accounts: list[str] | None = None) -> list[dict[str, Any]]:
+    """异步版（常驻网关进程内直接 await，参考: openclaw gateway 内嵌 agent turn）。"""
     accounts = accounts or list(DEFAULT_ACCOUNTS)
     busy = _pending_accounts()
     runs = []
@@ -86,9 +86,14 @@ def run_daily(accounts: list[str] | None = None) -> list[dict[str, Any]]:
             runs.append({"account": account, "skipped": "已有待审批项"})
             continue
         try:
-            runs.append(asyncio.run(trigger_for_account(account)))
+            runs.append(await trigger_for_account(account))
         except Exception as exc:  # noqa: BLE001 - 单账号失败不中断其他账号
             runs.append({"account": account, "error": str(exc)[:300]})
+    _append_log(runs)
+    return runs
+
+
+def _append_log(runs: list[dict[str, Any]]) -> None:
     log = _log_path()
     log.parent.mkdir(parents=True, exist_ok=True)
     with log.open("a", encoding="utf-8") as f:
@@ -99,7 +104,11 @@ def run_daily(accounts: list[str] | None = None) -> list[dict[str, Any]]:
             )
             + "\n"
         )
-    return runs
+
+
+def run_daily(accounts: list[str] | None = None) -> list[dict[str, Any]]:
+    """同步版（CLI/计划任务入口：asyncio.run 包装）。"""
+    return asyncio.run(run_daily_async(accounts))
 
 
 def main(argv: list[str] | None = None) -> int:

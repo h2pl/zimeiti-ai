@@ -16,8 +16,9 @@ EXECUTOR = PublishExecutor(daily_limit=2, allowed_accounts={"xhs-main", "gzh-mai
 _THREAD_ID_RE = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 
 
-def create_app() -> FastAPI:
-    app = FastAPI(title="Zimeiti AI API")
+def create_app(lifespan=None) -> FastAPI:
+    """lifespan：网关模式注入调度器后台任务（app.py 纯 API 模式不启动调度）。"""
+    app = FastAPI(title="Zimeiti AI API", lifespan=lifespan)
 
     @app.get("/health")
     def health() -> dict:
