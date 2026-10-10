@@ -232,3 +232,44 @@ export function triggerOps(job: 'hosted_content' | 'ops_data'): Promise<{ trigge
     body: JSON.stringify({ job }),
   });
 }
+
+export interface ChatSession {
+  thread_id: string;
+  account: string;
+  title: string;
+  created_at: string;
+}
+
+export function createChatSession(account: string, title: string): Promise<ChatSession> {
+  return request('/api/chat/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ account, title }),
+  });
+}
+
+export function fetchChatSessions(): Promise<ChatSession[]> {
+  return request('/api/chat/sessions');
+}
+
+export function fetchChatMessages(threadId: string): Promise<{ messages: { role: string; content: string }[] }> {
+  return request(`/api/chat/sessions/${threadId}/messages`);
+}
+
+export function enqueueDraft(
+  account: string,
+  slug: string,
+  title: string,
+): Promise<{ entry_id: string }> {
+  return request('/api/publish-queue/enqueue', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ account, slug, title }),
+  });
+}
+
+export function fetchPublishQueue(): Promise<
+  { id: string; account: string; drafts_path: string; title: string; run_at: string; status: string }[]
+> {
+  return request('/api/publish-queue');
+}

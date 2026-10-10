@@ -68,6 +68,11 @@ def schedule(
     return entry_id
 
 
+def list_entries(path: Path | None = None) -> list[dict[str, Any]]:
+    """全部队列条目（发布中心列表，按创建时间倒序）。"""
+    return sorted(_load(path), key=lambda e: e.get("created_at", ""), reverse=True)
+
+
 def due(now: datetime | None = None, path: Path | None = None) -> list[dict[str, Any]]:
     """到期待发布条目（pending 且 run_at ≤ now，按时间升序）。"""
     now = now or datetime.now()

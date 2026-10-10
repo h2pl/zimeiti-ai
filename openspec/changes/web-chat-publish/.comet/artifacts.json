@@ -1,0 +1,8 @@
+{
+  "openspec_proposal": "openspec/changes/web-chat-publish/proposal.md",
+  "openspec_design": "openspec/changes/web-chat-publish/design.md",
+  "openspec_tasks": "openspec/changes/web-chat-publish/tasks.md",
+  "openspec_delta_spec": "openspec/changes/web-chat-publish/specs/chat-workbench/spec.md",
+  "handoff_context": "openspec/changes/web-chat-publish/.comet/handoff/design-context.json",
+  "handoff_markdown": "openspec/changes/web-chat-publish/.comet/handoff/design-context.md"
+}

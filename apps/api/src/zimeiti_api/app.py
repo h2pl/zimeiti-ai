@@ -1,6 +1,8 @@
 """FastAPI 应用（Task 1.4 + 7.2：审批 API）。"""
 
+import json
 import re
+from datetime import datetime
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
@@ -314,6 +316,143 @@ def create_app(lifespan=None) -> FastAPI:
         cycle_dir = str(Path(OUTPUTS_DIR) / profile["account"] / "_catalog")
         # model 传 None：清单只读 name/description，闭包不调用（省 LLM 客户端创建）
         return tool_catalog(profile, None, EXECUTOR, cycle_dir)
+
+    @app.post("/api/chat/sessions")
+    def chat_sessions_create(body: dict) -> dict:
+        """创建对话会话（thread_id 即 checkpointer 线程，D1）。"""
+        from zimeiti_api.runtime.chat import create_session
+
+        account = str(body.get("account", "xhs-main"))
+        title = str(body.get("title", ""))
+        return create_session(account, title)
+
+    @app.get("/api/chat/sessions")
+    def chat_sessions_list() -> list[dict]:
+        from zimeiti_api.runtime.chat import list_sessions
+
+        return list_sessions()
+
+    def _sse(event: str, data: dict) -> str:
+        return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+    @app.post("/api/chat/sessions/{thread_id}/stream")
+    async def chat_stream(thread_id: str, body: dict):
+        """流式对话（D2）：token 增量 + interrupt 帧 + done。"""
+        from zimeiti_api.runtime.chat import get_session
+
+        session = get_session(thread_id)
+        if session is None:
+            raise HTTPException(status_code=404, detail=f"会话不存在: {thread_id}")
+        message = str(body.get("message", "")).strip()
+        if not message:
+            raise HTTPException(status_code=400, detail="消息不能为空")
+        account = session["account"]
+        profile = load_profile(account)
+
+        from zimeiti_api.runtime.checkpoints import get_checkpointer
+        from zimeiti_api.runtime.graph import build_minimal_agent
+
+        async def gen():
+            from langchain_core.messages import AIMessageChunk, HumanMessage
+
+            yield _sse("start", {"thread_id": thread_id})
+            try:
+                async with get_checkpointer() as saver:
+                    agent = build_minimal_agent(
+                        get_model(),
+                        saver,
+                        profile,
+                        EXECUTOR,
+                        cycle_dir=str(Path(OUTPUTS_DIR) / account / thread_id),
+                    )
+                    config = {"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}}
+                    async for mode, payload in agent.astream(
+                        {"messages": [HumanMessage(message)]},
+                        config,
+                        stream_mode=["messages", "updates"],
+                    ):
+                        if mode == "messages":
+                            chunk, _meta = payload
+                            if isinstance(chunk, AIMessageChunk) and chunk.content:
+                                yield _sse("token", {"text": str(chunk.content)})
+                        elif isinstance(payload, dict) and "__interrupt__" in payload:
+                            payloads = hosted.extract_interrupt_payload(
+                                {"__interrupt__": payload["__interrupt__"]}
+                            )
+                            if payloads:
+                                hosted._add_pending(
+                                    thread_id,
+                                    message,
+                                    account=account,
+                                    kind="question",
+                                    question=payloads,
+                                )
+                            else:
+                                hosted._add_pending(thread_id, message, account=account)
+                            audit.record("awaiting_approval", thread_id=thread_id)
+                            yield _sse("interrupt", {"pending": True})
+                yield _sse("done", {})
+            except Exception as exc:  # noqa: BLE001 - 流内错误以 error 帧下发
+                yield _sse("error", {"message": str(exc)[:300]})
+                yield _sse("done", {})
+
+        from fastapi.responses import StreamingResponse
+
+        return StreamingResponse(gen(), media_type="text/event-stream")
+
+    @app.get("/api/chat/sessions/{thread_id}/messages")
+    async def chat_messages(thread_id: str) -> dict:
+        """从 checkpointer 重建消息流（D3）。"""
+        from langchain_core.messages import AIMessage, HumanMessage
+
+        from zimeiti_api.runtime.chat import get_session
+        from zimeiti_api.runtime.checkpoints import get_checkpointer
+
+        session = get_session(thread_id)
+        if session is None:
+            raise HTTPException(status_code=404, detail=f"会话不存在: {thread_id}")
+        account = session["account"]
+        profile = load_profile(account)
+        config = {"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}}
+        async with get_checkpointer() as saver:
+            tup = await saver.aget_tuple(config)
+        messages: list[dict] = []
+        if tup is not None:
+            for m in (tup.checkpoint.get("channel_values", {}) or {}).get("messages", []):
+                if isinstance(m, (HumanMessage, AIMessage)) and m.content:
+                    messages.append({"role": m.type, "content": str(m.content)})
+        return {"messages": messages}
+
+    @app.get("/api/publish-queue")
+    def publish_queue_list() -> list[dict]:
+        from zimeiti_api.governance.queue import list_entries
+
+        return list_entries()
+
+    @app.post("/api/publish-queue/enqueue")
+    def publish_queue_enqueue(body: dict) -> dict:
+        """内容库草稿入队（幂等：同 drafts_path 的 pending 拒绝重复）。"""
+        from zimeiti_api.governance import queue
+        from zimeiti_api.operations.workbench import valid_account
+
+        account = str(body.get("account", ""))
+        slug = str(body.get("slug", ""))
+        if not (valid_account(account) and valid_account(slug)):
+            raise HTTPException(status_code=400, detail="非法 account/slug")
+        drafts_path = str(Path(OUTPUTS_DIR) / account / slug / "drafts.json")
+        if not Path(drafts_path).exists():
+            raise HTTPException(status_code=404, detail="草稿不存在")
+        for e in queue.list_entries():
+            if e.get("drafts_path") == drafts_path and e.get("status") == "pending":
+                raise HTTPException(status_code=409, detail="该草稿已在待发布队列")
+        run_at = (
+            str(body.get("run_at"))
+            if body.get("run_at")
+            else datetime.now().isoformat(timespec="seconds")
+        )
+        title = str(body.get("title", ""))
+        entry_id = queue.schedule(account, drafts_path, run_at, title=title)
+        return {"entry_id": entry_id}
 
     @app.get("/api/publish-log")
     def publish_log() -> list[dict]:
