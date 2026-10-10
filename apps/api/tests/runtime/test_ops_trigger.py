@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from zimeiti_api import gateway
+from zimeiti_api.runtime import gateway
 
 
 @pytest.mark.asyncio
@@ -19,15 +19,15 @@ async def test_consume_manual_triggers(tmp_path, monkeypatch):
 
     monkeypatch.setattr(gateway, "_run_job", fake_run_job)
     (tmp_path / "ops-trigger.json").write_text(
-        json.dumps({"hosted_daily": True}), encoding="utf-8"
+        json.dumps({"hosted_content": True}), encoding="utf-8"
     )
     ran = await gateway._consume_manual_triggers()
-    assert ran == ["hosted_daily"]
+    assert ran == ["hosted_content"]
     assert not (tmp_path / "ops-trigger.json").exists()  # 消费后清除
 
     # 空标记：不执行
     assert await gateway._consume_manual_triggers() == []
-    assert executed == ["hosted_daily"]
+    assert executed == ["hosted_content"]
 
 
 @pytest.mark.asyncio

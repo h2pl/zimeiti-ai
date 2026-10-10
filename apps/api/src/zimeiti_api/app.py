@@ -281,7 +281,7 @@ def create_app(lifespan=None) -> FastAPI:
         import json as _json
 
         job = str(body.get("job", ""))
-        if job not in ("hosted_daily", "ops_daily"):
+        if job not in ("hosted_content", "ops_data", "health_check"):
             raise HTTPException(status_code=400, detail="非法任务名")
         from zimeiti_api.config import DATA_DIR
 
