@@ -181,7 +181,11 @@ class TestSettings:
         monkeypatch.delenv("ZIMEITI_NOTIFY_WEBHOOK", raising=False)
         settings.update_settings({"notify_webhook_url": "https://feishu.example/hook"})
         sent = []
-        monkeypatch.setattr(notify.requests, "post", lambda url, **k: sent.append(url) or type("R", (), {"status_code": 200})())
+        monkeypatch.setattr(
+            notify.requests,
+            "post",
+            lambda url, **k: sent.append(url) or type("R", (), {"status_code": 200})(),
+        )
         notify.send("test_event", "hello")
         assert sent == ["https://feishu.example/hook"]
 

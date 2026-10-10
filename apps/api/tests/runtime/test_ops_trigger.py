@@ -36,10 +36,12 @@ async def test_consume_corrupt_marker_discards(tmp_path, monkeypatch):
     (tmp_path / "ops-trigger.json").write_text("{broken", encoding="utf-8")
     executed = []
     monkeypatch.setattr(gateway, "_run_job", lambda name: executed.append(name) or {})
+
     # 用 async 包装
     async def fake_run(name):
         executed.append(name)
         return {"job": name}
+
     monkeypatch.setattr(gateway, "_run_job", fake_run)
     assert await gateway._consume_manual_triggers() == []
     assert executed == []

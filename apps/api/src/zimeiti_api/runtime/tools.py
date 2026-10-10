@@ -302,7 +302,9 @@ def build_default_tools(
     return [discover_topics, select_topic, create_drafts, publish, ask_human]
 
 
-def tool_catalog(profile: dict[str, Any], model: Any, executor: PublishExecutor, cycle_dir: Path | str) -> list[dict[str, str]]:
+def tool_catalog(
+    profile: dict[str, Any], model: Any, executor: PublishExecutor, cycle_dir: Path | str
+) -> list[dict[str, str]]:
     """agent 工具清单（web-pages-batch T5，只读展示：名称+描述，不含闭包）。"""
     tools = build_default_tools(profile, model, executor, cycle_dir)
     return [{"name": t.name, "description": t.description} for t in tools]

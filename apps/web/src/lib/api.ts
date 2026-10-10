@@ -165,3 +165,70 @@ export function fetchOutputs(account: string): Promise<OutputItem[]> {
 export function fetchLogs(): Promise<LogEntry[]> {
   return request('/api/publish-log');
 }
+
+/* ── web-pages-batch 新增端点 ─────────────────────────────────── */
+
+export interface AccountDetail {
+  account: string;
+  enabled: boolean;
+  credentials_sealed: boolean;
+  login_state: boolean | null;
+}
+
+export interface FormulaItem {
+  title: string;
+  publish_date: string;
+  topic_direction: string;
+  read_latest: number | null;
+  lifecycle: string;
+}
+
+export interface FormulaResult {
+  platform: string;
+  sample: number;
+  top: FormulaItem[];
+}
+
+export function fetchAccounts(): Promise<AccountDetail[]> {
+  return request('/api/accounts');
+}
+
+export function toggleAccount(account: string, enabled: boolean): Promise<{ enabled: boolean }> {
+  return request(`/api/accounts/${account}/toggle`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled }),
+  });
+}
+
+export function fetchPostmortems(platform: string): Promise<FormulaResult> {
+  return request(`/api/postmortems/${platform}`);
+}
+
+export function fetchPostmortemNote(platform: string, title: string): Promise<{ evidence: unknown; markdown: string }> {
+  return request(`/api/postmortems/${platform}/${encodeURIComponent(title)}`);
+}
+
+export function fetchTools(): Promise<{ name: string; description: string }[]> {
+  return request('/api/tools');
+}
+
+export function fetchAppSettings(): Promise<Record<string, string>> {
+  return request('/api/settings');
+}
+
+export function updateAppSettings(data: Record<string, string>): Promise<Record<string, string>> {
+  return request('/api/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export function triggerOps(job: 'hosted_content' | 'ops_data'): Promise<{ triggered: string }> {
+  return request('/api/ops/trigger', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ job }),
+  });
+}
