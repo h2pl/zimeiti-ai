@@ -11,7 +11,7 @@ from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.types import Command
 
-from zimeiti_api import tools as tz
+from zimeiti_api.runtime import tools as tz
 from zimeiti_api.config import DATABASE_URL
 from zimeiti_api.runtime.graph import build_minimal_agent
 from zimeiti_api.runtime.hosted import run_hosted_cycle
