@@ -53,6 +53,7 @@ class TestRouter:
                 return {"status": "success", "title": draft.title}
 
         monkeypatch.setattr(xhs_mod, "XhsPublisher", FakePub)
+        monkeypatch.setattr("zimeiti_api.platform_state.is_enabled", lambda account: True)
         # 读回走子进程（litellm 事件循环隔离），单测直接打桩
         monkeypatch.setattr("zimeiti_api.tools._xhs_readback_subprocess", lambda title: "verified")
         result = real_platform_router("xhs-main", XhsDraft(title="AI 提效指南", body="b"))
@@ -80,6 +81,7 @@ class TestRouter:
                 return {"status": "success"}
 
         monkeypatch.setattr(xhs_mod, "XhsPublisher", FakePub)
+        monkeypatch.setattr("zimeiti_api.platform_state.is_enabled", lambda account: True)
         monkeypatch.setattr(
             "zimeiti_api.tools._xhs_readback_subprocess", lambda title: "unverified"
         )

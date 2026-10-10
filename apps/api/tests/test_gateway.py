@@ -112,9 +112,9 @@ async def test_catchup_missed_jobs(tmp_path, monkeypatch):
     monkeypatch.setattr(gateway, "_run_job", fake_run_job)
 
     ran = await gateway.catchup_missed_jobs()
-    assert ran == ["hosted_content", "ops_data"]
+    assert ran == ["health_check", "hosted_content", "ops_data"]
 
     # 再补跑一次：last_run 已是今天 → 不重复
     ran2 = await gateway.catchup_missed_jobs()
     assert ran2 == []
-    assert executed == ["hosted_content", "ops_data"]
+    assert executed == ["health_check", "hosted_content", "ops_data"]

@@ -7,15 +7,25 @@
 import json
 import uuid
 
+import pytest
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage
 from langchain_core.outputs import ChatGeneration, ChatResult
 
+from zimeiti_api import platform_state
 from zimeiti_api.checkpoints import get_checkpointer
 from zimeiti_api.credentials import encrypt_secret
 from zimeiti_api.graph import build_minimal_agent
 from zimeiti_api.hosted import resume_after_approval, run_hosted_cycle
 from zimeiti_api.publisher import PublishExecutor
+
+
+@pytest.fixture(autouse=True)
+def _platform_enabled(monkeypatch, tmp_path):
+    """平台启停门禁（P0⑦）：单测显式初始化为启用（fail-closed 缺文件=全停）。"""
+    monkeypatch.setattr("zimeiti_api.platform_state._state_path", lambda: tmp_path / "ps.json")
+    platform_state.ensure_defaults()
+
 
 PROFILE = {
     "account": "xhs-main",

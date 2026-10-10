@@ -8,6 +8,12 @@ import pytest
 from zimeiti_api import hosted_daily
 
 
+@pytest.fixture(autouse=True)
+def _platform_enabled(monkeypatch):
+    """单测默认全平台启用（启停门禁另测）。"""
+    monkeypatch.setattr("zimeiti_api.platform_state.is_enabled", lambda account: True)
+
+
 @pytest.fixture
 def fake_run(monkeypatch):
     """同步 runner 替代 asyncio.run（协程内无 await，直接驱动）。"""

@@ -29,7 +29,9 @@ logger = logging.getLogger(__name__)
 publish_calls: list[str] = []  # 兼容观测口（真实发布时记录）
 
 
-def real_platform_router(account: str, draft: Any, cover_image_path: str | None = None) -> dict:
+def real_platform_router(
+    account: str, draft: Any, cover_image_path: str | None = None
+) -> dict[str, Any]:
     """真实平台路由器（Task 1.1，D1）：按账号前缀路由到真实平台调用并读回。
 
     返回 {"platform_result": ..., "readback": ...}；未知账号 fail-closed 拒绝。
@@ -43,14 +45,34 @@ def real_platform_router(account: str, draft: Any, cover_image_path: str | None 
         client = GzhClient(creds["app_id"], creds["app_secret"])
         outcome = publish_gzh_draft(client, draft, cover_image_path=cover_image_path)
         outcome["readback"] = readback_gzh_draft(client, title)
+        from zimeiti_api import notify
+
+        notify.send(
+            "publish_result", f"[{account}] 草稿箱上传 outcome={outcome['readback']}：{title}"
+        )
         return outcome
     if account.startswith("xhs"):
+        from zimeiti_api import notify, platform_state, risk
         from zimeiti_api.platforms.xhs import XhsPublisher
 
+        if not platform_state.is_enabled(account):
+            raise ValueError(f"平台 {account} 已停用（登录失效待人工恢复），拒绝发布")
         pub = XhsPublisher()
         # 私密发布（仅自己可见）——宪法 I 落地形态，人工确认后才公开
-        platform_result = pub.publish_draft(draft, cover_path=cover_image_path)
-        return {"platform_result": platform_result, "readback": _xhs_readback_subprocess(title)}
+        try:
+            platform_result = pub.publish_draft(draft, cover_path=cover_image_path)
+        except Exception as exc:
+            risk.handle_platform_error(account, "publish", str(exc))
+            raise
+        xhs_outcome = {
+            "platform_result": platform_result,
+            "readback": _xhs_readback_subprocess(title),
+        }
+        notify.send(
+            "publish_result",
+            f"[{account}] 发布完成 outcome={xhs_outcome['readback']}：{title}",
+        )
+        return xhs_outcome
     raise ValueError(f"未知平台账号: {account}")
 
 
@@ -235,6 +257,18 @@ def build_default_tools(
         ]
         try:
             platform_draft = drafts["gzh"] if account.startswith("gzh") else drafts["xhs"]
+            # 发布前约束校验前置（P0⑥，fail-closed：命中即拒绝，未调用平台）
+            from zimeiti_api.preflight import preflight
+
+            pre_violations = preflight(account, platform_draft)
+            if pre_violations:
+                audit.record("preflight_rejected", account=account, violations=pre_violations)
+                return f"发布前约束校验未通过：{pre_violations}（fail-closed，未调用平台）"
+            # 平台启停门禁（P0⑦）
+            from zimeiti_api import platform_state
+
+            if not platform_state.is_enabled(account):
+                return "错误：平台已停用（登录失效待人工恢复），拒绝发布"
             result = executor.publish(
                 account,
                 platform_draft,

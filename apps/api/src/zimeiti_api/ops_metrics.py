@@ -13,6 +13,7 @@ CLI：uv run python -m zimeiti_api.ops_metrics {record|pull|report}
 import argparse
 import json
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import psycopg
@@ -368,29 +369,67 @@ def pull_gzh(db: MetricsDB, begin_date: str, end_date: str) -> dict:
     """公众号 datacube 取数（调用已 vendor 的 wechat_mp.client）。"""
     from zimeiti_api.credentials import load_account_credentials
     from zimeiti_api.platforms.gzh import GzhClient
+    from zimeiti_api.risk import handle_platform_error
 
+    scope = f"datacube:{begin_date}~{end_date}"
     creds = load_account_credentials("gzh-main")
     client = GzhClient(creds["app_id"], creds["app_secret"])
     try:
         raw = client.datacube("getusersummary", begin_date, end_date)
     except Exception as exc:  # noqa: BLE001 - 采集失败留痕（不写零）
-        db.record_error("gzh-main", f"datacube:{begin_date}~{end_date}", str(exc))
-        return {"ok": False, "error": str(exc)}
+        db.record_error("gzh-main", scope, str(exc))
+        level = handle_platform_error("gzh-main", scope, str(exc))
+        return {"ok": False, "error": str(exc), "risk_level": level}
     metrics = parse_gzh_datacube(raw)
     if not metrics:
-        db.record_error("gzh-main", f"datacube:{begin_date}~{end_date}", "空响应")
+        db.record_error("gzh-main", scope, "空响应")
         return {"ok": False, "error": "空响应"}
     for metric, value in metrics.items():
         db.record_snapshot(None, "gzh-main", metric, value, source="datacube")
     return {"ok": True, "metrics": metrics}
 
 
+def _xhs_throttle_path() -> Path:
+    from pathlib import Path
+
+    from zimeiti_api.config import DATA_DIR
+
+    return Path(DATA_DIR) / "state" / "xhs-pull-throttle.json"
+
+
 def pull_xhs(db: MetricsDB, page: Any = None) -> dict:
     """小红书数据看板取数（复用登录态打开创作者中心首页）。
 
+    节流纪律（P0②，参考: xiaobei xhs-engagement「少操作一次页面就少一次风控
+    暴露」）：单账号两次全量取数间隔 ≥20h；首页即窗口、不翻页（明文设计，
+    禁止加翻页逻辑扩大风控暴露面）。
+
     注意：sync Playwright 需干净的事件循环环境——托管流程内请在独立进程调用本模块。
     """
+    from datetime import datetime
+
     from zimeiti_api.platforms.xhs import XhsPublisher
+    from zimeiti_api.risk import handle_platform_error
+
+    # ── 取数节流（软风控暴露面控制） ──────────────────────────────
+    throttle_path = _xhs_throttle_path()
+    now = datetime.now()
+    last = ""
+    if throttle_path.exists():
+        try:
+            last = json.loads(throttle_path.read_text(encoding="utf-8")).get("last", "")
+        except (ValueError, OSError):
+            last = ""
+    if last:
+        try:
+            elapsed_h = (now - datetime.fromisoformat(last)).total_seconds() / 3600
+            if elapsed_h < 20:
+                db.record_error(
+                    "xhs-main", "dashboard:home", f"节流跳过：距上次全量取数 {elapsed_h:.1f}h"
+                )
+                return {"ok": False, "skipped": f"取数节流（距上次 {elapsed_h:.1f}h < 20h）"}
+        except ValueError:
+            pass
 
     pub = XhsPublisher()
     own_page = page is None
@@ -401,15 +440,31 @@ def pull_xhs(db: MetricsDB, page: Any = None) -> dict:
         body = page.inner_text("body")
     except Exception as exc:  # noqa: BLE001
         db.record_error("xhs-main", "dashboard:home", str(exc))
-        return {"ok": False, "error": str(exc)}
+        level = handle_platform_error("xhs-main", "dashboard:home", str(exc))
+        return {"ok": False, "error": str(exc), "risk_level": level}
     finally:
         if own_page:
             page.close()
+
+    # 页面级登录墙判定（无异常但被重定向到登录页）
+    from zimeiti_api.risk import classify
+
+    if classify(body) in ("login_wall", "soft_block"):
+        level = handle_platform_error("xhs-main", "dashboard:home", body[:300])
+        db.record_error("xhs-main", "dashboard:home", f"页面风控信号：{level}")
+        return {"ok": False, "error": f"页面风控信号（{level}）", "risk_level": level}
 
     metrics = parse_xhs_dashboard(body)
     if not metrics:
         db.record_error("xhs-main", "dashboard:home", "未解析到指标")
         return {"ok": False, "error": "未解析到指标"}
+
+    # 取数成功 → 更新节流游标
+    throttle_path.parent.mkdir(parents=True, exist_ok=True)
+    throttle_path.write_text(
+        json.dumps({"last": now.isoformat(timespec="seconds")}, ensure_ascii=False),
+        encoding="utf-8",
+    )
     for metric, value in metrics.items():
         db.record_snapshot(None, "xhs-main", metric, value, source="creator-center")
     return {"ok": True, "metrics": metrics}
@@ -466,14 +521,32 @@ def migrate_from_sqlite(db: "MetricsDB", sqlite_path: str) -> dict:
 # ─── CLI ─────────────────────────────────────────────────────────────────
 
 
+# 站点 → 账号（ops_daily/gateway 共用；单一事实来源在 ops_metrics）
+SITE_ACCOUNTS = {"gzh": "gzh-main", "xhs": "xhs-main"}
+
+
 def pull_platform(
     db: MetricsDB, site: str, begin_date: str | None = None, end_date: str | None = None
 ) -> dict:
     """按站点取数（调度器与 CLI 共用）。site: "gzh" | "xhs"。
 
+    门禁（P0⑦②，任一命中即跳过——不是错误，是纪律）：
+    - 平台已停用（登录失效未恢复）→ skipped
+    - 软风控冷却中 → skipped
     gzh datacube 仅提供 T-1 及以前数据（A3 实测），默认取过去 7 天截至昨天。
     """
+    from zimeiti_api import platform_state
+    from zimeiti_api.risk import in_cooldown
+
     out: dict[str, Any] = {}
+    account = SITE_ACCOUNTS.get(site, site)
+    if not platform_state.is_enabled(account):
+        entry = (platform_state._load() or {}).get(account) or {}
+        out[site] = {"ok": False, "skipped": f"平台已停用（{entry.get('reason', '未知')}）"}
+        return out
+    if in_cooldown(account):
+        out[site] = {"ok": False, "skipped": "软风控冷却中（30 分钟内不重试）"}
+        return out
     if site == "gzh":
         today = datetime.now().date()
         end = end_date or (today - timedelta(days=1)).strftime("%Y-%m-%d")

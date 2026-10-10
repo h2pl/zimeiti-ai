@@ -99,7 +99,7 @@ class XhsPublisher:
             h["Authorization"] = f"Bearer {self.token}"
         return h
 
-    def _publish(self, draft: Any, visibility: str, cover_path: str | None) -> dict:
+    def _publish(self, draft: Any, visibility: str, cover_path: str | None) -> dict[str, Any]:
         title = draft["title"] if isinstance(draft, dict) else draft.title
         body = draft["body"] if isinstance(draft, dict) else draft.body
         tags = (
@@ -113,8 +113,10 @@ class XhsPublisher:
             else make_cover_png(Path("data/outputs/xhs-main") / "cover.png")
         )
         payload = {
-            "title": title[:XHS_TITLE_LIMIT],
-            "content": body[:XHS_DESC_LIMIT],
+            # 约束由 preflight 前置校验保证（P0⑥）——不做静默截断（截断会改变内容
+            # 语义并导致读回对账标题不一致）。超限内容应在 tools.publish 即被拒绝。
+            "title": title,
+            "content": body,
             "images": [str(cover.resolve())],
             "tags": clean_tags[:10],
             "visibility": visibility,
@@ -133,11 +135,11 @@ class XhsPublisher:
         data = result.get("data") or {}
         return {"status": data.get("status", ""), "title": data.get("title", ""), "raw": result}
 
-    def publish_draft(self, draft: Any, cover_path: str | None = None, **_: Any) -> dict[str, str]:
+    def publish_draft(self, draft: Any, cover_path: str | None = None, **_: Any) -> dict[str, Any]:
         """私密发布（仅自己可见）。真实结果以 readback 为准。"""
         return self._publish(draft, "仅自己可见", cover_path)
 
-    def publish(self, draft: Any, cover_path: str | None = None, **_: Any) -> dict[str, str]:
+    def publish(self, draft: Any, cover_path: str | None = None, **_: Any) -> dict[str, Any]:
         """公开发布。真实结果以 readback 为准。"""
         return self._publish(draft, "公开可见", cover_path)
 

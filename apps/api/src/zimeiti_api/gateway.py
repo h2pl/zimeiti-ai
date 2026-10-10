@@ -35,6 +35,7 @@ from apscheduler.triggers.cron import CronTrigger
 
 # 任务注册表：name → 触发时刻与执行体选择（执行体见 _run_job）
 _JOBS: dict[str, dict[str, int]] = {
+    "health_check": {"hour": 7, "minute": 0},
     "hosted_content": {"hour": 7, "minute": 30},
     "ops_data": {"hour": 8, "minute": 30},
 }
@@ -85,13 +86,35 @@ async def _run_job(name: str) -> dict[str, Any]:
 
             runs = await run_daily_async()
             return {"job": name, "runs": runs}
+        if name == "health_check":
+            from zimeiti_api.health import run_health_check
+
+            return {"job": name, "report": run_health_check()}
         if name == "ops_data":
             from zimeiti_api.ops_daily import run_daily
             from zimeiti_api.ops_metrics import MetricsDB
 
             # sync Playwright（xhs 看板）不能进主循环——放 worker 线程
             ops_run = await asyncio.to_thread(lambda: run_daily(MetricsDB()))
+            # 晨报（P0⑦）：巡检态 + 当日任务摘要
+            from zimeiti_api import notify, platform_state
+            from zimeiti_api.health import build_morning_digest
+
+            digest = build_morning_digest(
+                {
+                    "accounts": {
+                        a: {"ok": platform_state.is_enabled(a)}
+                        for a in platform_state.DEFAULT_ACCOUNTS
+                    }
+                },
+                {"ops_data": {"runs": ops_run}},
+            )
+            notify.send("morning_digest", digest)
             return {"job": name, "runs": ops_run}
+        if name == "publish_queue_scan":
+            from zimeiti_api.publish_queue import run_due
+
+            return {"job": name, "results": run_due()}
         return {"job": name, "error": f"未知任务 {name}"}
     except Exception as exc:  # noqa: BLE001 - 任务失败记录后继续调度
         audit.record("gateway_job_failed", job=name, error=str(exc)[:300])
@@ -135,6 +158,17 @@ def _build_scheduler() -> AsyncIOScheduler:
         ),
         EVENT_JOB_ERROR | EVENT_JOB_EXECUTED | EVENT_JOB_MISSED,
     )
+    # 发布排期队列扫描（P0⑤）：间隔扫描，到期条目派发发布（已审批内容）
+    from apscheduler.triggers.interval import IntervalTrigger
+
+    scheduler.add_job(
+        _run_job,
+        IntervalTrigger(seconds=120),
+        args=["publish_queue_scan"],
+        id="publish_queue_scan",
+        name="publish_queue_scan",
+        max_instances=1,
+    )
     return scheduler
 
 
@@ -149,6 +183,9 @@ def create_gateway_app():
     async def lifespan(app):
         # 环境变量 ZIMEITI_GATEWAY=0 可关闭调度（纯 API 模式，测试用）
         if os.environ.get("ZIMEITI_GATEWAY", "1") == "1":
+            from zimeiti_api import platform_state
+
+            platform_state.ensure_defaults()  # 首次显式初始化（此后缺失/损坏 fail-closed 全停）
             missed = await catchup_missed_jobs()
             if missed:
                 audit.record("gateway_catchup", jobs=missed)

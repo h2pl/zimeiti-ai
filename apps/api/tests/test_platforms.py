@@ -282,7 +282,8 @@ class TestXhs:
         )
         assert seen["url"].endswith("/api/v1/publish")
         assert seen["payload"]["visibility"] == "仅自己可见"  # 宪法 I
-        assert len(seen["payload"]["title"]) <= 20
+        # 不做静默截断（P0⑥）：超限由 preflight 前置拒绝，publisher 原样透传
+        assert seen["payload"]["title"] == "标" * 30
         assert seen["payload"]["images"] == [str(Path(cover).resolve())]
         assert seen["payload"]["tags"] == ["t1", "t2"]
         assert seen["headers"]["Authorization"] == "Bearer T"
@@ -360,3 +361,18 @@ class TestXhs:
         pub = self._pub(tmp_path)
         assert pub.readback("我把选题到发布交给了一个AI助手", page=FakePage()) == "verified"
         assert pub.readback("不存在的标题", page=FakePage()) == "unverified"
+
+
+def test_no_cookie_injection_red_line():
+    """P0② 红线（xiaobei 封号事故）：xhs 平台代码禁止任何 cookie 注入造会话。
+
+    登录态只允许来自 login_interactive 的真实扫码（storage_state 文件），
+    绝不允许 CDP/Playwright add_cookies 凭空 materialize 会话。
+    """
+    import inspect
+
+    from zimeiti_api.platforms import xhs as xhs_mod
+
+    src = inspect.getsource(xhs_mod)
+    assert "add_cookies" not in src, "发现 cookie 注入代码——违反 xiaobei 风控红线"
+    assert "cdp" not in src.lower()

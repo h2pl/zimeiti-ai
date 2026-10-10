@@ -78,12 +78,17 @@ async def trigger_for_account(account: str) -> dict[str, Any]:
 
 async def run_daily_async(accounts: list[str] | None = None) -> list[dict[str, Any]]:
     """异步版（常驻网关进程内直接 await，参考: openclaw gateway 内嵌 agent turn）。"""
+    from zimeiti_api import platform_state
+
     accounts = accounts or list(DEFAULT_ACCOUNTS)
     busy = _pending_accounts()
     runs = []
     for account in accounts:
         if account in busy:
             runs.append({"account": account, "skipped": "已有待审批项"})
+            continue
+        if not platform_state.is_enabled(account):
+            runs.append({"account": account, "skipped": "平台已停用（登录失效待人工恢复）"})
             continue
         try:
             runs.append(await trigger_for_account(account))

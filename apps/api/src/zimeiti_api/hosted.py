@@ -30,6 +30,13 @@ def _add_pending(thread_id: str, instruction: str, account: str = "") -> None:
     # account 随中断落盘：恢复端点据此加载正确画像（修复硬编码 xhs-main 遗留项）
     pending.append({"thread_id": thread_id, "instruction": instruction, "account": account})
     PENDING_PATH.write_text(json.dumps(pending, ensure_ascii=False), encoding="utf-8")
+    # 审批待办通知（P0④；未配置 webhook 时静默）
+    from zimeiti_api import notify
+
+    notify.send(
+        "approval_required",
+        f"有待审批项需要处理：{thread_id}（{account or '未知账号'}）——请打开审批页确认",
+    )
 
 
 def _remove_pending(thread_id: str) -> None:

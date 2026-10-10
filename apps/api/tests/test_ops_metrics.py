@@ -4,6 +4,8 @@
 （事件与快照分离、消费只读）。
 """
 
+import pytest
+
 from zimeiti_api.ops_metrics import (
     migrate_from_sqlite,
     parse_gzh_datacube,
@@ -227,6 +229,13 @@ class TestPullGzh:
 class TestPullXhs:
     SAMPLE = "关注数 | 6 | 粉丝数 | 212 | 曝光数 | 88 | 点赞数 | 3 | 收藏数 | 1"
 
+    @pytest.fixture(autouse=True)
+    def _isolated_throttle(self, tmp_path, monkeypatch):
+        """节流游标隔离到 tmp（真实 data/state 不得被单测污染）。"""
+        monkeypatch.setattr(
+            "zimeiti_api.ops_metrics._xhs_throttle_path", lambda: tmp_path / "th.json"
+        )
+
     def test_pull_xhs_with_fake_page(self, metrics_db):
         from zimeiti_api import ops_metrics as om
 
@@ -403,6 +412,9 @@ def test_pull_platform_gzh_default_window(metrics_db, monkeypatch):
 
     monkeypatch.setattr(ops_metrics, "pull_gzh", fake_pull_gzh)
     monkeypatch.setattr(ops_metrics, "pull_xhs", lambda db: {"ok": True})
+    # 门禁放行（平台启用 + 无冷却），专注测窗口逻辑
+    monkeypatch.setattr("zimeiti_api.platform_state.is_enabled", lambda account: True)
+    monkeypatch.setattr("zimeiti_api.risk.in_cooldown", lambda account, now=None: False)
 
     out = ops_metrics.pull_platform(metrics_db, "gzh")
     assert out == {"gzh": {"ok": True}}

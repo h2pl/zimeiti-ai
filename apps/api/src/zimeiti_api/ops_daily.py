@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Any
 
 PLATFORM_SITES = ("gzh", "xhs")  # 取数站点（ops_metrics.pull_platform 的 site 参数）
-SITE_ACCOUNTS = {"gzh": "gzh-main", "xhs": "xhs-main"}  # 站点 → 校准账号
+from zimeiti_api.ops_metrics import SITE_ACCOUNTS  # noqa: E402  # 站点→账号单一事实来源
 
 
 def _state_path() -> Path:
@@ -127,9 +127,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     run = run_daily(MetricsDB(), force=args.force, skip_pull=args.skip_pull)
-    # pull_platform 按站点嵌套（{"gzh": {"ok": ...}}），ok 在内层
+    # pull_platform 按站点嵌套（{"gzh": {"ok": ...}}）；纪律性 skipped（停用/冷却/节流）不算失败
     pull_ok = any(
-        isinstance(v, dict) and v.get("ok") for p in run["pull"].values() for v in p.values()
+        isinstance(v, dict) and (v.get("ok") or v.get("skipped"))
+        for p in run["pull"].values()
+        for v in p.values()
     )
     print(json.dumps(run, ensure_ascii=False, default=str))
     # 全部站点取数失败视为运行失败（校准跳过不算失败）
