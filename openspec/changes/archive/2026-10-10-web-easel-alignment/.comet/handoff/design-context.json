@@ -1,0 +1,16 @@
+{
+  "change": "web-easel-alignment",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "9076c1c53b9808d19ab72d5bb9bd60224c3473452d1db20b376f47a51eeb1735",
+  "files": [
+    { "path": "openspec/changes/web-easel-alignment/proposal.md", "sha256": "2e1027c814445e61bc64715d101752b1aa10227a4545314f833da8fe37c34662" },
+    { "path": "openspec/changes/web-easel-alignment/design.md", "sha256": "bcffe49279900fa45dd3e708472e27ba2fee989a8c9b519d674b6ba2ece5ce1e" },
+    { "path": "openspec/changes/web-easel-alignment/tasks.md", "sha256": "52959c8777f45784f52f533bc537306304a15f86baebeec2593060c209f2dc0c" },
+    { "path": "openspec/changes/web-easel-alignment/.openspec.yaml", "sha256": "e61703315c59969805e021ec521ca189369aaf8ea902d52c5e39c7fbc603598f" },
+    { "path": "openspec/changes/web-easel-alignment/specs/web-easel-alignment/spec.md", "sha256": "5e3543f45f4b91c015c878751d57741303a2d471df13ea2be3dd7178fa7d04a7" }
+  ]
+}
