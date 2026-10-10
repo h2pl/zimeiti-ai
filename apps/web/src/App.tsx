@@ -3,7 +3,11 @@
  * 刷新保持当前页（sessionStorage，体验增强；Easel 无此需求）。
  */
 import { useEffect, useState } from "react";
+import AccountsPage from "./components/AccountsPage";
 import ApprovalsPage from "./components/ApprovalsPage";
+import BreakdownPage from "./components/BreakdownPage";
+import SettingsPage from "./components/SettingsPage";
+import SkillPage from "./components/SkillPage";
 import CalendarPage from "./components/CalendarPage";
 import DashboardPage from "./components/DashboardPage";
 import IdeasPage from "./components/IdeasPage";
@@ -17,6 +21,10 @@ import { fetchProfiles } from "./lib/api";
 export type Page =
   | "dashboard"
   | "approvals"
+  | "accounts"
+  | "breakdown"
+  | "skills"
+  | "settings"
   | "ideas"
   | "calendar"
   | "profile"
@@ -27,6 +35,10 @@ export type Page =
 const PAGES: Page[] = [
   "dashboard",
   "approvals",
+  "accounts",
+  "breakdown",
+  "skills",
+  "settings",
   "ideas",
   "calendar",
   "profile",
@@ -80,6 +92,14 @@ export default function App() {
         return <TrendsPage />;
       case "outputs":
         return <OutputsPage />;
+      case "accounts":
+        return <AccountsPage />;
+      case "breakdown":
+        return <BreakdownPage />;
+      case "skills":
+        return <SkillPage />;
+      case "settings":
+        return <SettingsPage />;
       case "logs":
         return <LogsPage />;
       default:
