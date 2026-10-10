@@ -30,3 +30,35 @@ class TestSeal:
 
         assert seal.main(["gzh-main"]) == 1
         assert not (tmp_path / "gzh-main.sealed").exists()
+
+
+def test_seal_xhs_uses_login_state(monkeypatch, tmp_path):
+    """xhs 账号 seal 登录态（非 appid/secret）；登录态缺失 fail-closed。"""
+    import json as _json
+
+    import zimeiti_api.seal as seal_mod
+
+    state_file = tmp_path / "xhs_state.json"
+    state_file.write_text(_json.dumps({"cookies": []}), encoding="utf-8")
+    monkeypatch.setattr("zimeiti_api.config.LOGIN_STATE_PATH", str(state_file))
+    monkeypatch.delenv("WECHAT_MP_APPID", raising=False)
+    monkeypatch.delenv("WECHAT_MP_APPSECRET", raising=False)
+    monkeypatch.setenv("ZIMEITI_CREDENTIALS_DIR", str(tmp_path / "creds"))
+    monkeypatch.setenv(
+        "ZIMEITI_MASTER_KEY",
+        __import__("cryptography.fernet", fromlist=["Fernet"]).Fernet.generate_key().decode(),
+    )
+
+    # 登录态存在 → 加密落盘
+    rc = seal_mod.main(["xhs-main"])
+    assert rc == 0
+    sealed = (tmp_path / "creds" / "xhs-main.sealed").read_text(encoding="utf-8").strip()
+    from zimeiti_api.credentials import decrypt_secret
+
+    payload = _json.loads(decrypt_secret(sealed))
+    assert "cookies" in payload["login_state"]
+    assert payload["sealed_at"]
+
+    # 登录态缺失 → fail-closed 拒绝
+    monkeypatch.setattr("zimeiti_api.config.LOGIN_STATE_PATH", str(tmp_path / "nope.json"))
+    assert seal_mod.main(["xhs-other"]) == 1

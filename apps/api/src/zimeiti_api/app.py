@@ -27,6 +27,18 @@ def create_app() -> FastAPI:
     def list_approvals() -> list[dict]:
         return hosted.list_pending_approvals()
 
+    def _rearm_pending_if_interrupted(
+        thread_id: str, result: dict, account: str, instruction: str
+    ) -> None:
+        """双闸门重登记：恢复后若再次中断（如选题通过→发布审批），必须重新登记待审批。
+
+        实测缺陷（2026-10-10 托管 E2E）：单闸门测试未覆盖「一次恢复命中下一个中断」，
+        旧实现只删 pending 不补登，循环在发布闸门永久卡死（审批页看不到）。
+        """
+        if "__interrupt__" in result:
+            hosted._add_pending(thread_id, instruction, account=account)
+            audit.record("awaiting_approval", thread_id=thread_id)
+
     def _resume_thread(thread_id: str, decision: str, account: str) -> dict:
         """按 pending 记录的账号恢复执行图（修复评审遗留：profile 不再硬编码 xhs-main）。
 
@@ -59,9 +71,11 @@ def create_app() -> FastAPI:
             raise HTTPException(status_code=404, detail=f"无待审批项: {thread_id}")
         # account 随中断记录；修复前遗留的旧记录无此字段，回退 xhs-main 保持原行为
         account = pending[0].get("account") or "xhs-main"
+        instruction = pending[0].get("instruction", "")
         result = _resume_thread(thread_id, "approve", account)
         hosted._remove_pending(thread_id)
         audit.record("approval_received", thread_id=thread_id)
+        _rearm_pending_if_interrupted(thread_id, result, account, instruction)
         if "__interrupt__" not in result:
             audit.record("cycle_completed", thread_id=thread_id)
         return {"thread_id": thread_id, "last_message": result["messages"][-1].content}
@@ -73,9 +87,11 @@ def create_app() -> FastAPI:
         if not pending:
             raise HTTPException(status_code=404, detail=f"无待审批项: {thread_id}")
         account = pending[0].get("account") or "xhs-main"  # 兼容修复前遗留的旧记录
+        instruction = pending[0].get("instruction", "")
         result = _resume_thread(thread_id, "reject", account)
         hosted._remove_pending(thread_id)
         audit.record("approval_rejected", thread_id=thread_id)
+        _rearm_pending_if_interrupted(thread_id, result, account, instruction)
         return {"thread_id": thread_id, "last_message": result["messages"][-1].content}
 
     @app.get("/api/publish-log")

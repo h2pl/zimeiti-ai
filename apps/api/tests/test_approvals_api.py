@@ -101,3 +101,59 @@ def test_approvals_api_flow():
     log = client.get("/api/publish-log").json()
     assert any(e.get("action") == "cycle_completed" for e in log)
     monkeypatch.undo()
+
+
+def test_confirm_reregisters_pending_on_second_interrupt():
+    """双闸门回归（2026-10-10 托管 E2E 实测缺陷）：
+
+    恢复后模型再次调用 publish → 命中第二个中断，待审批队列必须重新登记，
+    否则循环在发布闸门永久卡死（审批页看不到、confirm 404）。
+    测试安全：publish 工具对空 state 返回「没有可发布的草稿」，无真实外发。
+    """
+    import asyncio
+
+    from fastapi.testclient import TestClient
+
+    from zimeiti_api.app import create_app
+
+    asyncio.run(_start_cycle_with_pending_approval())  # 闸门#1：publish 中断
+
+    def fake_model_after_approve():
+        # 恢复闸门#1 后，模型继续调用 publish → 应命中闸门#2
+        return FakeToolModel(
+            responses=[
+                AIMessage(
+                    content="",
+                    tool_calls=[
+                        {
+                            "name": "publish",
+                            "args": {},
+                            "id": "c2",
+                        }
+                    ],
+                )
+            ]
+        )
+
+    import zimeiti_api.models as models_mod
+
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr(models_mod, "get_model", fake_model_after_approve)
+
+    client = TestClient(create_app())
+    resp = client.post("/api/approvals/test-7.2/confirm")
+    assert resp.status_code == 200
+    # 关键断言：第二个中断已重新登记到待审批队列
+    items = client.get("/api/approvals").json()
+    assert any(i["thread_id"] == "test-7.2" for i in items), "双闸门第二次中断未重登记"
+
+    # 第二次确认：无工具调用 → 循环完成，pending 清空
+    def fake_model_final():
+        return FakeToolModel(responses=[AIMessage(content="已发布")])
+
+    monkeypatch.setattr(models_mod, "get_model", fake_model_final)
+    resp = client.post("/api/approvals/test-7.2/confirm")
+    assert resp.status_code == 200
+    items = client.get("/api/approvals").json()
+    assert not any(i["thread_id"] == "test-7.2" for i in items)
+    monkeypatch.undo()

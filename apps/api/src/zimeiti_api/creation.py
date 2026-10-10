@@ -42,6 +42,10 @@ def build_creation_prompt(topic: SelectedTopic, profile: dict[str, Any]) -> str:
         f"选题：{topic.title}\n方向：{topic.direction}\n\n"
         "请基于以上信息创作两个平台的图文草稿，"
         "严格遵守画像中的风格、平台规则与偏好红线。\n"
+        "合规硬约束（出站闸门按关键词 fail-closed 拦截，误杀不修正）："
+        "正文中不得出现「稳赚不赔、百分百、保本、躺赚、必涨、月入十万」等词——"
+        "即使用于否定（如「没到躺赚的程度」）也会被拦截，"
+        "请改用「远未到不劳而获的程度」等不含违禁词的表达。\n"
         "以 JSON 输出，结构："
         '{"xhs": {"title","body","tags":[],"cover_copy"},'
         ' "gzh": {"title","body","summary"}}'
