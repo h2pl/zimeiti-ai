@@ -1,0 +1,16 @@
+{
+  "change": "web-workbench",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "3df859ee44e5ab37aa1011c2bddf6f26d96263cd78e3ee322018815a8e4ee408",
+  "files": [
+    { "path": "openspec/changes/web-workbench/proposal.md", "sha256": "f29e120d3f577df0ef0f4f226c756885300687342311cb13e339cc5709c9017c" },
+    { "path": "openspec/changes/web-workbench/design.md", "sha256": "50786f86bfd6a76dc54b55c54366ca8200600fcfd65f073ed9d64732bc827180" },
+    { "path": "openspec/changes/web-workbench/tasks.md", "sha256": "24d984ce60fe911d118d1536e40635db5bdde7340b7c5a9d81c979f65d51cc02" },
+    { "path": "openspec/changes/web-workbench/.openspec.yaml", "sha256": "e61703315c59969805e021ec521ca189369aaf8ea902d52c5e39c7fbc603598f" },
+    { "path": "openspec/changes/web-workbench/specs/web-workbench/spec.md", "sha256": "1b74e5ad7f143f64f84834b40028dff0fb94e0d5096b2bea26f1e25b7e81f0dd" }
+  ]
+}

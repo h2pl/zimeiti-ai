@@ -7,8 +7,10 @@ from fastapi import FastAPI, HTTPException
 from langgraph.types import Command
 
 from zimeiti_api.config import OUTPUTS_DIR
+from zimeiti_api.content import profiles as content_profiles
 from zimeiti_api.core import audit
 from zimeiti_api.governance.publisher import PublishExecutor
+from zimeiti_api.operations.metrics import MetricsDB
 from zimeiti_api.runtime import hosted
 from zimeiti_api.runtime.checkpoints import DATABASE_URL
 
@@ -147,6 +149,65 @@ def create_app(lifespan=None) -> FastAPI:
         from zimeiti_api.operations.metrics import MetricsDB
 
         return calendar_events(MetricsDB())
+
+    @app.get("/api/dashboard")
+    def dashboard() -> dict:
+        """概览（web-workbench T1）：待审批数/账号启停/今日发布/最近日志。"""
+        from zimeiti_api.operations.workbench import dashboard_summary, list_accounts
+
+        accounts = {
+            a["account"]: a["enabled"]
+            for a in list_accounts(Path(content_profiles.DEFAULT_BASE_DIR))
+        }
+        return dashboard_summary(
+            pending_count=len(hosted.list_pending_approvals()),
+            accounts=accounts,
+            publish_events=MetricsDB().list_events(),
+            recent_log=audit.list_entries(),
+        )
+
+    @app.get("/api/profiles")
+    def profiles_list() -> list[dict]:
+        from zimeiti_api.operations.workbench import list_accounts
+
+        return list_accounts(Path(content_profiles.DEFAULT_BASE_DIR))
+
+    @app.get("/api/profiles/{account}")
+    def profile_get(account: str) -> dict:
+        from zimeiti_api.operations.workbench import load_profile_data
+
+        data = load_profile_data(account)
+        if data is None:
+            raise HTTPException(status_code=404, detail=f"账号不存在: {account}")
+        return data
+
+    @app.put("/api/profiles/{account}")
+    def profile_put(account: str, body: dict) -> dict:
+        """受控画像写（D3）：validate fail-closed，非法输入 400 不落盘。"""
+        from zimeiti_api.operations.workbench import save_profile
+
+        try:
+            save_profile(account, body)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return {"ok": True}
+
+    @app.get("/api/trends/{account}")
+    def trends(account: str) -> dict:
+        from zimeiti_api.operations.workbench import trends as trends_data
+
+        data = trends_data(account)
+        if data is None:
+            raise HTTPException(status_code=404, detail=f"账号无运营数据: {account}")
+        return data
+
+    @app.get("/api/outputs/{account}")
+    def outputs(account: str) -> list[dict]:
+        from zimeiti_api.operations.workbench import outputs as outputs_data
+
+        return outputs_data(account, Path(OUTPUTS_DIR))
 
     @app.get("/api/publish-log")
     def publish_log() -> list[dict]:
