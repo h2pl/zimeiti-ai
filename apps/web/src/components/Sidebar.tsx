@@ -1,9 +1,11 @@
 /** 侧边栏——参考: Easel components/Sidebar.tsx 模式（导航+状态点）；主题切换见 ThemeToggle。 */
 import type { Page } from "../App";
 import ThemeToggle from "./ThemeToggle";
-import { IconCalendar, IconCheck, IconDashboard, IconFolder, IconIdea, IconList, IconSettings, IconTrend, IconUser } from "./icons";
+import { IconCalendar, IconCheck, IconDashboard, IconFolder, IconIdea, IconList, IconSend, IconSettings, IconTrend, IconUser } from "./icons";
 
 const NAV: { page: Page; label: string; icon: typeof IconDashboard }[] = [
+  { page: "chat", label: "对话工作台", icon: IconIdea },
+  { page: "publish", label: "发布中心", icon: IconSend },
   { page: "dashboard", label: "概览", icon: IconDashboard },
   { page: "approvals", label: "审批中心", icon: IconCheck },
   { page: "accounts", label: "账号管理", icon: IconUser },

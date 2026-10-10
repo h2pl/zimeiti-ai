@@ -1,0 +1,13 @@
+bash scripts/check-api.sh
+== 1/5 ruff format ==
+81 files left unchanged
+== 2/5 ruff lint ==
+All checks passed!
+== 3/5 mypy ==
+src\zimeiti_api\app.py:372: error: No overload variant of "astream" of "Pregel" matches argument types "dict[str, list[HumanMessage]]", "dict[str, dict[str, str]]", "list[str]"  [call-overload]
+src\zimeiti_api\app.py:372: note: Possible overload variants:
+src\zimeiti_api\app.py:372: note:     def astream(self, input: Any | Command[Any] | None, config: RunnableConfig | None = ..., *, context: None = ..., stream_mode: Literal['values', 'updates', 'checkpoints', 'tasks', 'debug', 'messages', 'custom'] | Sequence[Literal['values', 'updates', 'checkpoints', 'tasks', 'debug', 'messages', 'custom']] | None = ..., print_mode: Literal['values', 'updates', 'checkpoints', 'tasks', 'debug', 'messages', 'custom'] | Sequence[Literal['values', 'updates', 'checkpoints', 'tasks', 'debug', 'messages', 'custom']] = ..., output_keys: str | Sequence[str] | None = ..., interrupt_before: Literal['*'] | Sequence[str] | None = ..., interrupt_after: Literal['*'] | Sequence[str] | None = ..., durability: Literal['sync', 'async', 'exit'] | None = ..., control: RunControl | None = ..., subgraphs: bool = ..., debug: bool | None = ..., version: Literal['v2']) -> AsyncIterator[ValuesStreamPart[Any] | UpdatesStreamPart | MessagesStreamPart | CustomStreamPart | CheckpointStreamPart[Any] | TasksStreamPart | DebugStreamPart[Any]]
+src\zimeiti_api\app.py:372: note:     def astream(self, input: Any | Command[Any] | None, config: RunnableConfig | None = ..., *, context: None = ..., stream_mode: Literal['values', 'updates', 'checkpoints', 'tasks', 'debug', 'messages', 'custom'] | Sequence[Literal['values', 'updates', 'checkpoints', 'tasks', 'debug', 'messages', 'custom']] | None = ..., print_mode: Literal['values', 'updates', 'checkpoints', 'tasks', 'debug', 'messages', 'custom'] | Sequence[Literal['values', 'updates', 'checkpoints', 'tasks', 'debug', 'messages', 'custom']] = ..., output_keys: str | Sequence[str] | None = ..., interrupt_before: Literal['*'] | Sequence[str] | None = ..., interrupt_after: Literal['*'] | Sequence[str] | None = ..., durability: Literal['sync', 'async', 'exit'] | None = ..., control: RunControl | None = ..., subgraphs: bool = ..., debug: bool | None = ..., version: Literal['v1'] = ...) -> AsyncIterator[dict[str, Any] | Any]
+src\zimeiti_api\app.py:419: error: Argument 1 to "aget_tuple" of "AsyncPostgresSaver" has incompatible type "dict[str, dict[str, str]]"; expected "RunnableConfig"  [arg-type]
+Found 2 errors in 1 file (checked 53 source files)
+make: *** [check] ���� 1

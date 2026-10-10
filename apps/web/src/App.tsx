@@ -5,6 +5,8 @@
 import { useEffect, useState } from "react";
 import AccountsPage from "./components/AccountsPage";
 import ApprovalsPage from "./components/ApprovalsPage";
+import ChatPage from "./components/ChatPage";
+import PublishCenterPage from "./components/PublishCenterPage";
 import BreakdownPage from "./components/BreakdownPage";
 import SettingsPage from "./components/SettingsPage";
 import SkillPage from "./components/SkillPage";
@@ -19,6 +21,8 @@ import TrendsPage from "./components/TrendsPage";
 import { fetchProfiles } from "./lib/api";
 
 export type Page =
+  | "chat"
+  | "publish"
   | "dashboard"
   | "approvals"
   | "accounts"
@@ -33,6 +37,8 @@ export type Page =
   | "logs";
 
 const PAGES: Page[] = [
+  "chat",
+  "publish",
   "dashboard",
   "approvals",
   "accounts",
@@ -100,6 +106,10 @@ export default function App() {
         return <SkillPage />;
       case "settings":
         return <SettingsPage />;
+      case "chat":
+        return <ChatPage />;
+      case "publish":
+        return <PublishCenterPage />;
       case "logs":
         return <LogsPage />;
       default:
