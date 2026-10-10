@@ -74,6 +74,31 @@ def _save_last_run(name: str, last_run: dict[str, str], path: Path | None = None
     p.write_text(json.dumps(last_run, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def _trigger_path() -> Path:
+    from zimeiti_api.config import DATA_DIR
+
+    return Path(DATA_DIR) / "state" / "ops-trigger.json"
+
+
+async def _consume_manual_triggers() -> list[str]:
+    """消费 SkillPage 手动触发标记（API 与网关可能不同进程，标记文件是唯一通道）。"""
+    p = _trigger_path()
+    if not p.exists():
+        return []
+    try:
+        triggers = json.loads(p.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        p.unlink(missing_ok=True)
+        return []
+    ran = []
+    for name in list(triggers):
+        if name in _JOBS:
+            await _run_job(name)
+            ran.append(name)
+    p.unlink(missing_ok=True)
+    return ran
+
+
 async def _run_job(name: str) -> dict[str, Any]:
     """执行单个任务（先落 last_run 再执行：失败不无限重试，次日再跑）。"""
     from zimeiti_api.core import audit

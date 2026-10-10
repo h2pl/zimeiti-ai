@@ -218,6 +218,90 @@ def create_app(lifespan=None) -> FastAPI:
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    @app.get("/api/accounts")
+    def accounts_detail() -> list[dict]:
+        """账号管理数据面（web-pages-batch T2）。"""
+        from zimeiti_api.config import CREDENTIALS_DIR, LOGIN_STATE_PATH
+        from zimeiti_api.operations.workbench import accounts_detail
+
+        return accounts_detail(
+            Path(content_profiles.DEFAULT_BASE_DIR), Path(CREDENTIALS_DIR), Path(LOGIN_STATE_PATH)
+        )
+
+    @app.post("/api/accounts/{account}/toggle")
+    def account_toggle(account: str, body: dict) -> dict:
+        """启停切换（fail-closed 语义复用 platform_state）。"""
+        import re as _re
+
+        if not _re.match(r"^[A-Za-z0-9_-]+$", account):
+            raise HTTPException(status_code=400, detail="非法账号名")
+        from zimeiti_api.governance import platform_state
+
+        enabled = bool(body.get("enabled"))
+        platform_state.set_enabled(account, enabled, reason="手动切换（账号管理页）")
+        audit.record("account_toggled", account=account, enabled=enabled)
+        return {"account": account, "enabled": enabled}
+
+    @app.get("/api/postmortems/{platform}")
+    def postmortem_list(platform: str) -> dict:
+        """复盘清单（web-pages-batch T3，复用 postmortem 模块）。"""
+        from zimeiti_api.operations.metrics import MetricsDB
+        from zimeiti_api.operations.postmortem import top_formula
+
+        return top_formula(MetricsDB(), platform, top=50)
+
+    @app.get("/api/postmortems/{platform}/{title}")
+    def postmortem_note(platform: str, title: str) -> dict:
+        from zimeiti_api.operations.metrics import MetricsDB
+        from zimeiti_api.operations.postmortem import note_evidence, render_note
+
+        ev = note_evidence(MetricsDB(), platform, title)
+        if ev is None:
+            raise HTTPException(status_code=404, detail=f"未找到事件: {title}")
+        return {"evidence": ev, "markdown": render_note(ev)}
+
+    @app.get("/api/settings")
+    def settings_get() -> dict:
+        from zimeiti_api.core.settings import get_settings
+
+        return get_settings()
+
+    @app.put("/api/settings")
+    def settings_put(body: dict) -> dict:
+        from zimeiti_api.core.settings import update_settings
+
+        try:
+            return update_settings(body)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/api/ops/trigger")
+    def ops_trigger(body: dict) -> dict:
+        """手动触发运维任务（写标记文件，网关下一循环消费——D4）。"""
+        import json as _json
+
+        job = str(body.get("job", ""))
+        if job not in ("hosted_daily", "ops_daily"):
+            raise HTTPException(status_code=400, detail="非法任务名")
+        from zimeiti_api.config import DATA_DIR
+
+        p = Path(DATA_DIR) / "state" / "ops-trigger.json"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(_json.dumps({job: True}, ensure_ascii=False), encoding="utf-8")
+        audit.record("ops_triggered", job=job)
+        return {"triggered": job}
+
+    @app.get("/api/tools")
+    def tools_list() -> list[dict]:
+        """agent 工具清单（web-pages-batch T5，只读）。"""
+        from zimeiti_api.content.profiles import load_profile
+        from zimeiti_api.runtime.tools import tool_catalog
+
+        profile = load_profile("xhs-main")
+        cycle_dir = str(Path(OUTPUTS_DIR) / profile["account"] / "_catalog")
+        # model 传 None：清单只读 name/description，闭包不调用（省 LLM 客户端创建）
+        return tool_catalog(profile, None, EXECUTOR, cycle_dir)
+
     @app.get("/api/publish-log")
     def publish_log() -> list[dict]:
         return audit.list_entries()

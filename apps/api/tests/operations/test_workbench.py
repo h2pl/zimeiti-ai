@@ -137,3 +137,70 @@ class TestTrendsOutputs:
             (profile_dir / "xhs-main" / "profile.yaml").read_text(encoding="utf-8")
         )
         assert "hacked_field" not in on_disk
+
+
+class TestAccountsDetail:
+    def test_detail_aggregation(self, profile_dir, tmp_path, monkeypatch):
+        from zimeiti_api.governance import platform_state
+        from zimeiti_api.operations import workbench
+
+        cred = tmp_path / "creds"
+        cred.mkdir()
+        (cred / "xhs-main.sealed").write_text("sealed", encoding="utf-8")
+        login = tmp_path / "xhs_state.json"
+        monkeypatch.setattr(platform_state, "_state_path", lambda: tmp_path / "ps.json")
+        platform_state.ensure_defaults()
+
+        out = workbench.accounts_detail(profile_dir, cred, login)
+        assert out == [
+            {
+                "account": "xhs-main",
+                "enabled": True,
+                "credentials_sealed": True,
+                "login_state": False,
+            }
+        ]
+
+
+class TestSettings:
+    def test_roundtrip_and_whitelist(self, tmp_path, monkeypatch):
+        from zimeiti_api.core import settings
+
+        f = tmp_path / "settings.json"
+        monkeypatch.setattr(settings, "settings_path", lambda: f)
+        settings.update_settings({"notify_webhook_url": "https://x.example/hook"})
+        assert settings.get_setting("notify_webhook_url") == "https://x.example/hook"
+        with pytest.raises(ValueError, match="未知设置项"):
+            settings.update_settings({"evil": 1})
+
+    def test_notify_uses_runtime_setting(self, tmp_path, monkeypatch):
+        from zimeiti_api.core import notify, settings
+
+        f = tmp_path / "settings.json"
+        monkeypatch.setattr(settings, "settings_path", lambda: f)
+        monkeypatch.delenv("ZIMEITI_NOTIFY_WEBHOOK", raising=False)
+        settings.update_settings({"notify_webhook_url": "https://feishu.example/hook"})
+        sent = []
+        monkeypatch.setattr(notify.requests, "post", lambda url, **k: sent.append(url) or type("R", (), {"status_code": 200})())
+        notify.send("test_event", "hello")
+        assert sent == ["https://feishu.example/hook"]
+
+
+class TestToolCatalog:
+    def test_catalog_lists_five_tools(self, tmp_path):
+        from zimeiti_api.runtime.tools import tool_catalog
+
+        profile = {
+            "account": "xhs-main",
+            "positioning": "测试",
+            "style": "s",
+            "audience": "a",
+            "content_focus": "图文",
+            "boundary": "b",
+            "platform_rules": "r",
+            "preferences": "p",
+        }
+        cat = tool_catalog(profile, None, None, tmp_path / "c")
+        names = [t["name"] for t in cat]
+        assert names == ["discover_topics", "select_topic", "create_drafts", "publish", "ask_human"]
+        assert all(t["description"] for t in cat)

@@ -23,8 +23,16 @@ def _generic_payload(event: str, text: str) -> dict:
 
 
 def send(event: str, text: str) -> bool:
-    """发送通知。未配置 webhook / 发送失败 → False（静默，不影响主链路）。"""
+    """发送通知。未配置 webhook / 发送失败 → False（静默，不影响主链路）。
+
+    URL 解析优先级：env ZIMEITI_NOTIFY_WEBHOOK > 运行时设置
+    （core/settings 的 notify_webhook_url，SettingsPage 可即时修改）。
+    """
     url = os.environ.get("ZIMEITI_NOTIFY_WEBHOOK", "").strip()
+    if not url:
+        from zimeiti_api.core.settings import get_setting
+
+        url = get_setting("notify_webhook_url").strip()
     if not url:
         return False
     if "open.feishu.cn" in url or "feishu" in url:

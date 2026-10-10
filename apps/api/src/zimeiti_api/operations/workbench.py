@@ -132,3 +132,29 @@ def outputs(account: str, outputs_dir: Path) -> list[dict[str, Any]]:
             }
         )
     return out
+
+
+def accounts_detail(
+    profiles_dir: Path, credentials_dir: Path, login_state_path: Path
+) -> list[dict[str, Any]]:
+    """账号管理数据面（web-pages-batch）：画像账号 × 启停 × 凭证 × 登录态。"""
+    from zimeiti_api.governance import platform_state
+
+    out = []
+    if profiles_dir.exists():
+        for d in sorted(profiles_dir.iterdir()):
+            if not (d.is_dir() and (d / "profile.yaml").exists()):
+                continue
+            account = d.name
+            out.append(
+                {
+                    "account": account,
+                    "enabled": platform_state.is_enabled(account),
+                    "credentials_sealed": (Path(credentials_dir) / f"{account}.sealed").exists(),
+                    # 登录态仅 xhs 系账号适用（gzh 走 appid/secret 凭证）
+                    "login_state": Path(login_state_path).exists()
+                    if account.startswith("xhs")
+                    else None,
+                }
+            )
+    return out
