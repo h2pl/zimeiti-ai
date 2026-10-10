@@ -6,12 +6,13 @@ import { IconList } from "./icons";
 
 export default function LogsPage() {
   const [log, setLog] = useState<LogEntry[]>([]);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const load = () =>
       fetchLogs()
         .then((l) => setLog(l.reverse()))
-        .catch(() => {});
+        .catch((e) => setError(e instanceof Error ? e.message : String(e)));
     load();
     const t = setInterval(load, 5000);
     return () => clearInterval(t);
@@ -29,6 +30,7 @@ export default function LogsPage() {
         </div>
       </div>
       <div className="page-body">
+        {error && <div className="notice-error">加载失败：{error}</div>}
         <table>
           <thead>
             <tr>

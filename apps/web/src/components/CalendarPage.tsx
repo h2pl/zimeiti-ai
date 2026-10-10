@@ -6,9 +6,12 @@ import { IconCalendar } from "./icons";
 
 export default function CalendarPage() {
   const [events, setEvents] = useState<CalEvent[] | null>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchCalendar().then(setEvents).catch(() => setEvents([]));
+    fetchCalendar()
+      .then(setEvents)
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
 
   return (
@@ -23,6 +26,7 @@ export default function CalendarPage() {
         </div>
       </div>
       <div className="page-body">
+        {error && <div className="notice-error">加载失败：{error}</div>}
         {events !== null && events.length === 0 && (
           <div className="empty-state">
             <div className="empty-icon">📅</div>

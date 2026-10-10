@@ -8,6 +8,7 @@ export default function OutputsPage() {
   const [accounts, setAccounts] = useState<{ account: string }[]>([]);
   const [current, setCurrent] = useState("");
   const [items, setItems] = useState<OutputItem[] | null>(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetchProfiles()
@@ -23,7 +24,10 @@ export default function OutputsPage() {
     setItems(null);
     fetchOutputs(current)
       .then(setItems)
-      .catch(() => setItems([]));
+      .catch((e) => {
+        setItems([]);
+        setError(e instanceof Error ? e.message : String(e));
+      });
   }, [current]);
 
   return (
@@ -38,6 +42,7 @@ export default function OutputsPage() {
         </div>
       </div>
       <div className="page-body">
+        {error && <div className="notice-error">加载失败：{error}</div>}
         <div className="options">
           {accounts.map((a) => (
             <button

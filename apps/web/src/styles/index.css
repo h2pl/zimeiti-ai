@@ -282,3 +282,13 @@ td { padding: 8px 10px; border-bottom: 1px solid var(--surface-2); }
 
 /* ============ zimeiti 特有（基于同一令牌体系） ============ */
 .options { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+
+/* 主题切换按钮——来源: Easel theme.css .theme-toggle */
+.theme-toggle {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 34px; height: 34px;
+  border: none; border-radius: var(--radius); background: transparent;
+  color: var(--text-secondary); cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.theme-toggle:hover { background: var(--surface-hover); color: var(--text); }

@@ -1,5 +1,6 @@
-/** 侧边栏——参考: Easel components/Sidebar.tsx 模式（导航+状态点+主题切换）。 */
+/** 侧边栏——参考: Easel components/Sidebar.tsx 模式（导航+状态点）；主题切换见 ThemeToggle。 */
 import type { Page } from "../App";
+import ThemeToggle from "./ThemeToggle";
 import { IconCalendar, IconCheck, IconDashboard, IconFolder, IconIdea, IconList, IconTrend, IconUser } from "./icons";
 
 const NAV: { page: Page; label: string; icon: typeof IconDashboard }[] = [
@@ -44,6 +45,10 @@ export default function Sidebar({
         ))}
       </div>
       <div className="sidebar-footer">
+        <div className="status-row" style={{ justifyContent: "space-between" }}>
+          <span className="status-row-text">主题</span>
+          <ThemeToggle />
+        </div>
         {Object.entries(accountStatus).map(([account, enabled]) => (
           <div key={account} className="status-row">
             <span className={enabled ? "status-dot online" : "status-dot offline"} />
