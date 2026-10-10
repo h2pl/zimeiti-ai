@@ -83,7 +83,7 @@ export default function App() {
       case "logs":
         return <LogsPage />;
       default:
-        return <DashboardPage />;
+        return <DashboardPage onNavigate={setCurrentPage} />;
     }
   }
 

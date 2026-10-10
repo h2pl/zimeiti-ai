@@ -292,3 +292,21 @@ td { padding: 8px 10px; border-bottom: 1px solid var(--surface-2); }
   transition: background var(--t-fast), color var(--t-fast);
 }
 .theme-toggle:hover { background: var(--surface-hover); color: var(--text); }
+
+/* ============ 概览模块卡（信息架构对齐 Easel Dashboard，基于同一令牌） ============ */
+.dash-actions { display: flex; gap: 10px; flex-wrap: wrap; max-width: 1100px; margin: 16px auto 0; }
+.dash-grid { max-width: 1100px; margin: 16px auto 0; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.dash-card { padding: 16px 18px; }
+.dash-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.dash-card-title { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 650; color: var(--text-secondary); }
+.dash-card-link { font-size: 12.5px; color: var(--text-tertiary); text-decoration: none; cursor: pointer; }
+.dash-card-link:hover { color: var(--accent-start); }
+.dash-log-row { display: flex; align-items: center; gap: 10px; padding: 6px 2px; font-size: 13px; }
+.dash-log-ts { color: var(--text-tertiary); font-size: 12.5px; min-width: 90px; }
+.kpi-icon {
+  width: 30px; height: 30px; border-radius: 9px;
+  background: var(--accent-soft); color: var(--accent-end);
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-bottom: 10px;
+}
+.kpi-link { color: var(--accent-end); text-decoration: none; font-size: 14px; }
