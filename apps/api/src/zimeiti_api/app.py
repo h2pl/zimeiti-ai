@@ -347,6 +347,9 @@ def create_app(lifespan=None) -> FastAPI:
         if not message:
             raise HTTPException(status_code=400, detail="消息不能为空")
         account = session["account"]
+        from zimeiti_api.content.profiles import load_profile
+        from zimeiti_api.models import get_model
+
         profile = load_profile(account)
 
         from zimeiti_api.runtime.checkpoints import get_checkpointer
@@ -411,8 +414,6 @@ def create_app(lifespan=None) -> FastAPI:
         session = get_session(thread_id)
         if session is None:
             raise HTTPException(status_code=404, detail=f"会话不存在: {thread_id}")
-        account = session["account"]
-        profile = load_profile(account)
         config = {"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}}
         async with get_checkpointer() as saver:
             tup = await saver.aget_tuple(config)
