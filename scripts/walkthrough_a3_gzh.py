@@ -25,15 +25,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from zimeiti_api import audit
-from zimeiti_api.compliance import ComplianceGate
-from zimeiti_api.creation import create_drafts
-from zimeiti_api.models import get_model
+from zimeiti_api.core import audit
+from zimeiti_api.governance.compliance import ComplianceGate
+from zimeiti_api.content.creation import create_drafts
+from zimeiti_api.core.models import get_model
 from zimeiti_api.platforms.gzh import GzhClient
-from zimeiti_api.profiles import load_profile
-from zimeiti_api.publisher import PublishExecutor
-from zimeiti_api.tools import real_platform_router
-from zimeiti_api.topics import select_topic
+from zimeiti_api.content.profiles import load_profile
+from zimeiti_api.governance.publisher import PublishExecutor
+from zimeiti_api.runtime.tools import real_platform_router
+from zimeiti_api.content.topics import select_topic
 
 SLUG = datetime.now().strftime("%Y%m%d-%H%M%S")
 OUT_DIR = Path("data/outputs/gzh-main") / SLUG
@@ -96,7 +96,7 @@ async def main() -> int:
     # 凭证密封信封（宪法 II）：appid/secret 加密后交给执行器校验
     from cryptography.fernet import Fernet
 
-    from zimeiti_api.credentials import encrypt_secret
+    from zimeiti_api.core.credentials import encrypt_secret
 
     master = os.environ.get("ZIMEITI_MASTER_KEY")
     if not master:

@@ -37,13 +37,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from zimeiti_api import hosted
-from zimeiti_api.checkpoints import get_checkpointer
+from zimeiti_api.runtime import hosted
+from zimeiti_api.runtime.checkpoints import get_checkpointer
 from zimeiti_api.config import OUTPUTS_DIR
-from zimeiti_api.graph import build_minimal_agent
-from zimeiti_api.models import get_model
-from zimeiti_api.profiles import load_profile
-from zimeiti_api.publisher import PublishExecutor
+from zimeiti_api.runtime.graph import build_minimal_agent
+from zimeiti_api.core.models import get_model
+from zimeiti_api.content.profiles import load_profile
+from zimeiti_api.governance.publisher import PublishExecutor
 
 ACCOUNT = sys.argv[1] if len(sys.argv) > 1 else "xhs-main"
 DIRECTION = sys.argv[2] if len(sys.argv) > 2 else ""

@@ -23,7 +23,7 @@ os.environ["AUDIT_PATH"] = os.path.join(_TEST_STATE, "audit.jsonl")
 os.environ.setdefault("ZIMEITI_MASTER_KEY", "test-master-key-not-production")
 
 
-import zimeiti_api.hosted as _hosted  # noqa: E402  # 有意后置：需先设置测试环境变量
+import zimeiti_api.runtime.hosted as _hosted  # noqa: E402  # 有意后置：需先设置测试环境变量
 
 _hosted.PENDING_PATH = _P(_TEST_STATE) / "pending_approvals.json"
 
@@ -39,7 +39,7 @@ def metrics_db():
     import psycopg
 
     from zimeiti_api.config import DATABASE_URL
-    from zimeiti_api.ops_metrics import MetricsDB
+    from zimeiti_api.operations.metrics import MetricsDB
 
     with psycopg.connect(DATABASE_URL) as conn:
         conn.execute(f"CREATE SCHEMA IF NOT EXISTS {METRICS_TEST_SCHEMA}")

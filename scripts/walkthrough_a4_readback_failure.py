@@ -19,8 +19,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from zimeiti_api import audit
-from zimeiti_api.credentials import load_account_credentials
+from zimeiti_api.core import audit
+from zimeiti_api.core.credentials import load_account_credentials
 from zimeiti_api.platforms.gzh import GzhClient, publish_gzh_draft, readback_gzh_draft
 
 TS = datetime.now().strftime("%Y%m%d-%H%M%S")

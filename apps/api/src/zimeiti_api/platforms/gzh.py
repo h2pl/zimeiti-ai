@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from zimeiti_api.config import CREDENTIALS_DIR, DATA_DIR  # noqa: F401 - config 加载 .env 并锚定目录
-from zimeiti_api.themes import apply_theme
+from zimeiti_api.platforms.themes import apply_theme
 from zimeiti_api.vendor.wechat_mp import WeChatClient
 from zimeiti_api.vendor.wechatfmt.formatting import apply_wechat_styles
 from zimeiti_api.vendor.wechatfmt.generate_cover_combined import generate_cover_combined

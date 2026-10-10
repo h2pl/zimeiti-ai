@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from zimeiti_api.creation import XhsDraft
+from zimeiti_api.content.creation import XhsDraft
 from zimeiti_api.platforms.xhs import XhsPublisher, make_cover_png
 
 SLUG = "diag-publish-click"

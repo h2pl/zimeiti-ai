@@ -22,7 +22,7 @@ vendor 来源：E:/Projects/my-tools/wechat-mp-toolkit/src/wechat_mp/client.py�
   - 基础工具（服务器 IP 列表、清空配额）
 
 本地唯一改动：删除 config.py 依赖，app_id/app_secret 改为必传构造参数
-（凭证由 zimeiti_api.credentials Fernet 解密后注入，宪法 II 凭证只存密文）。
+（凭证由 zimeiti_api.core.credentials Fernet 解密后注入，宪法 II 凭证只存密文）。
 """
 
 import json

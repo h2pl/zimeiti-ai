@@ -1,0 +1,15 @@
+{
+  "change": "arch-restructure",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "12a282c5cc7a703e326af75c3fcaa31601b3dafe3cdab0bbdd0f7878eff1b69b",
+  "files": [
+    { "path": "openspec/changes/arch-restructure/proposal.md", "sha256": "67eceb34e22e9ffe242667ab673414e415237af09f3cc61ebc92af6b082463f5" },
+    { "path": "openspec/changes/arch-restructure/design.md", "sha256": "43268659bea8a95fdb597a38f6394e7ef1175b58a9a0bacf71f26853377b133b" },
+    { "path": "openspec/changes/arch-restructure/tasks.md", "sha256": "9aecf5553f1bd178e9d5afc6cc582a6a8ce71374467308b8d9ed6809392abbd7" },
+    { "path": "openspec/changes/arch-restructure/.openspec.yaml", "sha256": "9fb84f0658a7a2924fd716c5fa528a0e5dc4b5979deff93672db6b4259942abe" }
+  ]
+}

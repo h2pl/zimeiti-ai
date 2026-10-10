@@ -6,10 +6,11 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from langgraph.types import Command
 
-from zimeiti_api import audit, hosted
-from zimeiti_api.checkpoints import DATABASE_URL
 from zimeiti_api.config import OUTPUTS_DIR
-from zimeiti_api.publisher import PublishExecutor
+from zimeiti_api.core import audit
+from zimeiti_api.governance.publisher import PublishExecutor
+from zimeiti_api.runtime import hosted
+from zimeiti_api.runtime.checkpoints import DATABASE_URL
 
 # 进程级单例执行器：频控计数跨请求持久（评审 W2 升级项修复）
 EXECUTOR = PublishExecutor(daily_limit=2, allowed_accounts={"xhs-main", "gzh-main"})
@@ -57,9 +58,9 @@ def create_app(lifespan=None) -> FastAPI:
         """
         from langgraph.checkpoint.postgres import PostgresSaver
 
-        from zimeiti_api.graph import build_minimal_agent
-        from zimeiti_api.models import get_model
-        from zimeiti_api.profiles import load_profile
+        from zimeiti_api.content.profiles import load_profile
+        from zimeiti_api.core.models import get_model
+        from zimeiti_api.runtime.graph import build_minimal_agent
 
         if not _THREAD_ID_RE.match(thread_id):
             raise HTTPException(status_code=400, detail="非法 thread_id（允许字母数字._-）")
@@ -128,13 +129,13 @@ def create_app(lifespan=None) -> FastAPI:
     @app.get("/api/kanban")
     def kanban() -> dict:
         """选题三态看板（P1⑪，Easel IdeasPage 对标）。"""
-        from zimeiti_api.kanban import collect_cards
+        from zimeiti_api.operations.kanban import collect_cards
 
         return collect_cards(OUTPUTS_DIR)
 
     @app.post("/api/kanban/move")
     def kanban_move(body: dict) -> dict:
-        from zimeiti_api.kanban import set_status
+        from zimeiti_api.operations.kanban import set_status
 
         set_status(str(body.get("title", "")), str(body.get("status", "")))
         return {"ok": True}
@@ -142,8 +143,8 @@ def create_app(lifespan=None) -> FastAPI:
     @app.get("/api/calendar")
     def calendar() -> list[dict]:
         """内容日历（P1⑪，Easel CalendarPage 对标；发布事件只读）。"""
-        from zimeiti_api.kanban import calendar_events
-        from zimeiti_api.ops_metrics import MetricsDB
+        from zimeiti_api.operations.kanban import calendar_events
+        from zimeiti_api.operations.metrics import MetricsDB
 
         return calendar_events(MetricsDB())
 

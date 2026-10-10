@@ -19,11 +19,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from zimeiti_api import audit
-from zimeiti_api.credentials import load_account_credentials
+from zimeiti_api.core import audit
+from zimeiti_api.core.credentials import load_account_credentials
 from zimeiti_api.platforms.gzh import GzhClient
-from zimeiti_api.publisher import PublishExecutor, RateLimitExceeded
-from zimeiti_api.tools import real_platform_router
+from zimeiti_api.governance.publisher import PublishExecutor, RateLimitExceeded
+from zimeiti_api.runtime.tools import real_platform_router
 
 TS = datetime.now().strftime("%Y%m%d-%H%M%S")
 

@@ -26,13 +26,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from zimeiti_api import audit
-from zimeiti_api.compliance import ComplianceGate
-from zimeiti_api.creation import create_drafts
-from zimeiti_api.models import get_model
+from zimeiti_api.core import audit
+from zimeiti_api.governance.compliance import ComplianceGate
+from zimeiti_api.content.creation import create_drafts
+from zimeiti_api.core.models import get_model
 from zimeiti_api.platforms.xhs import XhsPublisher, make_cover_png
-from zimeiti_api.profiles import load_profile
-from zimeiti_api.topics import select_topic
+from zimeiti_api.content.profiles import load_profile
+from zimeiti_api.content.topics import select_topic
 
 SLUG = datetime.now().strftime("%Y%m%d-%H%M%S")
 OUT_DIR = Path("data/outputs/xhs-main") / SLUG
@@ -96,7 +96,7 @@ def main() -> int:
         [
             sys.executable,
             "-m",
-            "zimeiti_api.xhs_readback",
+            "zimeiti_api.platforms.xhs_readback",
             "--title",
             drafts.xhs.title[:20],
             "--debug-dir",

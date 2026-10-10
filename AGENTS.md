@@ -16,7 +16,16 @@
 ## 目录结构（单仓库四目录 + 基建）
 
 ```
-apps/api/     后端：FastAPI + deepagents agent 运行时（src/zimeiti_api/）
+apps/api/     后端：FastAPI + deepagents agent 运行时（src/zimeiti_api/，领域分层：
+              core/ 横切基建（audit/credentials/alias/seal/notify/models）｜
+              governance/ 宪法护栏（compliance/risk/platform_state/preflight/
+              publisher/queue）｜ platforms/ 平台适配（gzh/xhs/xhs_readback/themes）｜
+              content/ 内容管线（topics/creation/dna/templates/profiles）｜
+              operations/ 运营数据与复盘（metrics/daily/calibration/report_page/
+              postmortem/kanban）｜ runtime/ agent 运行时（graph/tools/hosted/
+              hosted_daily/gateway/checkpoints/health）；顶层仅 app.py 入口与
+              config.py 全局锚点；依赖单向：runtime→governance/platforms/
+              content/operations→core）
   └── data/   运行时数据唯一归宿（gitignore）：audit/ credentials/ login/ state/ outputs/
 apps/web/     前端：Vite + React + TS 审批页
 packages/skills/   agent 技能包（预留，对齐 Easel skills 体系）
