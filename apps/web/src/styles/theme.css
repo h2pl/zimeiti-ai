@@ -1,0 +1,41 @@
+/* 暗色主题——来源: Easel styles/theme.css（变量整套覆盖，保留通用子集） */
+
+:root { color-scheme: light; }
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #14171e;
+  --bg-elev: #1b2029;
+  --surface: #1e242e;
+  --surface-2: #252c37;
+  --surface-hover: #2d3643;
+  --border: #333d4b;
+  --border-strong: #4a586a;
+  --text: #edf0f5;
+  --text-secondary: #b1bbc9;
+  --text-tertiary: #95a1b3;
+  --accent-start: #63c9cf;
+  --accent-end: #a1b4fa;
+  --accent-soft: rgba(115, 151, 222, 0.17);
+  --accent-gradient: linear-gradient(135deg, #167d89, #485eb4);
+  --accent-gradient-soft: linear-gradient(135deg, #25364b, #37303a);
+  --green: #6bd499;
+  --green-soft: rgba(70, 190, 128, 0.15);
+  --amber: #f1bd69;
+  --amber-soft: rgba(228, 163, 65, 0.15);
+  --red: #f58f98;
+  --red-soft: rgba(233, 102, 115, 0.15);
+  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.16);
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.24);
+  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.36);
+}
+
+:root[data-theme='dark'] .sidebar { background: linear-gradient(180deg, #191e27, #1c222c); }
+
+:root[data-theme='dark'] :is(.main-content, .page-host) {
+  background:
+    radial-gradient(circle at 23% 8%, rgba(55, 87, 133, 0.17), transparent 36%),
+    radial-gradient(circle at 78% 12%, rgba(117, 76, 67, 0.12), transparent 38%),
+    radial-gradient(circle at 52% 92%, rgba(70, 80, 90, 0.10), transparent 38%),
+    var(--bg);
+}
