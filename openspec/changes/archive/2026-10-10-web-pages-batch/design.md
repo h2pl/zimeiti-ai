@@ -2,6 +2,8 @@
 comet_change: web-pages-batch
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-10-web-pages-batch
+status: final
 ---
 
 # 设计：web-pages-batch

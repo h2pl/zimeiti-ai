@@ -2,6 +2,7 @@
 change: web-pages-batch
 design-doc: openspec/changes/web-pages-batch/design.md
 base-ref: 1238359
+archived-with: 2026-10-10-web-pages-batch
 ---
 
 <!-- comet-task-authority: openspec/changes/web-pages-batch/tasks.md -->

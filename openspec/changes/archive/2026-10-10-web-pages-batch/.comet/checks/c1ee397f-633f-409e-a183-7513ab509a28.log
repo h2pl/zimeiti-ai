@@ -1,0 +1,9 @@
+bash scripts/check-api.sh
+== 1/5 ruff format ==
+1 file reformatted, 79 files left unchanged
+== 2/5 ruff lint ==
+All checks passed!
+== 3/5 mypy ==
+src\zimeiti_api\runtime\gateway.py:113: error: Module "zimeiti_api" has no attribute "audit"  [attr-defined]
+Found 1 error in 1 file (checked 52 source files)
+make: *** [check] ���� 1
