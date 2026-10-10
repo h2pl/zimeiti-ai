@@ -2,7 +2,7 @@
  *  SSE 消费参考: Easel api.ts streamChat（ReadableStream 手解帧）。 */
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Approval } from "../lib/api";
-import { answerQuestion, createChatSession, fetchApprovals, fetchChatSessions } from "../lib/api";
+import { answerQuestion, createChatSession, fetchApprovals, fetchChatMessages, fetchChatSessions } from "../lib/api";
 import { IconSend } from "./icons";
 
 interface Msg {
@@ -55,10 +55,8 @@ export default function ChatPage() {
 
   const loadHistory = useCallback(async (threadId: string) => {
     try {
-      const r = await fetch(`/api/chat/sessions/${threadId}/messages`);
-      if (!r.ok) return;
-      const body = await r.json();
-      setMessages(body.messages || []);
+      const body = await fetchChatMessages(threadId);
+      setMessages(body.messages as Msg[]);
     } catch {
       /* 历史读取失败保持本地流 */
     }
@@ -93,13 +91,14 @@ export default function ChatPage() {
   const runStream = async (threadId: string, message: string) => {
     setPhase("streaming");
     setMessages((m) => [...m, { role: "user", content: message }, { role: "assistant", content: "" }]);
-    streamAbort.current = new AbortController();
+    const myController = new AbortController();
+    streamAbort.current = myController;
     try {
       const res = await fetch(`/api/chat/sessions/${threadId}/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message }),
-        signal: streamAbort.current.signal,
+        signal: myController.signal,
       });
       if (!res.ok || !res.body) throw new Error(`流请求失败 ${res.status}`);
       const reader = res.body.getReader();
@@ -116,14 +115,25 @@ export default function ChatPage() {
           const dataLine = frame.split("\n").find((l) => l.startsWith("data: "));
           if (!evLine || !dataLine) continue;
           const event = evLine.slice(7).trim();
-          const payload = JSON.parse(dataLine.slice(6));
+          let payload: {
+            text?: string;
+            message?: string;
+            pending?: boolean;
+            question?: string;
+            options?: string[];
+          };
+          try {
+            payload = JSON.parse(dataLine.slice(6));
+          } catch {
+            continue; // 单帧损坏跳过，不中断整条流（S1）
+          }
           if (event === "token") {
             setMessages((m) => {
               const last = m[m.length - 1];
               if (last?.role === "assistant") {
-                return [...m.slice(0, -1), { ...last, content: last.content + payload.text }];
+                return [...m.slice(0, -1), { ...last, content: last.content + (payload.text ?? "") }];
               }
-              return [...m, { role: "assistant", content: payload.text }];
+              return [...m, { role: "assistant", content: payload.text ?? "" }];
             });
           } else if (event === "interrupt") {
             setInterrupt({ thread_id: threadId, isQuestion: false });
@@ -136,7 +146,7 @@ export default function ChatPage() {
               setInterrupt({ thread_id: threadId, isQuestion: false });
             }
           } else if (event === "error") {
-            showToast(payload.message, false);
+            showToast(payload.message ?? "流式请求失败", false);
           }
         }
       }
@@ -146,7 +156,7 @@ export default function ChatPage() {
       }
     } finally {
       setPhase("idle");
-      streamAbort.current = null;
+      if (streamAbort.current?.signal === myController.signal) streamAbort.current = null;
     }
   };
 
@@ -198,7 +208,12 @@ export default function ChatPage() {
                   <button
                     key={o}
                     className="btn btn-sm"
-                    onClick={() => void answerQuestion(interrupt.thread_id, o).then(() => setInterrupt(null))}
+                    onClick={() =>
+                      void answerQuestion(interrupt.thread_id, o).then((r) => {
+                        setInterrupt(null);
+                        setMessages((m) => [...m, { role: "assistant", content: r?.last_message ?? "" }]);
+                      })
+                    }
                   >
                     {o}
                   </button>

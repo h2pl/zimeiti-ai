@@ -125,7 +125,7 @@ export default function PublishCenterPage() {
                 <td>
                   <span
                     className={
-                      e.status === "ok"
+                      e.status === "done"
                         ? "badge badge-ok"
                         : e.status === "failed"
                           ? "badge badge-warn"

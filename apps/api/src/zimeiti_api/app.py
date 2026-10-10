@@ -387,7 +387,11 @@ def create_app(lifespan=None) -> FastAPI:
                         if mode == "messages":
                             chunk, _meta = payload
                             if isinstance(chunk, AIMessageChunk) and chunk.content:
-                                yield _sse("token", {"text": str(chunk.content)})
+                                # S2：list 型 content 取 str 块拼接（评审 S2）
+                                text = (
+                                    chunk.text() if hasattr(chunk, "text") else str(chunk.content)
+                                )
+                                yield _sse("token", {"text": text})
                         elif isinstance(payload, dict) and "__interrupt__" in payload:
                             payloads = hosted.extract_interrupt_payload(
                                 {"__interrupt__": payload["__interrupt__"]}
