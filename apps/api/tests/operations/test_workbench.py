@@ -117,3 +117,23 @@ class TestTrendsOutputs:
 
     def test_outputs_empty_account(self, tmp_path):
         assert workbench.outputs("ghost", tmp_path) == []
+
+    def test_save_reject_keeps_file_unchanged(self, profile_dir):
+        """规格场景（W2）：非法编辑必须保证 profile.yaml 内容不变。"""
+        f = profile_dir / "xhs-main" / "profile.yaml"
+        before = f.read_text(encoding="utf-8")
+        data = workbench.load_profile_data("xhs-main")
+        data.pop("style")  # 缺必填 → validate 拒绝
+        with pytest.raises(Exception):
+            workbench.save_profile("xhs-main", data)
+        assert f.read_text(encoding="utf-8") == before
+
+    def test_save_filters_unknown_keys(self, profile_dir):
+        """W3：未知键不得持久化进画像文件。"""
+        data = workbench.load_profile_data("xhs-main")
+        data["hacked_field"] = "evil"
+        workbench.save_profile("xhs-main", data)
+        on_disk = yaml.safe_load(
+            (profile_dir / "xhs-main" / "profile.yaml").read_text(encoding="utf-8")
+        )
+        assert "hacked_field" not in on_disk

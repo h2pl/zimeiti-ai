@@ -18,6 +18,7 @@ export default function TrendsPage() {
 
   useEffect(() => {
     if (!current || !accounts.some((a) => a.account === current)) return;
+    setData(null); // S2：切换账号清空旧数据，避免与新账号误读
     api
       .trends(current)
       .then((d) => {

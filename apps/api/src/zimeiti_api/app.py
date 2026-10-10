@@ -176,7 +176,10 @@ def create_app(lifespan=None) -> FastAPI:
     def profile_get(account: str) -> dict:
         from zimeiti_api.operations.workbench import load_profile_data
 
-        data = load_profile_data(account)
+        try:
+            data = load_profile_data(account)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         if data is None:
             raise HTTPException(status_code=404, detail=f"账号不存在: {account}")
         return data
@@ -198,7 +201,10 @@ def create_app(lifespan=None) -> FastAPI:
     def trends(account: str) -> dict:
         from zimeiti_api.operations.workbench import trends as trends_data
 
-        data = trends_data(account)
+        try:
+            data = trends_data(account)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         if data is None:
             raise HTTPException(status_code=404, detail=f"账号无运营数据: {account}")
         return data
@@ -207,7 +213,10 @@ def create_app(lifespan=None) -> FastAPI:
     def outputs(account: str) -> list[dict]:
         from zimeiti_api.operations.workbench import outputs as outputs_data
 
-        return outputs_data(account, Path(OUTPUTS_DIR))
+        try:
+            return outputs_data(account, Path(OUTPUTS_DIR))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/publish-log")
     def publish_log() -> list[dict]:
