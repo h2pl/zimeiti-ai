@@ -40,11 +40,12 @@ openspec/     OpenSpec：specs/ 主规格（capability 行为契约）｜ change
 ## 工程约定
 
 1. **变更工作流**：Comet Classic 五阶段（open→design→build→verify→archive），用 `/comet-open` 开新变更；禁跳过工件直接写代码
-2. **TDD**：先写失败测试（RED）再实现（GREEN），测试是可执行需求
-3. **门禁**：`make check` 五项全绿；覆盖率 ≥80%
-4. **宪法级红线**：发布前人工审批（HITL 不可关）；凭证只存密文；平台操作带频控/白名单；出站内容过 fail-closed 合规闸门；发布结果读回对账，未核实不报成功
-5. **配置**：一切路径/密钥经 `src/zimeiti_api/config.py`（环境变量可覆盖，绝对锚定不依赖 cwd）
-6. **已知遗留**（详见归档 design.md）：API 审批端点 profile 硬编码 xhs-main（接 gzh 前修）；发布读回恒 unverified（真实平台脚本在 real-account-verification 变更落地）
+2. **分支隔离**：每个变更默认 `comet classic workspace prepare <name> --isolation branch`（独立分支 `comet/<name>` 开发，全流程在该分支，merge 回 `comet-integration` 前展示分支边界）；`current` 仅限连续依赖的变更链且 MUST 经用户确认——隔离模式是 Comet decision-point 强制项，Agent 无权替选（2026-10-10 事故：擅自 current 导致集成分支无法按变更回滚）
+3. **TDD**：先写失败测试（RED）再实现（GREEN），测试是可执行需求
+4. **门禁**：`make check` 五项全绿；覆盖率 ≥80%
+5. **宪法级红线**：发布前人工审批（HITL 不可关）；凭证只存密文；平台操作带频控/白名单；出站内容过 fail-closed 合规闸门；发布结果读回对账，未核实不报成功
+6. **配置**：一切路径/密钥经 `src/zimeiti_api/config.py`（环境变量可覆盖，绝对锚定不依赖 cwd）
+7. **已知遗留**（详见归档 design.md）：API 审批端点 profile 硬编码 xhs-main（接 gzh 前修）；发布读回恒 unverified（真实平台脚本在 real-account-verification 变更落地）
 
 ## 开发铁律（永远遵守，违反即返工）
 
