@@ -387,3 +387,29 @@ class TestSqliteMigration:
         assert events[0]["title"] == "旧标题"
         snaps = metrics_db.list_snapshots("gzh-main")
         assert snaps[0]["value"] == 42
+
+
+def test_pull_platform_gzh_default_window(metrics_db, monkeypatch):
+    """gzh 默认窗口 = 过去 7 天截至昨天（datacube 仅提供 T-1 及以前，A3 实测）。"""
+    from datetime import datetime, timedelta
+
+    from zimeiti_api import ops_metrics
+
+    captured = {}
+
+    def fake_pull_gzh(db, begin, end):
+        captured["begin"], captured["end"] = begin, end
+        return {"ok": True}
+
+    monkeypatch.setattr(ops_metrics, "pull_gzh", fake_pull_gzh)
+    monkeypatch.setattr(ops_metrics, "pull_xhs", lambda db: {"ok": True})
+
+    out = ops_metrics.pull_platform(metrics_db, "gzh")
+    assert out == {"gzh": {"ok": True}}
+    today = datetime.now().date()
+    assert captured["end"] == (today - timedelta(days=1)).strftime("%Y-%m-%d")
+    assert captured["begin"] == (today - timedelta(days=7)).strftime("%Y-%m-%d")
+
+    # 显式日期直传，覆盖默认窗口
+    ops_metrics.pull_platform(metrics_db, "gzh", "2026-09-01", "2026-09-02")
+    assert captured == {"begin": "2026-09-01", "end": "2026-09-02"}

@@ -186,9 +186,8 @@ class MetricsDB:
             )
             conn.commit()
             return int(cur.fetchone()["id"])
-            return int(cur.fetchone()["id"])
 
-    # ─── 读取侧 ────────────────────────────────────────────────────
+            # ─── 读取侧 ────────────────────────────────────────────────────
 
     def list_events(self, platform: str | None = None) -> list[dict]:
         with self._conn() as conn:
@@ -467,6 +466,24 @@ def migrate_from_sqlite(db: "MetricsDB", sqlite_path: str) -> dict:
 # ─── CLI ─────────────────────────────────────────────────────────────────
 
 
+def pull_platform(
+    db: MetricsDB, site: str, begin_date: str | None = None, end_date: str | None = None
+) -> dict:
+    """按站点取数（调度器与 CLI 共用）。site: "gzh" | "xhs"。
+
+    gzh datacube 仅提供 T-1 及以前数据（A3 实测），默认取过去 7 天截至昨天。
+    """
+    out: dict[str, Any] = {}
+    if site == "gzh":
+        today = datetime.now().date()
+        end = end_date or (today - timedelta(days=1)).strftime("%Y-%m-%d")
+        begin = begin_date or (today - timedelta(days=7)).strftime("%Y-%m-%d")
+        out["gzh"] = pull_gzh(db, begin, end)
+    if site == "xhs":
+        out["xhs"] = pull_xhs(db)
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="运营数据：事件记录/取数/只读归因")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -513,15 +530,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.cmd == "pull":
+        sites = ("gzh", "xhs") if args.platform == "all" else (args.platform,)
         out: dict[str, Any] = {}
-        if args.platform in ("all", "gzh"):
-            # datacube 仅提供 T-1 及以前数据（A3 实测），默认取过去 7 天
-            today = datetime.now().date()
-            end = args.end or (today - timedelta(days=1)).strftime("%Y-%m-%d")
-            begin = args.begin or (today - timedelta(days=7)).strftime("%Y-%m-%d")
-            out["gzh"] = pull_gzh(db, begin, end)
-        if args.platform in ("all", "xhs"):
-            out["xhs"] = pull_xhs(db)
+        for site in sites:
+            out.update(pull_platform(db, site, args.begin, args.end))
         print(json.dumps(out, ensure_ascii=False, default=str))
         return 0
 

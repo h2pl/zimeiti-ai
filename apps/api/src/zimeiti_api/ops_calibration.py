@@ -47,10 +47,13 @@ def build_evidence(db: MetricsDB, platform: str, profile: str | None = None) -> 
         mean = sum(values) / len(values)
         latest = values[-1]
         entry: dict = {"mean": round(mean, 4), "latest": latest}
-        if len(values) >= 2:
-            entry["normalized"] = round(latest / mean, 4)
-        else:
+        if len(values) < 2:
             entry["normalized"] = None  # 基线不足（单点无法归一）
+        elif mean == 0:
+            # 基线为零（如点赞数全程 0）无法归一——定时任务无人值守，禁止除零崩溃
+            entry["normalized"] = None
+        else:
+            entry["normalized"] = round(latest / mean, 4)
         baseline[metric] = entry
 
     # 2. 生命周期分布

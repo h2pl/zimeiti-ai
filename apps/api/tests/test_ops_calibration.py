@@ -297,3 +297,30 @@ class TestAutoTrigger:
             force=True,
         )
         assert out["skipped"] is False
+
+
+class TestEvidenceZeroBaseline:
+    def test_zero_mean_baseline_degrades_not_crashes(self, metrics_db):
+        """定时任务无人值守：基线为零（如点赞数全程 0）必须降级，禁止除零崩溃。
+
+        回归：2026-10-10 ops-daily 首轮 xhs-main 校准 division by zero。
+        """
+        from zimeiti_api.ops_calibration import build_evidence
+
+        metrics_db.record_event(
+            platform="xhs-main",
+            title="笔记",
+            source_folder="f1",
+            publish_date="2026-10-01",
+            profile="xhs-main",
+        )
+        for ts in ("2026-10-09T20:00:00", "2026-10-09T20:05:00"):
+            metrics_db.record_snapshot(
+                None, "xhs-main", "点赞数", 0, source="creator-center", captured_at=ts
+            )
+            metrics_db.record_snapshot(
+                None, "xhs-main", "粉丝数", 212, source="creator-center", captured_at=ts
+            )
+        ev = build_evidence(metrics_db, platform="xhs-main", profile="xhs-main")
+        assert ev["baseline"]["点赞数"]["normalized"] is None  # 基线为零 → 降级
+        assert ev["baseline"]["粉丝数"]["normalized"] == 1.0
