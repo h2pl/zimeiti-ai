@@ -7,17 +7,19 @@ unless-stopped）内嵌定时器（heartbeat/cron）按点唤醒 agent turn，�
   uv run python -m zimeiti_api.gateway   # 一条命令，无人值守
 
   ┌─ FastAPI 审批 API + /health（同进程，审批页天然可用）────────────┐
-  │  调度器（asyncio 后台任务，进程内 setTimeout 式）                │
+  │  APScheduler（AsyncIOScheduler，调度内核用现成轮子——              │
+  │  misfire_grace_time/coalesce/时区/持久化语义不再手搓）            │
   │   ├─ 07:30 hosted_daily_async  → 选题+创作 → 中断等审批          │
-  │   └─ 08:30 ops_daily（线程内跑，隔离 sync Playwright 事件循环）  │
+  │   └─ 08:30 ops_daily（worker 线程跑，隔离 sync Playwright）      │
   └──────────────────────────────────────────────────────────────┘
 
-与 Windows 计划任务方案（scripts/run_*.bat）的关系：网关是主形态（自包含、
-无需外部调度器）；计划任务脚本保留为「不开常驻进程」的降级方案。
+依赖选型记录：APScheduler 3.x 稳定线（4.0 仍是 pre-release 官方不建议上生产）；
+LangGraph Platform 有原生 cron 但自托管要 license 且需整体迁移（调研记录
+2026-10-10）；aegra（开源替代）待多 agent 后台运行需求出现后再评估。
 
 幂等：每任务每天至多执行一次（last_run 日期持久化 data/state/gateway.json）；
-网关中途重启后当天已跑任务不重跑，错过时间点则在启动后补跑（对齐 cron
-catch-up 语义的简化版）。
+网关错过时间点启动后补跑（catch-up，is_due 判定），运行中错过的触发由
+APScheduler 的 misfire_grace_time（1h）+ coalesce 兜底。
 """
 
 import asyncio
@@ -28,15 +30,16 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-CHECK_INTERVAL_S = 60
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 
-# 任务注册表：name → (每日触发时间 HH:MM, 异步执行体)
-# - hosted_content：触发托管循环（async，进程内直接 await）
-# - ops_data：运营取数+校准（sync Playwright，须放 worker 线程隔离事件循环）
-_JOBS: dict[str, tuple[str, Any]] = {
-    "hosted_content": ("07:30", None),  # 执行体在 _run_job 内延迟导入
-    "ops_data": ("08:30", None),
+# 任务注册表：name → 触发时刻与执行体选择（执行体见 _run_job）
+_JOBS: dict[str, dict[str, int]] = {
+    "hosted_content": {"hour": 7, "minute": 30},
+    "ops_data": {"hour": 8, "minute": 30},
 }
+
+MISFIRE_GRACE_S = 3600  # 运行中错过的触发，1 小时内补跑一次（coalesce 合并）
 
 
 def _state_path() -> Path:
@@ -56,11 +59,11 @@ def _load_last_run(path: Path | None = None) -> dict[str, str]:
 
 
 def is_due(name: str, now: datetime, last_run: dict[str, str]) -> bool:
-    """到期判定（纯函数，便于单测）：今天已跑过 → 不跑；过了触发点 → 跑。"""
+    """补跑判定（纯函数，便于单测）：今天已跑过 → 不跑；过了触发点 → 跑。"""
     if last_run.get(name) == now.strftime("%Y-%m-%d"):
         return False
-    hh, mm = _JOBS[name][0].split(":")
-    return (now.hour, now.minute) >= (int(hh), int(mm))
+    cfg = _JOBS[name]
+    return (now.hour, now.minute) >= (cfg["hour"], cfg["minute"])
 
 
 def _save_last_run(name: str, last_run: dict[str, str], path: Path | None = None) -> None:
@@ -90,52 +93,70 @@ async def _run_job(name: str) -> dict[str, Any]:
             ops_run = await asyncio.to_thread(lambda: run_daily(MetricsDB()))
             return {"job": name, "runs": ops_run}
         return {"job": name, "error": f"未知任务 {name}"}
-    except Exception as exc:  # noqa: BLE001 - 任务失败记录后继续调度循环
-        from zimeiti_api import audit as _audit
-
-        _audit.record("gateway_job_failed", job=name, error=str(exc)[:300])
+    except Exception as exc:  # noqa: BLE001 - 任务失败记录后继续调度
+        audit.record("gateway_job_failed", job=name, error=str(exc)[:300])
         return {"job": name, "error": str(exc)[:300]}
 
 
-async def scheduler_loop(state_path: Path | None = None, check_interval: int = CHECK_INTERVAL_S):
-    """调度主循环（对标 openclaw heartbeat-runner 的 setTimeout 循环）。"""
+async def catchup_missed_jobs() -> list[str]:
+    """启动补跑：进程关停期间错过的任务立即执行一次（cron catch-up 简化语义）。"""
+    now = datetime.now()
+    last_run = _load_last_run()
+    ran = []
+    for name in _JOBS:
+        if is_due(name, now, last_run):
+            await _run_job(name)
+            ran.append(name)
+    return ran
+
+
+def _build_scheduler() -> AsyncIOScheduler:
+    """构建调度器（每日 CronTrigger；内核语义交给 APScheduler，不再手搓循环）。"""
     from zimeiti_api import audit
 
-    audit.record("gateway_scheduler_started", jobs=list(_JOBS))
-    while True:
-        try:
-            now = datetime.now()
-            last_run = _load_last_run(state_path)
-            for name in _JOBS:
-                if is_due(name, now, last_run):
-                    result = await _run_job(name)
-                    audit.record(
-                        "gateway_job_finished",
-                        **{
-                            "job": name,
-                            "ok": "error" not in result,
-                        },
-                    )
-        except Exception:  # noqa: BLE001 - 调度循环永不退出
-            from zimeiti_api import audit as _audit
+    scheduler = AsyncIOScheduler()
+    for name, cfg in _JOBS.items():
+        scheduler.add_job(
+            _run_job,
+            CronTrigger(hour=cfg["hour"], minute=cfg["minute"]),
+            args=[name],
+            id=name,
+            name=name,
+            coalesce=True,  # 积压多次触发合并为一次
+            misfire_grace_time=MISFIRE_GRACE_S,
+            max_instances=1,  # 上一次没跑完不允许并发重入
+        )
+    from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_EXECUTED, EVENT_JOB_MISSED
 
-            _audit.record("gateway_scheduler_error")
-        await asyncio.sleep(check_interval)
+    scheduler.add_listener(
+        lambda event: audit.record(
+            "gateway_job_error" if event.exception else "gateway_job_executed",
+            job=getattr(event, "job_id", None),
+        ),
+        EVENT_JOB_ERROR | EVENT_JOB_EXECUTED | EVENT_JOB_MISSED,
+    )
+    return scheduler
 
 
 def create_gateway_app():
-    """网关 = 审批 API + 进程内调度器（lifespan 启动后台任务）。"""
+    """网关 = 审批 API + APScheduler 调度器（lifespan 启动补跑+定时任务）。"""
     from contextlib import asynccontextmanager
 
+    from zimeiti_api import audit
     from zimeiti_api.app import create_app
 
     @asynccontextmanager
     async def lifespan(app):
         # 环境变量 ZIMEITI_GATEWAY=0 可关闭调度（纯 API 模式，测试用）
         if os.environ.get("ZIMEITI_GATEWAY", "1") == "1":
-            task = asyncio.create_task(scheduler_loop())
+            missed = await catchup_missed_jobs()
+            if missed:
+                audit.record("gateway_catchup", jobs=missed)
+            scheduler = _build_scheduler()
+            scheduler.start()
+            app.state.scheduler = scheduler
             yield
-            task.cancel()
+            scheduler.shutdown(wait=False)
         else:
             yield
 
@@ -156,6 +177,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    import sys
-
     raise SystemExit(main())

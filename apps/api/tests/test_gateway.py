@@ -1,6 +1,5 @@
-"""gateway 常驻网关验收：到期判定幂等、任务执行 last_run 落盘、调度循环。"""
+"""gateway 常驻网关验收：到期判定幂等、任务执行 last_run 落盘、APScheduler 注册。"""
 
-import asyncio
 import json
 import threading
 from datetime import datetime
@@ -76,31 +75,46 @@ async def test_ops_data_runs_in_worker_thread(tmp_path, monkeypatch):
     assert seen_threads == [True]  # 在 worker 线程执行，而非主协程线程
 
 
+def test_build_scheduler_registers_jobs():
+    """APScheduler 内核：双任务按 CronTrigger 注册，misfire/coalesce 语义齐备。"""
+    scheduler = gateway._build_scheduler()
+    for name, cfg in gateway._JOBS.items():
+        job = scheduler.get_job(name)
+        assert job is not None
+        assert job.coalesce is True
+        assert job.max_instances == 1
+        assert job.misfire_grace_time == gateway.MISFIRE_GRACE_S
+        from apscheduler.triggers.cron import CronTrigger
+
+        assert str(job.trigger) == str(CronTrigger(hour=cfg["hour"], minute=cfg["minute"]))
+
+
 @pytest.mark.asyncio
-async def test_scheduler_loop_triggers_due_jobs_once(tmp_path, monkeypatch):
-    """调度循环：到期任务触发一次并记录 last_run，第二轮不再触发（幂等）。"""
+async def test_catchup_missed_jobs(tmp_path, monkeypatch):
+    """启动补跑：错过的任务立即执行一次并记录 last_run；已跑过的不重复。"""
     state_file = tmp_path / "gateway.json"
-    monkeypatch.setattr(gateway, "_state_path", lambda: state_file)  # load/save 真实读写
+    monkeypatch.setattr(gateway, "_state_path", lambda: state_file)
+
+    class FakeDateTime(datetime):
+        @classmethod
+        def now(cls):
+            return datetime(2026, 10, 10, 9, 0)  # 双任务均已过点
+
+    monkeypatch.setattr(gateway, "datetime", FakeDateTime)
 
     executed = []
 
     async def fake_run_job(name):
         executed.append(name)
-        gateway._save_last_run(name, gateway._load_last_run())  # 与真实 _run_job 同语义
+        gateway._save_last_run(name, gateway._load_last_run())
         return {"job": name}
 
     monkeypatch.setattr(gateway, "_run_job", fake_run_job)
 
-    class FakeDateTime(datetime):
-        @classmethod
-        def now(cls):
-            return datetime(2026, 10, 10, 8, 31)  # 双任务均已到点（07:30/08:30）
+    ran = await gateway.catchup_missed_jobs()
+    assert ran == ["hosted_content", "ops_data"]
 
-    monkeypatch.setattr(gateway, "datetime", FakeDateTime)
-
-    task = asyncio.create_task(gateway.scheduler_loop(check_interval=1))
-    await asyncio.sleep(1.5)
-    task.cancel()
-    with pytest.raises(asyncio.CancelledError):
-        await task
-    assert executed == ["hosted_content", "ops_data"]  # 各恰好一次
+    # 再补跑一次：last_run 已是今天 → 不重复
+    ran2 = await gateway.catchup_missed_jobs()
+    assert ran2 == []
+    assert executed == ["hosted_content", "ops_data"]
