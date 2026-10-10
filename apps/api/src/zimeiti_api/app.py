@@ -2,10 +2,13 @@
 
 import json
 import re
+from collections.abc import AsyncIterator
 from datetime import datetime
 from pathlib import Path
+from typing import Any, cast
 
 from fastapi import FastAPI, HTTPException
+from langchain_core.runnables import RunnableConfig
 from langgraph.types import Command
 
 from zimeiti_api.config import OUTPUTS_DIR
@@ -348,7 +351,7 @@ def create_app(lifespan=None) -> FastAPI:
             raise HTTPException(status_code=400, detail="消息不能为空")
         account = session["account"]
         from zimeiti_api.content.profiles import load_profile
-        from zimeiti_api.models import get_model
+        from zimeiti_api.core.models import get_model
 
         profile = load_profile(account)
 
@@ -368,12 +371,19 @@ def create_app(lifespan=None) -> FastAPI:
                         EXECUTOR,
                         cycle_dir=str(Path(OUTPUTS_DIR) / account / thread_id),
                     )
-                    config = {"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}}
-                    async for mode, payload in agent.astream(
-                        {"messages": [HumanMessage(message)]},
-                        config,
-                        stream_mode=["messages", "updates"],
-                    ):
+                    config: RunnableConfig = {
+                        "configurable": {"thread_id": thread_id, "checkpoint_ns": ""}
+                    }
+                    # stream_mode 双模式为 langgraph 运行时合法参数（mypy overload 不覆盖列表形态）
+                    stream = cast(
+                        "AsyncIterator[tuple[str, Any]]",
+                        agent.astream(
+                            {"messages": [HumanMessage(message)]},
+                            config,
+                            stream_mode=["messages", "updates"],
+                        ),
+                    )
+                    async for mode, payload in stream:
                         if mode == "messages":
                             chunk, _meta = payload
                             if isinstance(chunk, AIMessageChunk) and chunk.content:
@@ -414,9 +424,12 @@ def create_app(lifespan=None) -> FastAPI:
         session = get_session(thread_id)
         if session is None:
             raise HTTPException(status_code=404, detail=f"会话不存在: {thread_id}")
-        config = {"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}}
+        config: RunnableConfig = {"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}}
         async with get_checkpointer() as saver:
             tup = await saver.aget_tuple(config)
+        print("DBG chat_messages saver type:", type(saver).__name__, "| tup:", tup is not None)
+        cv = (tup.checkpoint.get("channel_values", {}) or {}) if tup is not None else {}
+        print("DBG cv type:", type(cv).__name__, "| messages:", list(cv.get("messages", [])))
         messages: list[dict] = []
         if tup is not None:
             for m in (tup.checkpoint.get("channel_values", {}) or {}).get("messages", []):
