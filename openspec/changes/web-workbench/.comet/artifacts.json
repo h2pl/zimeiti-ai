@@ -1,8 +1,0 @@
-{
-  "openspec_proposal": "openspec/changes/web-workbench/proposal.md",
-  "openspec_design": "openspec/changes/web-workbench/design.md",
-  "openspec_tasks": "openspec/changes/web-workbench/tasks.md",
-  "openspec_delta_spec": "openspec/changes/web-workbench/specs/web-workbench/spec.md",
-  "handoff_context": "openspec/changes/web-workbench/.comet/handoff/design-context.json",
-  "handoff_markdown": "openspec/changes/web-workbench/.comet/handoff/design-context.md"
-}

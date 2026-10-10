@@ -1,0 +1,17 @@
+bash scripts/check-api.sh
+== 1/5 ruff format ==
+2 files reformatted, 74 files left unchanged
+== 2/5 ruff lint ==
+B017 Do not assert blind exception: `Exception`
+   --> tests\operations\test_workbench.py:127:14
+    |
+125 |         data = workbench.load_profile_data("xhs-main")
+126 |         data.pop("style")  # 缺必填 → validate 拒绝
+127 |         with pytest.raises(Exception):
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^
+128 |             workbench.save_profile("xhs-main", data)
+129 |         assert f.read_text(encoding="utf-8") == before
+    |
+
+Found 1 error.
+make: *** [check] ���� 1

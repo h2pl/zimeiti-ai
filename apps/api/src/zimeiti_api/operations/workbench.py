@@ -78,9 +78,7 @@ def save_profile(account: str, data: dict[str, Any]) -> None:
     import yaml
 
     # W3：未知键过滤（收敛到既有 schema 键集），enabled 是运行时叠加字段不落盘
-    existing_keys = set(
-        yaml.safe_load(profile_file.read_text(encoding="utf-8")).keys()
-    )
+    existing_keys = set(yaml.safe_load(profile_file.read_text(encoding="utf-8")).keys())
     data = {k: v for k, v in data.items() if k in existing_keys and k != "enabled"}
     profile_file.write_text(
         yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8"

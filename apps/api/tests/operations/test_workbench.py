@@ -124,7 +124,7 @@ class TestTrendsOutputs:
         before = f.read_text(encoding="utf-8")
         data = workbench.load_profile_data("xhs-main")
         data.pop("style")  # 缺必填 → validate 拒绝
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError, match="必填"):
             workbench.save_profile("xhs-main", data)
         assert f.read_text(encoding="utf-8") == before
 

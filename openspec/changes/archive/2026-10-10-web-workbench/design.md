@@ -2,6 +2,8 @@
 comet_change: web-workbench
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-10-web-workbench
+status: final
 ---
 
 # 设计：web-workbench
