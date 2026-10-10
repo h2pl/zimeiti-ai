@@ -2,6 +2,7 @@
 change: web-easel-alignment
 design-doc: openspec/changes/web-easel-alignment/design.md
 base-ref: 9b9639b
+archived-with: 2026-10-10-web-easel-alignment
 ---
 
 <!-- comet-task-authority: openspec/changes/web-easel-alignment/tasks.md -->
@@ -30,3 +31,35 @@ styles/index.css `:root` 令牌 + 全局原子类 + 内联 SVG 图标 + 暗色 t
 - 后端不动（端点契约已就绪）
 
 回滚：分支单 commit revert。
+
+## 执行序（每项绑定 comet-task-ref）
+
+<!-- comet-task-ref:1c4c4452-c880-4fb5-a811-5590ca6dc202 -->
+- T1 `styles/index.css` 设计系统移植
+
+<!-- comet-task-ref:0e12b587-c2af-4fd2-9e59-5d78407a73d4 -->
+- T2 `index.html` 防闪脚本与字体
+
+<!-- comet-task-ref:9f96bf38-e885-4ed1-a25a-b74164ca968b -->
+- T3 卸载 react-router-dom
+
+<!-- comet-task-ref:ecef2fcb-0e63-40b7-b051-3f0d0ed193e3 -->
+- T4 页面结构迁移 components/
+
+<!-- comet-task-ref:3c458548-c50e-44df-817c-21b9e92d02c1 -->
+- T5 lib/api.ts 重写
+
+<!-- comet-task-ref:c7eb057e-1c56-4bc1-a9ed-cdd3ed14b826 -->
+- T6 八页面 Easel 范式重写
+
+<!-- comet-task-ref:a93c1abb-4922-4b5b-aa07-87b07a679839 -->
+- T7 侧边栏渐变激活条+状态点
+
+<!-- comet-task-ref:c715ea5a-8968-4457-bdf0-ab5b528fcbd7 -->
+- T8 pnpm build + grep 验收
+
+<!-- comet-task-ref:7cd2347b-6026-4bb0-802c-f46d72b40554 -->
+- T9 端点冒烟
+
+<!-- comet-task-ref:3159a9a7-ebcc-40f1-8927-a426831ad901 -->
+- T10 spec 场景核对
