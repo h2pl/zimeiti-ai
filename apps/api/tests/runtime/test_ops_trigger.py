@@ -1,7 +1,6 @@
 """运维触发标记消费验收（web-pages-batch T4）。"""
 
 import json
-from pathlib import Path
 
 import pytest
 

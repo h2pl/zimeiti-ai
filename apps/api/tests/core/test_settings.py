@@ -1,7 +1,5 @@
 """运行时设置验收（web-pages-batch T1）。"""
 
-from pathlib import Path
-
 import pytest
 
 from zimeiti_api.core import settings
