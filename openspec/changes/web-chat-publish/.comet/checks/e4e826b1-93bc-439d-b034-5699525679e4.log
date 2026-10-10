@@ -1,0 +1,52 @@
+bash scripts/check-api.sh
+== 1/5 ruff format ==
+81 files left unchanged
+== 2/5 ruff lint ==
+F821 Undefined name `load_profile`
+   --> src\zimeiti_api\app.py:350:19
+    |
+348 |             raise HTTPException(status_code=400, detail="消息不能为空")
+349 |         account = session["account"]
+350 |         profile = load_profile(account)
+    |                   ^^^^^^^^^^^^
+351 |
+352 |         from zimeiti_api.runtime.checkpoints import get_checkpointer
+    |
+
+F821 Undefined name `get_model`
+   --> src\zimeiti_api\app.py:362:25
+    |
+360 |                 async with get_checkpointer() as saver:
+361 |                     agent = build_minimal_agent(
+362 |                         get_model(),
+    |                         ^^^^^^^^^
+363 |                         saver,
+364 |                         profile,
+    |
+
+F841 Local variable `profile` is assigned to but never used
+   --> src\zimeiti_api\app.py:415:9
+    |
+413 |             raise HTTPException(status_code=404, detail=f"会话不存在: {thread_id}")
+414 |         account = session["account"]
+415 |         profile = load_profile(account)
+    |         ^^^^^^^
+416 |         config = {"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}}
+417 |         async with get_checkpointer() as saver:
+    |
+help: Remove assignment to unused variable `profile`
+
+F821 Undefined name `load_profile`
+   --> src\zimeiti_api\app.py:415:19
+    |
+413 |             raise HTTPException(status_code=404, detail=f"会话不存在: {thread_id}")
+414 |         account = session["account"]
+415 |         profile = load_profile(account)
+    |                   ^^^^^^^^^^^^
+416 |         config = {"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}}
+417 |         async with get_checkpointer() as saver:
+    |
+
+Found 4 errors.
+No fixes available (1 hidden fix can be enabled with the `--unsafe-fixes` option).
+make: *** [check] ���� 1

@@ -4,7 +4,7 @@
 
 ### Requirement: 会话创建与清单
 
-创建对话会话返回唯一 thread_id；清单列出全部会话（含消息数与最后活跃时间）。
+创建对话会话返回唯一 thread_id；清单列出全部会话（含最后活跃时间与轮次数）。
 
 #### Scenario: 创建会话
 - **When** POST /api/chat/sessions
@@ -12,16 +12,16 @@
 
 ### Requirement: 流式对话
 
-发送消息后以 SSE 流式返回模型增量 token、工具调用事件；agent 命中人工闸门时
-下发 interrupt 帧（含问题载荷或审批提示）并结束本轮流。
+发送消息后以 SSE 流式返回模型增量 token；agent 命中人工闸门时下发携带载荷的
+interrupt 帧并结束本轮流。
 
 #### Scenario: 提问中断以 interrupt 帧下发
 - **When** agent 调用 ask_human 触发中断
 - **Then** SSE 流以 interrupt 帧结束，pending 队列登记该会话
 
 #### Scenario: 回答后续跑
-- **When** 用户经应答端点回答后再次发起空消息流
-- **Then** agent 从断点续跑并继续流式输出
+- **When** 用户经应答端点回答
+- **Then** agent 从断点同步续跑，返回的 last_message 由前端回显为 assistant 消息
 
 ### Requirement: 发布中心
 

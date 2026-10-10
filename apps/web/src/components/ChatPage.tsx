@@ -64,6 +64,19 @@ export default function ChatPage() {
     }
   }, []);
 
+  // W4：切换会话/卸载时中止进行中的流
+  useEffect(() => {
+    return () => streamAbort.current?.abort();
+  }, []);
+
+  const switchSession = (s: Session) => {
+    streamAbort.current?.abort();
+    setPhase("idle");
+    setCurrent(s);
+    setInterrupt(null);
+    void loadHistory(s.thread_id);
+  };
+
   const newSession = async () => {
     try {
       const s = await createChatSession("xhs-main", "新对话");
@@ -163,11 +176,7 @@ export default function ChatPage() {
             <button
               key={s.thread_id}
               className={current?.thread_id === s.thread_id ? "chip active" : "chip"}
-              onClick={() => {
-                setCurrent(s);
-                setInterrupt(null);
-                void loadHistory(s.thread_id);
-              }}
+              onClick={() => switchSession(s)}
             >
               {s.title}
             </button>

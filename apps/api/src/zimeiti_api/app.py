@@ -427,14 +427,12 @@ def create_app(lifespan=None) -> FastAPI:
         config: RunnableConfig = {"configurable": {"thread_id": thread_id, "checkpoint_ns": ""}}
         async with get_checkpointer() as saver:
             tup = await saver.aget_tuple(config)
-        print("DBG chat_messages saver type:", type(saver).__name__, "| tup:", tup is not None)
-        cv = (tup.checkpoint.get("channel_values", {}) or {}) if tup is not None else {}
-        print("DBG cv type:", type(cv).__name__, "| messages:", list(cv.get("messages", [])))
         messages: list[dict] = []
         if tup is not None:
             for m in (tup.checkpoint.get("channel_values", {}) or {}).get("messages", []):
                 if isinstance(m, (HumanMessage, AIMessage)) and m.content:
-                    messages.append({"role": m.type, "content": str(m.content)})
+                    text = m.text() if hasattr(m, "text") else str(m.content)
+                    messages.append({"role": m.type, "content": text})
         return {"messages": messages}
 
     @app.get("/api/publish-queue")
@@ -453,9 +451,12 @@ def create_app(lifespan=None) -> FastAPI:
         slug = str(body.get("slug", ""))
         if not (valid_account(account) and valid_account(slug)):
             raise HTTPException(status_code=400, detail="非法 account/slug")
-        drafts_path = str(Path(OUTPUTS_DIR) / account / slug / "drafts.json")
-        if not Path(drafts_path).exists():
+        drafts_dir = Path(OUTPUTS_DIR) / account / slug
+        if not (drafts_dir / "drafts.json").exists():
             raise HTTPException(status_code=404, detail="草稿不存在")
+        # C1（评审）：存目录路径——queue.execute_approved_publish 约定 drafts_path
+        # 为目录（其内拼接 drafts.json）；存文件路径会导致到期发布必然 FileNotFoundError
+        drafts_path = str(drafts_dir)
         for e in queue.list_entries():
             if e.get("drafts_path") == drafts_path and e.get("status") == "pending":
                 raise HTTPException(status_code=409, detail="该草稿已在待发布队列")

@@ -34,6 +34,8 @@ def create_session(account: str, title: str = "", path: Path | None = None) -> d
         "account": account,
         "title": title.strip() or "新对话",
         "created_at": datetime.now().isoformat(timespec="seconds"),
+        "last_active": datetime.now().isoformat(timespec="seconds"),
+        "turns": 0,
     }
     sessions = _load(path)
     sessions.append(entry)
@@ -48,6 +50,18 @@ def get_session(thread_id: str, path: Path | None = None) -> dict[str, Any] | No
         if s["thread_id"] == thread_id:
             return s
     return None
+
+
+def touch_session(thread_id: str, path: Path | None = None) -> None:
+    """流式轮次后更新最后活跃时间与轮次计数（清单展示用）。"""
+    sessions = _load(path)
+    for s in sessions:
+        if s["thread_id"] == thread_id:
+            s["last_active"] = datetime.now().isoformat(timespec="seconds")
+            s["turns"] = s.get("turns", 0) + 1
+            break
+    p = path or registry_path()
+    p.write_text(json.dumps(sessions, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def list_sessions(path: Path | None = None) -> list[dict[str, Any]]:

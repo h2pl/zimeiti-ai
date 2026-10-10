@@ -163,3 +163,70 @@ class TestMessagesEndpoint:
     def test_messages_404(self, chat_env, client):
         r = client.get("/api/chat/sessions/ghost/messages")
         assert r.status_code == 404
+
+
+# ── T4 发布中心端点（评审 W1 补测） ─────────────────────────────────
+
+
+class TestPublishCenter:
+    @pytest.fixture
+    def pub_env(self, tmp_path, monkeypatch):
+        import zimeiti_api.app as appmod
+
+        outputs = tmp_path / "outputs"
+        slug_dir = outputs / "xhs-main" / "20261010-120000"
+        slug_dir.mkdir(parents=True)
+        (slug_dir / "drafts.json").write_text(
+            json.dumps(
+                {
+                    "topic": "T",
+                    "compliance": {"passed": True},
+                    "drafts": {"xhs": {"title": "标题T"}},
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(appmod, "OUTPUTS_DIR", outputs)
+        monkeypatch.setattr("zimeiti_api.governance.queue._queue_path", lambda: tmp_path / "q.json")
+        return outputs
+
+    def test_enqueue_and_list(self, chat_env, client, pub_env):
+        r = client.post(
+            "/api/publish-queue/enqueue",
+            json={"account": "xhs-main", "slug": "20261010-120000", "title": "标题T"},
+        )
+        assert r.status_code == 200
+        entries = client.get("/api/publish-queue").json()
+        assert len(entries) == 1
+        # C1：drafts_path 存目录路径（与 execute_approved_publish 拼接约定一致）
+        assert not entries[0]["drafts_path"].endswith("drafts.json")
+
+    def test_enqueue_duplicate_409(self, chat_env, client, pub_env):
+        body = {"account": "xhs-main", "slug": "20261010-120000", "title": "标题T"}
+        assert client.post("/api/publish-queue/enqueue", json=body).status_code == 200
+        assert client.post("/api/publish-queue/enqueue", json=body).status_code == 409
+
+    def test_enqueue_missing_draft_404(self, chat_env, client, pub_env):
+        r = client.post(
+            "/api/publish-queue/enqueue",
+            json={"account": "xhs-main", "slug": "ghost", "title": "x"},
+        )
+        assert r.status_code == 404
+
+    def test_empty_account_outputs(self, chat_env, client, pub_env):
+        r = client.get("/api/outputs/ghost")
+        assert r.status_code == 200 and r.json() == []
+
+
+class TestChatSessionFields:
+    def test_list_has_last_active_and_turns(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(chat, "registry_path", lambda: tmp_path / "cs.json")
+        s = chat.create_session("xhs-main")
+        chat.touch_session(s["thread_id"])
+        entry = chat.list_sessions()[0]
+        assert entry["turns"] == 1
+        assert entry["last_active"]
+
+    def test_touch_unknown_session_noop(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(chat, "registry_path", lambda: tmp_path / "cs.json")
+        chat.touch_session("ghost")  # 不抛错即通过
