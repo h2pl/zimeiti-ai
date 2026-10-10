@@ -2,6 +2,7 @@
 change: web-chat-publish
 design-doc: openspec/changes/web-chat-publish/design.md
 base-ref: 6cee62a
+archived-with: 2026-10-10-web-chat-publish
 ---
 
 <!-- comet-task-authority: openspec/changes/web-chat-publish/tasks.md -->

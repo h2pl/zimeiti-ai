@@ -2,6 +2,8 @@
 comet_change: web-chat-publish
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-10-web-chat-publish
+status: final
 ---
 
 # 设计：web-chat-publish
