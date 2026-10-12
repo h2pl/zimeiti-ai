@@ -2,6 +2,7 @@
 change: phase1-easel-api-copy
 design-doc: docs/openspec/changes/phase1-easel-api-copy/design.md
 base-ref: 7261f21ac1c1b0f0e3a34b0bc2e5b45d3361a00f
+archived-with: 2026-10-13-phase1-easel-api-copy
 ---
 
 <!-- comet-task-authority: docs/openspec/changes/phase1-easel-api-copy/tasks.md -->

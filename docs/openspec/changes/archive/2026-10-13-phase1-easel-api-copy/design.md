@@ -2,6 +2,8 @@
 comet_change: phase1-easel-api-copy
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-13-phase1-easel-api-copy
+status: final
 ---
 ## Context
 
