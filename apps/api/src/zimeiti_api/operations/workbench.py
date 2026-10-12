@@ -204,3 +204,55 @@ def preflight_for_draft(account: str, slug: str, outputs_dir: Path) -> dict[str,
         "preflight": result,
         "passed": all(not v for v in result.values()),
     }
+
+
+def create_account(data: dict[str, Any], profiles_dir: Path) -> dict[str, Any]:
+    """创建账号（feat-accounts-crud）：白名单 + 不存在 + validate → 落盘并启用。"""
+    account = str(data.get("account", ""))
+    if not valid_account(account):
+        raise ValueError("非法账号名")
+    acc_dir = Path(profiles_dir) / account
+    if (acc_dir / "profile.yaml").exists():
+        raise FileExistsError(f"账号已存在: {account}")
+    from zimeiti_api.content.profiles import validate_profile
+
+    validate_profile(data)  # fail-closed
+    acc_dir.mkdir(parents=True, exist_ok=True)
+    import yaml
+
+    (acc_dir / "profile.yaml").write_text(
+        yaml.safe_dump(data, allow_unicode=True, sort_keys=False), encoding="utf-8"
+    )
+    from zimeiti_api.core import audit
+    from zimeiti_api.governance import platform_state
+
+    platform_state.ensure_defaults()
+    platform_state.set_enabled(account, True, reason="创建账号")
+    audit.record("account_created", account=account)
+    return {**data, "enabled": True}
+
+
+def delete_account(
+    account: str, profiles_dir: Path, credentials_dir: Path, state_path: Path
+) -> dict[str, Any]:
+    """删除账号（危险操作，全程审计）：画像目录 + 平台状态键 + 凭证文件。"""
+    import shutil
+
+    if not valid_account(account):
+        raise ValueError("非法账号名")
+    acc_dir = Path(profiles_dir) / account
+    if not (acc_dir / "profile.yaml").exists():
+        raise FileNotFoundError(f"账号不存在: {account}")
+    from zimeiti_api.core import audit
+    from zimeiti_api.governance import platform_state
+
+    removed: dict[str, Any] = {"profile": True}
+    shutil.rmtree(acc_dir)
+    state_removed = platform_state.remove_account(account, state_path)
+    removed["platform_state"] = state_removed
+    sealed = Path(credentials_dir) / f"{account}.sealed"
+    if sealed.exists():
+        sealed.unlink()
+        removed["credentials"] = True
+    audit.record("account_deleted", account=account, removed=json.dumps(removed))
+    return {"account": account, "removed": removed}

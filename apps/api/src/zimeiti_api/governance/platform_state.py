@@ -75,3 +75,17 @@ def disabled_accounts(
     accounts: tuple[str, ...] = DEFAULT_ACCOUNTS, path: Path | None = None
 ) -> list[str]:
     return [a for a in accounts if not is_enabled(a, path)]
+
+
+def remove_account(account: str, path: Path | None = None) -> bool:
+    """移除账号启停记录（feat-accounts-crud：删账号时清理；键不存在返回 False）。"""
+    p = path or _state_path()
+    data = _load(p) or {}
+    if account in data:
+        del data[account]
+        p.parent.mkdir(parents=True, exist_ok=True)
+        import json
+
+        p.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        return True
+    return False

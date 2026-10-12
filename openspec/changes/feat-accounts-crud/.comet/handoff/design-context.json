@@ -1,0 +1,16 @@
+{
+  "change": "feat-accounts-crud",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "95a01d4107075369280d0889b00d455e1314302a2108231472c03a59e55897a7",
+  "files": [
+    { "path": "openspec/changes/feat-accounts-crud/proposal.md", "sha256": "6796e21b3eeffd5b1aacc71e82e3b67119c915a954402cf3577e083fda892059" },
+    { "path": "openspec/changes/feat-accounts-crud/design.md", "sha256": "b674e44ad8285cac95b623b15636b41d1fabab74f160b8d960e6a0b0c3620747" },
+    { "path": "openspec/changes/feat-accounts-crud/tasks.md", "sha256": "b512ed4586f9d90f285862af03f5221b6c7a8ba22d15fbfcf8c62823598aa1b3" },
+    { "path": "openspec/changes/feat-accounts-crud/.openspec.yaml", "sha256": "1dfdca412094f24473d8b842866201ec26f200b29b17064b03f1e4982c35a7b9" },
+    { "path": "openspec/changes/feat-accounts-crud/specs/web-workbench/spec.md", "sha256": "0057965c41b7b4a4a667fe1bce0ba2660bb1cb234f7ddea9384fc644c0ef8238" }
+  ]
+}
