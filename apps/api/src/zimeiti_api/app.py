@@ -291,6 +291,22 @@ def create_app(lifespan=None) -> FastAPI:
         job = str(body.get("job", ""))
         if job not in ("hosted_content", "ops_data", "health_check"):
             raise HTTPException(status_code=400, detail="非法任务名")
+        # D2：params 白名单（account/direction）
+        params = body.get("params") or {}
+        if not isinstance(params, dict):
+            raise HTTPException(status_code=400, detail="params 必须为对象")
+        unknown = [k for k in params if k not in ("account", "direction")]
+        if unknown:
+            raise HTTPException(status_code=400, detail=f"未知参数: {unknown}")
+        account = str(params.get("account", "")).strip()
+        if account:
+            from zimeiti_api.operations.workbench import valid_account
+
+            if not valid_account(account):
+                raise HTTPException(status_code=400, detail="非法账号名")
+        direction = str(params.get("direction", "")).strip()
+        if len(direction) > 200:
+            raise HTTPException(status_code=400, detail="选题方向过长（≤200 字符）")
         from zimeiti_api.config import DATA_DIR
 
         p = Path(DATA_DIR) / "state" / "ops-trigger.json"
@@ -301,10 +317,11 @@ def create_app(lifespan=None) -> FastAPI:
             existing = _json.loads(p.read_text(encoding="utf-8"))
         except (ValueError, OSError):
             existing = {}
-        existing[job] = True
+        spec: dict = {"params": {"account": account, "direction": direction}}
+        existing[job] = spec
         p.write_text(_json.dumps(existing, ensure_ascii=False), encoding="utf-8")
-        audit.record("ops_triggered", job=job)
-        return {"triggered": job}
+        audit.record("ops_triggered", job=job, account=account)
+        return {"triggered": job, "params": spec["params"]}
 
     @app.get("/api/tools")
     def tools_list() -> list[dict]:

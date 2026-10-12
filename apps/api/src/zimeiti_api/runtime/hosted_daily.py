@@ -49,8 +49,11 @@ def _pending_accounts() -> set[str]:
     return {p.get("account", "") for p in hosted.list_pending_approvals()}
 
 
-async def trigger_for_account(account: str) -> dict[str, Any]:
-    """为单账号触发一轮托管循环（到第一次人工中断为止）。"""
+async def trigger_for_account(account: str, direction: str = "") -> dict[str, Any]:
+    """为单账号触发一轮托管循环（到第一次人工中断为止）。
+
+    direction 非空时替换 INSTRUCTION 的选题指引段（D3 模板化拼接）。
+    """
     from zimeiti_api.config import OUTPUTS_DIR
     from zimeiti_api.content.profiles import load_profile
     from zimeiti_api.core.models import get_model
@@ -76,8 +79,13 @@ async def trigger_for_account(account: str) -> dict[str, Any]:
     return {"account": account, "interrupted": interrupted}
 
 
-async def run_daily_async(accounts: list[str] | None = None) -> list[dict[str, Any]]:
-    """异步版（常驻网关进程内直接 await，参考: openclaw gateway 内嵌 agent turn）。"""
+async def run_daily_async(
+    accounts: list[str] | None = None, direction: str = ""
+) -> list[dict[str, Any]]:
+    """异步版（常驻网关进程内直接 await，参考: openclaw gateway 内嵌 agent turn）。
+
+    direction：手动触发的选题方向（feat-skill-runner D3），空 = 每日默认。
+    """
     from zimeiti_api.governance import platform_state
 
     accounts = accounts or list(DEFAULT_ACCOUNTS)
@@ -91,7 +99,7 @@ async def run_daily_async(accounts: list[str] | None = None) -> list[dict[str, A
             runs.append({"account": account, "skipped": "平台已停用（登录失效待人工恢复）"})
             continue
         try:
-            runs.append(await trigger_for_account(account))
+            runs.append(await trigger_for_account(account, direction=direction))
         except Exception as exc:  # noqa: BLE001 - 单账号失败不中断其他账号
             runs.append({"account": account, "error": str(exc)[:300]})
     _append_log(runs)

@@ -32,7 +32,7 @@ def test_daily_skips_accounts_with_pending(monkeypatch, fake_run):
     monkeypatch.setattr(hosted_daily, "_pending_accounts", lambda: {"xhs-main"})
     called = []
 
-    async def fake_trigger(account):
+    async def fake_trigger(account, direction=""):
         called.append(account)
         return {"account": account, "interrupted": True}
 
@@ -47,7 +47,7 @@ def test_daily_single_account_failure_continues(monkeypatch, tmp_path, fake_run)
     monkeypatch.setattr(hosted_daily, "_pending_accounts", lambda: set())
     monkeypatch.setattr(hosted_daily, "_log_path", lambda: tmp_path / "h.jsonl")
 
-    async def fake_trigger(account):
+    async def fake_trigger(account, direction=""):
         if account == "xhs-main":
             raise RuntimeError("模型超时")
         return {"account": account, "interrupted": True}
@@ -65,7 +65,7 @@ def test_daily_log_appends(tmp_path, monkeypatch, fake_run):
     monkeypatch.setattr(hosted_daily, "_pending_accounts", lambda: set())
     monkeypatch.setattr(hosted_daily, "_log_path", lambda: tmp_path / "h.jsonl")
 
-    async def fake_trigger(account):
+    async def fake_trigger(account, direction=""):
         return {"account": account, "interrupted": True}
 
     monkeypatch.setattr(hosted_daily, "trigger_for_account", fake_trigger)

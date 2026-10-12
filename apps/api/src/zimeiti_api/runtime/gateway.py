@@ -100,10 +100,25 @@ async def _consume_manual_triggers() -> list[str]:
         consumed.unlink(missing_ok=True)
         return []
     ran = []
-    for name in list(triggers):
-        if name in _JOBS:
-            await _run_job(name)
+    for name, spec in triggers.items():
+        if name not in _JOBS:
+            continue
+        # D1：标记值兼容 bool（旧）与 {"params": {...}}（feat-skill-runner 新）
+        params = spec.get("params") if isinstance(spec, dict) else None
+        if name == "hosted_content" and isinstance(params, dict):
+            from zimeiti_api.runtime.hosted_daily import run_daily_async
+
+            result = await run_daily_async(
+                accounts=[params["account"]] if params.get("account") else None,
+                direction=str(params.get("direction", "")),
+            )
             ran.append(name)
+            from zimeiti_api.core import audit as _audit
+
+            _audit.record("gateway_job_finished", job=name, ok="error" not in (result[0] or {}))
+            continue
+        await _run_job(name)
+        ran.append(name)
     consumed.unlink(missing_ok=True)
     return ran
 

@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from zimeiti_api.app import create_app
 from zimeiti_api.governance import platform_state
+from zimeiti_api.runtime import gateway
 
 
 @pytest.fixture
@@ -165,9 +166,9 @@ class TestToolsAndTrigger:
         monkeypatch.setattr("zimeiti_api.config.DATA_DIR", str(tmp_path))
         r = client.post("/api/ops/trigger", json={"job": "ops_data"})
         assert r.status_code == 200
-        assert json.loads(
-            (tmp_path / "state" / "ops-trigger.json").read_text(encoding="utf-8")
-        ) == {"ops_data": True}
+        marker = json.loads((tmp_path / "state" / "ops-trigger.json").read_text(encoding="utf-8"))
+        # feat-skill-runner：标记值升级为对象（params），网关兼容旧 bool
+        assert marker["ops_data"]["params"] == {"account": "", "direction": ""}
 
     def test_ops_trigger_invalid_job_400(self, client, tmp_path, monkeypatch):
         monkeypatch.setattr("zimeiti_api.config.DATA_DIR", str(tmp_path))
@@ -318,3 +319,87 @@ class TestPublishOrchestration:
             json={"account": "xhs-main", "slug": "s1", "title": "T", "run_at": "明天"},
         )
         assert r.status_code == 400
+
+
+class TestSkillRunnerTrigger:
+    """feat-skill-runner：ops/trigger 参数白名单与标记对象格式。"""
+
+    @pytest.fixture
+    def trig(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("zimeiti_api.config.DATA_DIR", str(tmp_path))
+        return tmp_path
+
+    def _marker(self, tmp_path):
+        return json.loads((tmp_path / "state" / "ops-trigger.json").read_text(encoding="utf-8"))
+
+    def test_hosted_content_with_params(self, client, trig):
+        r = client.post(
+            "/api/ops/trigger",
+            json={
+                "job": "hosted_content",
+                "params": {"account": "xhs-main", "direction": "AI 工作流实战"},
+            },
+        )
+        assert r.status_code == 200
+        marker = self._marker(trig)
+        assert marker["hosted_content"]["params"]["direction"] == "AI 工作流实战"
+
+    def test_unknown_param_key_400(self, client, trig):
+        r = client.post("/api/ops/trigger", json={"job": "hosted_content", "params": {"evil": 1}})
+        assert r.status_code == 400
+
+    def test_invalid_account_400(self, client, trig):
+        r = client.post(
+            "/api/ops/trigger",
+            json={"job": "hosted_content", "params": {"account": "../etc"}},
+        )
+        assert r.status_code == 400
+
+    def test_long_direction_400(self, client, trig):
+        r = client.post(
+            "/api/ops/trigger",
+            json={"job": "hosted_content", "params": {"direction": "x" * 201}},
+        )
+        assert r.status_code == 400
+
+
+class TestGatewayParamsPassthrough:
+    """网关消费：hosted_content 标记带 params 时透传 direction（D1/D3）。"""
+
+    @pytest.mark.asyncio
+    async def test_params_passthrough(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(gateway, "_trigger_path", lambda: tmp_path / "ops-trigger.json")
+        seen = {}
+
+        async def fake_run_daily(accounts=None, direction=""):
+            seen["accounts"] = accounts
+            seen["direction"] = direction
+            return [{"account": "xhs-main", "interrupted": True}]
+
+        monkeypatch.setattr("zimeiti_api.runtime.hosted_daily.run_daily_async", fake_run_daily)
+        (tmp_path / "ops-trigger.json").write_text(
+            json.dumps(
+                {"hosted_content": {"params": {"account": "xhs-main", "direction": "指定方向"}}}
+            ),
+            encoding="utf-8",
+        )
+        ran = await gateway._consume_manual_triggers()
+        assert ran == ["hosted_content"]
+        assert seen["accounts"] == ["xhs-main"]
+        assert seen["direction"] == "指定方向"
+
+    @pytest.mark.asyncio
+    async def test_legacy_bool_marker_still_works(self, tmp_path, monkeypatch):
+        """向后兼容：旧布尔值标记仍走默认 _run_job 路径。"""
+        monkeypatch.setattr(gateway, "_trigger_path", lambda: tmp_path / "ops-trigger.json")
+        executed = []
+
+        async def fake_run_job(name):
+            executed.append(name)
+            return {"job": name}
+
+        monkeypatch.setattr(gateway, "_run_job", fake_run_job)
+        (tmp_path / "ops-trigger.json").write_text(json.dumps({"ops_data": True}), encoding="utf-8")
+        ran = await gateway._consume_manual_triggers()
+        assert ran == ["ops_data"]
+        assert executed == ["ops_data"]

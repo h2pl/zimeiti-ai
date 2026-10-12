@@ -1,0 +1,9 @@
+{
+  "openspec_proposal": "openspec/changes/feat-skill-runner/proposal.md",
+  "openspec_design": "openspec/changes/feat-skill-runner/design.md",
+  "openspec_tasks": "openspec/changes/feat-skill-runner/tasks.md",
+  "openspec_delta_spec": "openspec/changes/feat-skill-runner/specs/web-workbench/spec.md",
+  "build_plan": "docs/superpowers/plans/2026-10-12-feat-skill-runner.md",
+  "handoff_context": "openspec/changes/feat-skill-runner/.comet/handoff/design-context.json",
+  "handoff_markdown": "openspec/changes/feat-skill-runner/.comet/handoff/design-context.md"
+}
