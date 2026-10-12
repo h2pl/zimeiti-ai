@@ -1,0 +1,16 @@
+{
+  "change": "feat-skill-runner",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "e4cb745642462f9b325fa23ab10b275fe1004305dd7386d09c1b997553f4e35a",
+  "files": [
+    { "path": "openspec/changes/feat-skill-runner/proposal.md", "sha256": "4ebd764240e96ad13fc6c355c4c78233b1aae3f9b1883edec3f656e34640eb31" },
+    { "path": "openspec/changes/feat-skill-runner/design.md", "sha256": "897eb99d5b13055190e70e1bc7fe7c268e1dc210ea5d2aa8128bf7296ff955d7" },
+    { "path": "openspec/changes/feat-skill-runner/tasks.md", "sha256": "9e68651a820af4817f1da4a14d4e786deb8b085f9f703612a38999fa8bdf8a69" },
+    { "path": "openspec/changes/feat-skill-runner/.openspec.yaml", "sha256": "1dfdca412094f24473d8b842866201ec26f200b29b17064b03f1e4982c35a7b9" },
+    { "path": "openspec/changes/feat-skill-runner/specs/web-workbench/spec.md", "sha256": "991a52f977e9faf69cb01a677816978de46ac87dc245b41616510b712bbe0657" }
+  ]
+}

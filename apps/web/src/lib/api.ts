@@ -225,11 +225,14 @@ export function updateAppSettings(data: Record<string, string>): Promise<Record<
   });
 }
 
-export function triggerOps(job: 'hosted_content' | 'ops_data'): Promise<{ triggered: string }> {
+export function triggerOps(
+  job: 'hosted_content' | 'ops_data',
+  params?: Record<string, string>,
+): Promise<{ triggered: string; params: Record<string, string> }> {
   return request('/api/ops/trigger', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ job }),
+    body: JSON.stringify({ job, params: params ?? {} }),
   });
 }
 
