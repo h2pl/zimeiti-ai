@@ -268,9 +268,16 @@ export function enqueueDraft(
   });
 }
 
-export function fetchPublishQueue(): Promise<
-  { id: string; account: string; drafts_path: string; title: string; run_at: string; status: string }[]
-> {
+export interface QueueEntry {
+  id: string;
+  account: string;
+  drafts_path: string;
+  title: string;
+  run_at: string;
+  status: string;
+}
+
+export function fetchPublishQueue(): Promise<QueueEntry[]> {
   return request('/api/publish-queue');
 }
 
@@ -285,4 +292,32 @@ export interface OutputDetail {
 
 export function fetchOutputDetail(account: string, slug: string): Promise<OutputDetail> {
   return request(`/api/outputs/${account}/${slug}`);
+}
+
+export interface PreflightResult {
+  account: string;
+  slug: string;
+  preflight: Record<string, string[]>;
+  passed: boolean;
+}
+
+export function fetchPreflight(account: string, slug: string): Promise<PreflightResult> {
+  return request(`/api/preflight/${account}/${slug}`);
+}
+
+export function cancelQueueEntry(entryId: string): Promise<{ status: string }> {
+  return request(`/api/publish-queue/${entryId}/cancel`, { method: 'POST' });
+}
+
+export function enqueueDraftScheduled(
+  account: string,
+  slug: string,
+  title: string,
+  runAt: string,
+): Promise<{ entry_id: string }> {
+  return request('/api/publish-queue/enqueue', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ account, slug, title, run_at: runAt }),
+  });
 }

@@ -182,3 +182,25 @@ def output_detail(account: str, slug: str, outputs_dir: Path) -> dict[str, Any] 
         "compliance": data.get("compliance") or {},
         "drafts": data.get("drafts") or {},
     }
+
+
+def preflight_for_draft(account: str, slug: str, outputs_dir: Path) -> dict[str, Any]:
+    """发布编排预检（T2）：对双平台 draft 跑 governance.preflight，逐项返回。
+
+    fail-closed：passed = 两平台均无违规。account/slug 白名单同 output_detail。
+    """
+    detail = output_detail(account, slug, outputs_dir)
+    if detail is None:
+        raise FileNotFoundError("草稿不存在")
+    from zimeiti_api.governance.preflight import preflight
+
+    result: dict[str, list[str]] = {}
+    for platform in ("xhs", "gzh"):
+        draft = detail["drafts"].get(platform) or {}
+        result[platform] = preflight(account, {**draft, "platform": platform})
+    return {
+        "account": account,
+        "slug": slug,
+        "preflight": result,
+        "passed": all(not v for v in result.values()),
+    }
