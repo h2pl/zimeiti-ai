@@ -273,3 +273,16 @@ export function fetchPublishQueue(): Promise<
 > {
   return request('/api/publish-queue');
 }
+
+export interface OutputDetail {
+  slug: string;
+  account: string;
+  topic: string;
+  created_at: string;
+  compliance: { passed?: boolean };
+  drafts: Record<string, { title?: string; body?: string; tags?: string[] } | undefined>;
+}
+
+export function fetchOutputDetail(account: string, slug: string): Promise<OutputDetail> {
+  return request(`/api/outputs/${account}/${slug}`);
+}

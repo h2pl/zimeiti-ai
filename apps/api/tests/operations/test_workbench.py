@@ -1,6 +1,7 @@
 """web-workbench 后端端点验收（T1-T3）：dashboard/profiles/trends/outputs。"""
 
 import json
+from datetime import datetime
 
 import pytest
 import yaml
@@ -41,7 +42,7 @@ class TestDashboard:
         out = workbench.dashboard_summary(
             pending_count=1,
             accounts={"xhs-main": True},
-            publish_events=[{"publish_date": "2026-10-10", "title": "x"}],
+            publish_events=[{"publish_date": datetime.now().strftime("%Y-%m-%d"), "title": "x"}],
             recent_log=[{"action": "a"}],
         )
         assert out["pending_approvals"] == 1
@@ -208,3 +209,30 @@ class TestToolCatalog:
         names = [t["name"] for t in cat]
         assert names == ["discover_topics", "select_topic", "create_drafts", "publish", "ask_human"]
         assert all(t["description"] for t in cat)
+
+
+class TestOutputDetail:
+    def test_detail_full(self, tmp_path):
+        slug_dir = tmp_path / "xhs-main" / "20261010-120000"
+        slug_dir.mkdir(parents=True)
+        (slug_dir / "drafts.json").write_text(
+            json.dumps(
+                {
+                    "topic": "T",
+                    "created_at": "2026-10-10T12:00:00",
+                    "compliance": {"passed": True},
+                    "drafts": {"xhs": {"title": "标题X", "body": "正文", "tags": ["a"]}},
+                }
+            ),
+            encoding="utf-8",
+        )
+        out = workbench.output_detail("xhs-main", "20261010-120000", tmp_path)
+        assert out["drafts"]["xhs"]["title"] == "标题X"
+        assert out["compliance"]["passed"] is True
+
+    def test_detail_404(self, tmp_path):
+        assert workbench.output_detail("xhs-main", "ghost", tmp_path) is None
+
+    def test_detail_traversal_rejected(self, tmp_path):
+        with pytest.raises(ValueError, match="非法"):
+            workbench.output_detail("xhs-main", "..%2Fetc", tmp_path)
