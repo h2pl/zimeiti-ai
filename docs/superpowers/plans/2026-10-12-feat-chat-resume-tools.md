@@ -2,6 +2,7 @@
 change: feat-chat-resume-tools
 design-doc: openspec/changes/feat-chat-resume-tools/design.md
 base-ref: 586107e
+archived-with: 2026-10-12-feat-chat-resume-tools
 ---
 
 <!-- comet-task-authority: openspec/changes/feat-chat-resume-tools/tasks.md -->

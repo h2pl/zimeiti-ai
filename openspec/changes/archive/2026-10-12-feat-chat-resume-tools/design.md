@@ -2,6 +2,8 @@
 comet_change: feat-chat-resume-tools
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-12-feat-chat-resume-tools
+status: final
 ---
 
 # 设计：feat-chat-resume-tools
