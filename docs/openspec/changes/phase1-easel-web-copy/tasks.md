@@ -8,6 +8,7 @@
 
 - [x] 2.1 复制 `Easel/web/static/*` → `apps/web/public/static/` <!-- comet-task:87877329-e19c-4ae1-8ccf-144693c8ba30 -->
 - [x] 2.2 验证：资源文件齐全，引用路径为 `./static/...` <!-- comet-task:b60b56cd-38ec-463d-80e0-644133b315ac -->
+- [x] 2.3 清理评审发现的未引用 Easel artifact 页面与大体积媒体（index.html/main.html/onepage.html/showcase/easel-icon.png/marked.umd.js），保留源码引用的资源 <!-- comet-task:48905f7d-0f94-4640-b1e5-1bda729c89e5 -->
 
 ## 3. 安装依赖并跑起来
 

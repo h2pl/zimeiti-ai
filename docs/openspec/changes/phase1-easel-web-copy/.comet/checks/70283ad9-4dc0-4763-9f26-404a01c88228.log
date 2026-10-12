@@ -1,0 +1,85 @@
+
+> frontend@0.0.0 build
+> tsc -b && vite build
+
+src/components/BreakdownPage.tsx(4,10): error TS2305: Module '"./icons"' has no exported member 'IconFire'.
+src/components/BreakdownPage.tsx(4,20): error TS2305: Module '"./icons"' has no exported member 'IconIdea'.
+src/components/BreakdownPage.tsx(4,30): error TS2305: Module '"./icons"' has no exported member 'IconSkills'.
+src/components/CalendarPage.tsx(4,10): error TS2305: Module '"./icons"' has no exported member 'IconCalendar'.
+src/components/CalendarPage.tsx(4,24): error TS2305: Module '"./icons"' has no exported member 'IconTrash'.
+src/components/CalendarPage.tsx(4,35): error TS2305: Module '"./icons"' has no exported member 'IconChevron'.
+src/components/ChatPage.tsx(8,10): error TS2305: Module '"./icons"' has no exported member 'IconArrowUp'.
+src/components/ChatPage.tsx(8,23): error TS2305: Module '"./icons"' has no exported member 'IconStop'.
+src/components/ChatPage.tsx(8,33): error TS2305: Module '"./icons"' has no exported member 'IconPlus'.
+src/components/ChatPage.tsx(8,43): error TS2724: '"./icons"' has no exported member named 'IconFile'. Did you mean 'IconFilm'?
+src/components/DashboardPage.tsx(13,3): error TS2305: Module '"./icons"' has no exported member 'IconFire'.
+src/components/DashboardPage.tsx(13,13): error TS2305: Module '"./icons"' has no exported member 'IconCalendar'.
+src/components/DashboardPage.tsx(13,27): error TS2305: Module '"./icons"' has no exported member 'IconOutputs'.
+src/components/DashboardPage.tsx(13,40): error TS2305: Module '"./icons"' has no exported member 'IconChat'.
+src/components/DashboardPage.tsx(13,50): error TS2305: Module '"./icons"' has no exported member 'IconSkills'.
+src/components/DashboardPage.tsx(13,62): error TS2305: Module '"./icons"' has no exported member 'IconAccounts'.
+src/components/DashboardPage.tsx(14,3): error TS2305: Module '"./icons"' has no exported member 'IconIdea'.
+src/components/DashboardPage.tsx(14,13): error TS2305: Module '"./icons"' has no exported member 'IconPublish'.
+src/components/icons.tsx(2,15): error TS2307: Cannot find module './easelIcons' or its corresponding type declarations.
+src/components/icons.tsx(6,65): error TS2307: Cannot find module './easelIcons' or its corresponding type declarations.
+src/components/IdeasPage.tsx(4,10): error TS2305: Module '"./icons"' has no exported member 'IconIdea'.
+src/components/IdeasPage.tsx(4,20): error TS2305: Module '"./icons"' has no exported member 'IconEdit'.
+src/components/IdeasPage.tsx(4,30): error TS2305: Module '"./icons"' has no exported member 'IconTrash'.
+src/components/IdeasPage.tsx(4,41): error TS2305: Module '"./icons"' has no exported member 'IconChat'.
+src/components/IdeasPage.tsx(4,51): error TS2305: Module '"./icons"' has no exported member 'IconCalendar'.
+src/components/IdeasPage.tsx(4,65): error TS2305: Module '"./icons"' has no exported member 'IconChevron'.
+src/components/MessageBubble.tsx(5,10): error TS2305: Module '"./icons"' has no exported member 'IconCopy'.
+src/components/MessageBubble.tsx(5,20): error TS2305: Module '"./icons"' has no exported member 'IconCheck'.
+src/components/MessageBubble.tsx(5,31): error TS2305: Module '"./icons"' has no exported member 'IconRetry'.
+src/components/OutputsPage.tsx(6,10): error TS2305: Module '"./icons"' has no exported member 'IconOutputs'.
+src/components/OutputsPage.tsx(6,23): error TS2305: Module '"./icons"' has no exported member 'IconImage'.
+src/components/OutputsPage.tsx(6,34): error TS2305: Module '"./icons"' has no exported member 'IconVideo'.
+src/components/OutputsPage.tsx(6,45): error TS2305: Module '"./icons"' has no exported member 'IconMusic'.
+src/components/OutputsPage.tsx(6,56): error TS2724: '"./icons"' has no exported member named 'IconFile'. Did you mean 'IconFilm'?
+src/components/OutputsPage.tsx(6,66): error TS2305: Module '"./icons"' has no exported member 'IconFolder'.
+src/components/OutputsPage.tsx(6,78): error TS2305: Module '"./icons"' has no exported member 'IconRefresh'.
+src/components/OutputsPage.tsx(6,91): error TS2305: Module '"./icons"' has no exported member 'IconChevron'.
+src/components/OutputsPage.tsx(6,104): error TS2305: Module '"./icons"' has no exported member 'IconTrash'.
+src/components/PublishPage.tsx(9,10): error TS2305: Module '"./icons"' has no exported member 'IconPublish'.
+src/components/PublishPage.tsx(9,23): error TS2305: Module '"./icons"' has no exported member 'IconCopy'.
+src/components/PublishPage.tsx(9,33): error TS2305: Module '"./icons"' has no exported member 'IconCheck'.
+src/components/PublishPage.tsx(9,44): error TS2305: Module '"./icons"' has no exported member 'IconCalendar'.
+src/components/PublishPage.tsx(9,58): error TS2305: Module '"./icons"' has no exported member 'IconSkills'.
+src/components/PublishPage.tsx(9,70): error TS2305: Module '"./icons"' has no exported member 'IconEdit'.
+src/components/PublishPage.tsx(9,80): error TS2305: Module '"./icons"' has no exported member 'IconStop'.
+src/components/PublishPage.tsx(9,90): error TS2305: Module '"./icons"' has no exported member 'IconTrash'.
+src/components/Sidebar.tsx(6,3): error TS2305: Module '"./icons"' has no exported member 'IconChat'.
+src/components/Sidebar.tsx(6,13): error TS2305: Module '"./icons"' has no exported member 'IconSkills'.
+src/components/Sidebar.tsx(6,25): error TS2305: Module '"./icons"' has no exported member 'IconOutputs'.
+src/components/Sidebar.tsx(6,38): error TS2305: Module '"./icons"' has no exported member 'IconAccounts'.
+src/components/Sidebar.tsx(6,52): error TS2305: Module '"./icons"' has no exported member 'IconProfile'.
+src/components/Sidebar.tsx(7,3): error TS2305: Module '"./icons"' has no exported member 'IconNewChat'.
+src/components/Sidebar.tsx(7,16): error TS2305: Module '"./icons"' has no exported member 'IconEdit'.
+src/components/Sidebar.tsx(7,26): error TS2305: Module '"./icons"' has no exported member 'IconArchive'.
+src/components/Sidebar.tsx(7,39): error TS2305: Module '"./icons"' has no exported member 'IconUnarchive'.
+src/components/Sidebar.tsx(7,54): error TS2305: Module '"./icons"' has no exported member 'IconTrash'.
+src/components/Sidebar.tsx(7,65): error TS2305: Module '"./icons"' has no exported member 'IconChevron'.
+src/components/Sidebar.tsx(8,3): error TS2305: Module '"./icons"' has no exported member 'IconDashboard'.
+src/components/SkillPage.tsx(8,3): error TS2724: '"./icons"' has no exported member named 'IconSearch'. Did you mean 'IconUser'?
+src/components/SkillPage.tsx(8,28): error TS2305: Module '"./icons"' has no exported member 'IconSkills'.
+src/components/SkillPage.tsx(8,40): error TS2724: '"./icons"' has no exported member named 'IconSend'. Did you mean 'IconTrend'?
+src/components/SkillPage.tsx(8,50): error TS2305: Module '"./icons"' has no exported member 'IconChart'.
+src/components/SkillPage.tsx(8,61): error TS2305: Module '"./icons"' has no exported member 'IconLayers'.
+src/components/SkillPage.tsx(9,3): error TS2305: Module '"./icons"' has no exported member 'IconVideo'.
+src/components/SkillPage.tsx(9,14): error TS2305: Module '"./icons"' has no exported member 'IconImage'.
+src/components/SkillPage.tsx(9,25): error TS2305: Module '"./icons"' has no exported member 'IconMusic'.
+src/components/SkillPage.tsx(9,36): error TS2305: Module '"./icons"' has no exported member 'IconMic'.
+src/components/SkillPage.tsx(9,45): error TS2305: Module '"./icons"' has no exported member 'IconText'.
+src/components/SkillPage.tsx(9,55): error TS2305: Module '"./icons"' has no exported member 'IconLayout'.
+src/components/SkillPage.tsx(9,67): error TS2305: Module '"./icons"' has no exported member 'IconProfile'.
+src/components/SkillPage.tsx(9,80): error TS2305: Module '"./icons"' has no exported member 'IconOutputs'.
+src/components/SubNav.tsx(3,10): error TS2305: Module '"./icons"' has no exported member 'IconDashboard'.
+src/components/SubNav.tsx(3,25): error TS2305: Module '"./icons"' has no exported member 'IconFire'.
+src/components/SubNav.tsx(3,35): error TS2305: Module '"./icons"' has no exported member 'IconIdea'.
+src/components/SubNav.tsx(3,45): error TS2305: Module '"./icons"' has no exported member 'IconCalendar'.
+src/components/SubNav.tsx(3,59): error TS2305: Module '"./icons"' has no exported member 'IconPublish'.
+src/components/SubNav.tsx(3,72): error TS2305: Module '"./icons"' has no exported member 'IconSkills'.
+src/components/TrendsPage.tsx(4,10): error TS2305: Module '"./icons"' has no exported member 'IconFire'.
+src/components/TrendsPage.tsx(4,20): error TS2305: Module '"./icons"' has no exported member 'IconRefresh'.
+src/components/TrendsPage.tsx(4,33): error TS2305: Module '"./icons"' has no exported member 'IconBookmark'.
+src/components/TrendsPage.tsx(4,47): error TS2305: Module '"./icons"' has no exported member 'IconCheck'.

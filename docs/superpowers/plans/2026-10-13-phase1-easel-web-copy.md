@@ -45,3 +45,8 @@ base-ref: db02161b0e65318f7a9be4e675a7e8e698376f7e
 - 依赖安装受网络影响 → 对齐 Easel 版本，失败即记录
 - 后端缺失 → 页面按 Easel 自带空态呈现，不改前端代码
 - 回滚：分支隔离，丢弃分支即回到 `zimeiti-init`
+
+<!-- comet-task-ref:48905f7d-0f94-4640-b1e5-1bda729c89e5 -->
+## 任务 2.3（Verify 评审返修）：清理未引用静态资源
+
+删除未引用的 Easel artifact 页面与大体积媒体（index.html/main.html/onepage.html/showcase/easel-icon.png/marked.umd.js），仅保留源码引用的 easel-icon-transparent.png。验收：删除后构建通过、页面渲染无 404、public/static 仅剩被引用资源。
