@@ -2,6 +2,8 @@
 comet_change: feat-skill-runner
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-12-feat-skill-runner
+status: final
 ---
 
 # 设计：feat-skill-runner
