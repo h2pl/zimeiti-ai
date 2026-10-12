@@ -19,7 +19,7 @@ echo "== API: http://localhost:8000 =="
 APIS_PID=$!
 
 echo "== Web: http://localhost:5173 =="
-(cd apps/web && pnpm dev) &
+(cd apps/web && npm run dev) &
 WEBS_PID=$!
 
 wait

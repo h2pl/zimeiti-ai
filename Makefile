@@ -10,7 +10,7 @@ up:
 # install deps for api & web
 install:
 	cd apps/api && uv sync
-	cd apps/web && pnpm install
+	cd apps/web && npm install
 
 # one-command dev: Postgres + API(8000) + Web(5173)
 dev:
@@ -22,7 +22,7 @@ api:
 
 # run web only (hot reload)
 web:
-	cd apps/web && pnpm dev
+	cd apps/web && npm run dev
 
 # backend tests (auto preflight docker/pg)
 test:
