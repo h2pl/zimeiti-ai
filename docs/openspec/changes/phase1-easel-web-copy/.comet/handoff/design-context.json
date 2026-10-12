@@ -1,0 +1,16 @@
+{
+  "change": "phase1-easel-web-copy",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "439b097cd3290205eb48c48bc2e36d3540ee244d84014af96e05d2c82a9bf8db",
+  "files": [
+    { "path": "docs/openspec/changes/phase1-easel-web-copy/proposal.md", "sha256": "a0bd5299d1ac761e2196891d1517a7437420588b9019c33aad1fd005240fbcde" },
+    { "path": "docs/openspec/changes/phase1-easel-web-copy/design.md", "sha256": "c02df74b1e144db018f22e4c052e0ce820f39362fc04369a82a932d1b3077c2b" },
+    { "path": "docs/openspec/changes/phase1-easel-web-copy/tasks.md", "sha256": "05d891a05daf3e49d7ec253ca957b0d86dea5fb032e7362e2932798fb7dc74ff" },
+    { "path": "docs/openspec/changes/phase1-easel-web-copy/.openspec.yaml", "sha256": "010447270992e8e9533b7bbfb4dbdecda78eab560f05c50428c80463aa9e0ec1" },
+    { "path": "docs/openspec/changes/phase1-easel-web-copy/specs/easel-web-copy/spec.md", "sha256": "51900ed93ab544496617ff9dfd0ad901f8457b784498c7d3a121fcb2825b4a75" }
+  ]
+}

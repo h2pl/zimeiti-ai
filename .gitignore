@@ -21,3 +21,7 @@ Thumbs.db
 /.comet/*
 !/.comet/config.yaml
 # <<< Comet managed project state <<<
+
+# Node
+node_modules/
+dist/
