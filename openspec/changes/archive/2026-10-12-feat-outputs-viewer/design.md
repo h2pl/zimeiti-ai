@@ -2,6 +2,8 @@
 comet_change: feat-outputs-viewer
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-12-feat-outputs-viewer
+status: final
 ---
 
 # 设计：feat-outputs-viewer
