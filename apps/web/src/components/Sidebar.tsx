@@ -117,7 +117,7 @@ export default function Sidebar({
       <div className="sidebar-header">
         <div className="sidebar-logo">
           <img className="sidebar-logo-icon" src="./static/easel-icon-transparent.png" alt="" />
-          <h1>Easel</h1>
+          <h1>Zimeiti AI</h1>
           <ThemeToggle />
         </div>
         <select
