@@ -158,3 +158,27 @@ def accounts_detail(
                 }
             )
     return out
+
+
+def output_detail(account: str, slug: str, outputs_dir: Path) -> dict[str, Any] | None:
+    """内容查看器数据面（feat-outputs-viewer T1）：slug 全量元数据 + 双平台正文。
+
+    slug 白名单同 account（D3 只读，防路径遍历）。
+    """
+    if not (valid_account(account) and valid_account(slug)):
+        raise ValueError("非法 account/slug")
+    f = Path(outputs_dir) / account / slug / "drafts.json"
+    if not f.exists():
+        return None
+    try:
+        data = json.loads(f.read_text(encoding="utf-8"))
+    except (ValueError, OSError):
+        return None
+    return {
+        "slug": slug,
+        "account": account,
+        "topic": data.get("topic", ""),
+        "created_at": data.get("created_at", ""),
+        "compliance": data.get("compliance") or {},
+        "drafts": data.get("drafts") or {},
+    }
