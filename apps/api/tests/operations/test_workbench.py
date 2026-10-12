@@ -236,3 +236,70 @@ class TestOutputDetail:
     def test_detail_traversal_rejected(self, tmp_path):
         with pytest.raises(ValueError, match="非法"):
             workbench.output_detail("xhs-main", "..%2Fetc", tmp_path)
+
+
+class TestAccountsCrud:
+    """feat-accounts-crud：创建/删除账号（含凭证清理与审计）。"""
+
+    def test_create_account(self, profile_dir, tmp_path, monkeypatch):
+        from zimeiti_api.governance import platform_state
+        from zimeiti_api.operations import workbench
+
+        ps = tmp_path / "ps.json"
+        monkeypatch.setattr(platform_state, "_state_path", lambda: ps)
+        platform_state.ensure_defaults()
+        data = {
+            "account": "gzh-test",
+            "positioning": "p",
+            "style": "s",
+            "audience": "a",
+            "content_focus": "图文",
+            "boundary": "b",
+            "platform_rules": "r",
+            "preferences": "p",
+        }
+        out = workbench.create_account(data, profile_dir)
+        assert out["enabled"] is True
+        assert (profile_dir / "gzh-test" / "profile.yaml").exists()
+
+    def test_create_duplicate_409(self, profile_dir, tmp_path, monkeypatch):
+        from zimeiti_api.governance import platform_state
+        from zimeiti_api.operations import workbench
+
+        monkeypatch.setattr(platform_state, "_state_path", lambda: tmp_path / "ps.json")
+        platform_state.ensure_defaults()
+        data = {
+            "account": "gzh-test",
+            "positioning": "p",
+            "style": "s",
+            "audience": "a",
+            "content_focus": "图文",
+            "boundary": "b",
+            "platform_rules": "r",
+            "preferences": "p",
+        }
+        workbench.create_account(data, profile_dir)
+        with pytest.raises(FileExistsError):
+            workbench.create_account(data, profile_dir)
+
+    def test_delete_account_cleans_credentials(self, profile_dir, tmp_path, monkeypatch):
+        from zimeiti_api.governance import platform_state
+        from zimeiti_api.operations import workbench
+
+        ps = tmp_path / "ps.json"
+        monkeypatch.setattr(platform_state, "_state_path", lambda: ps)
+        platform_state.ensure_defaults()
+        cred = tmp_path / "creds"
+        cred.mkdir()
+        (cred / "xhs-main.sealed").write_text("sealed", encoding="utf-8")
+        out = workbench.delete_account("xhs-main", profile_dir, cred, ps)
+        assert out["removed"]["profile"] is True
+        assert out["removed"]["credentials"] is True
+        assert not (profile_dir / "xhs-main").exists()
+        assert not (cred / "xhs-main.sealed").exists()
+
+    def test_delete_unknown_404(self, profile_dir, tmp_path):
+        from zimeiti_api.operations import workbench
+
+        with pytest.raises(FileNotFoundError):
+            workbench.delete_account("ghost", profile_dir, tmp_path, tmp_path / "ps.json")

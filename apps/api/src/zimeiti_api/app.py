@@ -542,6 +542,37 @@ def create_app(lifespan=None) -> FastAPI:
             raise HTTPException(status_code=409, detail=f"条目不存在或已终态: {entry_id}")
         return {"entry_id": entry_id, "status": "cancelled"}
 
+    @app.post("/api/accounts")
+    def accounts_create(body: dict) -> dict:
+        """创建账号（feat-accounts-crud）：validate fail-closed + 启用。"""
+        from zimeiti_api.operations.workbench import create_account
+
+        try:
+            return create_account(body, Path(content_profiles.DEFAULT_BASE_DIR))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except FileExistsError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @app.delete("/api/accounts/{account}")
+    def accounts_delete(account: str) -> dict:
+        """删除账号（危险操作全程审计；不存在 404）。"""
+        from zimeiti_api.config import CREDENTIALS_DIR
+        from zimeiti_api.governance import platform_state
+        from zimeiti_api.operations.workbench import delete_account
+
+        try:
+            return delete_account(
+                account,
+                Path(content_profiles.DEFAULT_BASE_DIR),
+                Path(CREDENTIALS_DIR),
+                platform_state._state_path(),
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
     @app.get("/api/publish-log")
     def publish_log() -> list[dict]:
         return audit.list_entries()

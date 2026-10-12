@@ -333,3 +333,15 @@ export function resumeChatStream(
     body: JSON.stringify({ kind, message }),
   });
 }
+
+export function createAccount(data: ProfileData): Promise<ProfileData> {
+  return request("/api/accounts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteAccount(account: string): Promise<{ removed: Record<string, boolean> }> {
+  return request(`/api/accounts/${account}`, { method: "DELETE" });
+}
