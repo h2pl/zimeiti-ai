@@ -8,19 +8,12 @@ status: final
 
 # 设计：feat-outputs-viewer
 
-## Context
-
-OutputsPage 现仅元数据列表（workbench.outputs 扫 drafts.json 摘要）。发布编排
-（下一变更）需要先看到内容。Easel OutputsPage 的「查看文章」交互为对标物。
-
 ## 决策记录
 
-- **D1 端点**：`GET /api/outputs/{account}/{slug}` →
-  `operations/workbench.py` 增 `output_detail(account, slug, outputs_dir)`：
-  复用 valid_account 白名单 + slug 白名单（同 regex），读 drafts.json 返回
-  {slug, account, topic, created_at, compliance, drafts}（drafts 含 xhs/gzh
-  正文）。不存在 404。
-- **D2 前端**：OutputsPage 行点击打开侧滑查看器（复用 overlay/modal 体系）；
-  正文经 marked+DOMPurify 渲染（依赖已就绪，不新增）。
-- **D3 安全**：slug 白名单正则同 account（`^[A-Za-z0-9_-]+$`），杜绝
-  `..%2F` 路径遍历；只读端点。
+- **D1 单篇产物读取**：`operations/workbench.py` 增 `output_detail(account, slug,
+  outputs_dir)`——白名单校验 + 读 `OUTPUTS_DIR/<account>/<slug>/drafts.json`
+  全量返回（正文是产物本体，量可控，不裁剪）。
+- **D2 封面图**：端点直接 `FileResponse`（cover.png 存在判定；不存在 404）。
+  路径拼接全部用 Path + 白名单，防 `../` 穿越。
+- **D3 前端**：OutputsPage 条目展开面板（标题/正文/封面 + 合规徽章），
+  api.ts 增 fetchOutputDetail / coverUrl helper。

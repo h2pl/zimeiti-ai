@@ -13,7 +13,7 @@ Success: no issues found in 53 source files
 ........................................................................ [ 30%]
 ........................................................................ [ 61%]
 ........................................................................ [ 92%]
-.................                                                        [100%]
+..................                                                       [100%]
 ============================== warnings summary ===============================
 tests\conftest.py:16
 tests\conftest.py:16
@@ -56,7 +56,7 @@ _______________ coverage: platform win32, python 3.14.5-final-0 _______________
 Name                                           Stmts   Miss  Cover   Missing
 ----------------------------------------------------------------------------
 src\zimeiti_api\__init__.py                        0      0   100%
-src\zimeiti_api\app.py                           322     52    84%   52, 73, 89, 106-115, 122, 124, 139-141, 145-148, 153-156, 186-187, 189, 201-202, 207-215, 223-224, 269, 317-318, 326-330, 334-336, 408, 412-414, 457
+src\zimeiti_api\app.py                           342     68    80%   52, 73, 89, 106-115, 122, 124, 139-141, 145-148, 153-156, 186-187, 189, 201-202, 207-215, 223-224, 269, 317-318, 326-330, 334-336, 408, 412-414, 457, 479-486, 491-501
 src\zimeiti_api\config.py                         13      0   100%
 src\zimeiti_api\content\__init__.py                0      0   100%
 src\zimeiti_api\content\creation.py               31      2    94%   62, 75
@@ -86,7 +86,7 @@ src\zimeiti_api\operations\kanban.py              49      3    94%   28-29, 59
 src\zimeiti_api\operations\metrics.py            274     43    84%   214, 227, 317, 331, 348, 385-386, 393-397, 419-422, 424-432, 447, 453-455, 459-460, 544-546, 548-549, 556, 606-611, 614-616, 623
 src\zimeiti_api\operations\postmortem.py          84     30    64%   24-26, 83, 138-165, 169
 src\zimeiti_api\operations\report_page.py        101     19    81%   53, 84, 201-218, 222-224
-src\zimeiti_api\operations\workbench.py           92      8    91%   74, 91, 111, 122-123, 147, 175-176
+src\zimeiti_api\operations\workbench.py           93      7    92%   74, 91, 111, 122-123, 147, 176
 src\zimeiti_api\platforms\__init__.py              0      0   100%
 src\zimeiti_api\platforms\gzh.py                  65     11    83%   44, 50, 68-79, 83-88
 src\zimeiti_api\platforms\themes.py               14      0   100%
@@ -102,7 +102,7 @@ src\zimeiti_api\runtime\hosted.py                 69      7    90%   72-73, 79, 
 src\zimeiti_api\runtime\hosted_daily.py           68     27    60%   47-49, 54-76, 91-92, 120-128, 132
 src\zimeiti_api\runtime\tools.py                 161     26    84%   60, 65-67, 87-102, 149, 172-173, 213-215, 266-267, 272, 279-282, 300
 ----------------------------------------------------------------------------
-TOTAL                                           2584    463    82%
-Required test coverage of 80% reached. Total coverage: 82.08%
-233 passed, 10 warnings in 31.91s
+TOTAL                                           2605    478    82%
+Required test coverage of 80% reached. Total coverage: 81.65%
+234 passed, 10 warnings in 32.44s
 == 全部门禁通过 ==

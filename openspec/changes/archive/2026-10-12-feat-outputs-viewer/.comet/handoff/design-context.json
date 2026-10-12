@@ -5,12 +5,12 @@
   "canonical_spec": "openspec",
   "task_hash_policy": "task-content-v1",
   "generated_by": "comet-handoff.sh",
-  "context_hash": "1f5761d36a8481d84eb443af41ae8ef8c8f6e62c5d16b6751a807f1d2429cd2c",
+  "context_hash": "6865e5fad6bb4231157beb820fb5a4794bb1cae88546766c35ecf9f39dfc41f5",
   "files": [
-    { "path": "openspec/changes/feat-outputs-viewer/proposal.md", "sha256": "761e434bd3ac9f44bdaac921286dd37567a135c07e0e5ed8abef5b78950127c2" },
-    { "path": "openspec/changes/feat-outputs-viewer/design.md", "sha256": "9b13f2b3aff469100e07487aeaf43e5a1f1d4639095eda599557536a08e9e115" },
-    { "path": "openspec/changes/feat-outputs-viewer/tasks.md", "sha256": "0ac86adcebb10c8648f43ded26060fa746c93f97ac649799a4185f7fe7a4e5cf" },
+    { "path": "openspec/changes/feat-outputs-viewer/proposal.md", "sha256": "cfacf838f50675704e79c72bf22f6148dc9e12f993fd694e1fa0b005e51984ef" },
+    { "path": "openspec/changes/feat-outputs-viewer/design.md", "sha256": "55678f5c7d9051a0317218ea10e5d9f1280a688ccdd2f8beb772edce1ca84bfc" },
+    { "path": "openspec/changes/feat-outputs-viewer/tasks.md", "sha256": "a7de2805b79b944fe3a8ad216a7e3d9cb5894d9deb4060d8fb8ff7613d5537ff" },
     { "path": "openspec/changes/feat-outputs-viewer/.openspec.yaml", "sha256": "1dfdca412094f24473d8b842866201ec26f200b29b17064b03f1e4982c35a7b9" },
-    { "path": "openspec/changes/feat-outputs-viewer/specs/web-workbench/spec.md", "sha256": "0c9af2dada9cfd9221b965905f90458e8814287aa2a7e3ffd4d0aae1f682d16d" }
+    { "path": "openspec/changes/feat-outputs-viewer/specs/web-workbench/spec.md", "sha256": "fc308a975e531d6347f85e2736fa27f237499fb3988c37afa0bc44abf0763b4b" }
   ]
 }

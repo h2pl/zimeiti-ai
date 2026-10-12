@@ -1,6 +1,6 @@
 # 任务：feat-outputs-viewer
 
-- [x] T1 `workbench.output_detail()` + GET /api/outputs/{account}/{slug} 端点 <!-- comet-task:9ba9ae6f-95a7-4c34-a141-fa321cb9142c -->
-      （404/400 防护）+ 测试
-- [x] T2 OutputsPage 行点击查看器（modal + marked 渲染双平台正文） <!-- comet-task:184bfd09-4cb4-429a-b88c-704c99ed743f -->
-- [x] T3 make check + pnpm build + spec 场景核对（含路径遍历拒绝） <!-- comet-task:8949f973-2103-4d1d-b84d-3dc9d64c162b -->
+- [x] T1 后端：output_detail + GET /api/outputs/{account}/{slug} + cover.png <!-- comet-task:20521fff-c4f8-4627-9608-ccdabdbe3e4d -->
+      FileResponse + 测试（含 404/400 路径穿越）
+- [x] T2 前端：OutputsPage 展开正文面板 + 封面图 <!-- comet-task:ad84f297-8ea0-415c-bfc3-404c51ca8e63 -->
+- [x] T3 make check + npm build + spec 场景核对 <!-- comet-task:b94ef893-1ca0-4fc5-a25b-20b0f9304066 -->
