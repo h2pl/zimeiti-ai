@@ -321,3 +321,15 @@ export function enqueueDraftScheduled(
     body: JSON.stringify({ account, slug, title, run_at: runAt }),
   });
 }
+
+export function resumeChatStream(
+  threadId: string,
+  kind: "question" | "approval" | "reject",
+  message: string,
+): Promise<Response> {
+  return fetch(`/api/chat/sessions/${threadId}/resume-stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ kind, message }),
+  });
+}
