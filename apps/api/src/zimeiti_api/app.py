@@ -558,6 +558,7 @@ def create_app(lifespan=None) -> FastAPI:
     def accounts_delete(account: str) -> dict:
         """删除账号（危险操作全程审计；不存在 404）。"""
         from zimeiti_api.config import CREDENTIALS_DIR
+        from zimeiti_api.governance import platform_state
         from zimeiti_api.operations.workbench import delete_account
 
         try:
