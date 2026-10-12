@@ -473,6 +473,33 @@ def create_app(lifespan=None) -> FastAPI:
         entry_id = queue.schedule(account, drafts_path, run_at, title=title)
         return {"entry_id": entry_id}
 
+    @app.get("/api/outputs/{account}/{slug}")
+    def output_detail(account: str, slug: str) -> dict:
+        """单篇产物全文（feat-outputs-viewer）。"""
+        from zimeiti_api.operations.workbench import output_detail as _detail
+
+        try:
+            return _detail(account, slug, Path(OUTPUTS_DIR))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/api/outputs/{account}/{slug}/cover.png")
+    def output_cover(account: str, slug: str):
+        """封面图（D2：FileResponse，不存在 404）。"""
+        from fastapi.responses import FileResponse
+
+        from zimeiti_api.operations.workbench import cover_path
+
+        try:
+            p = cover_path(account, slug, Path(OUTPUTS_DIR))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        if p is None:
+            raise HTTPException(status_code=404, detail="封面不存在")
+        return FileResponse(str(p))
+
     @app.get("/api/publish-log")
     def publish_log() -> list[dict]:
         return audit.list_entries()

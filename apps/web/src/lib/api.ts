@@ -280,9 +280,13 @@ export interface OutputDetail {
   topic: string;
   created_at: string;
   compliance: { passed?: boolean };
-  drafts: Record<string, { title?: string; body?: string; tags?: string[] } | undefined>;
+  drafts: Record<string, { title?: string; body?: string; summary?: string; tags?: string[] } | undefined>;
 }
 
 export function fetchOutputDetail(account: string, slug: string): Promise<OutputDetail> {
   return request(`/api/outputs/${account}/${slug}`);
+}
+
+export function coverUrl(account: string, slug: string): string {
+  return `/api/outputs/${account}/${slug}/cover.png`;
 }

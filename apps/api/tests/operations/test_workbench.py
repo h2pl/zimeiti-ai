@@ -212,27 +212,50 @@ class TestToolCatalog:
 
 
 class TestOutputDetail:
-    def test_detail_full(self, tmp_path):
-        slug_dir = tmp_path / "xhs-main" / "20261010-120000"
-        slug_dir.mkdir(parents=True)
-        (slug_dir / "drafts.json").write_text(
+    """feat-outputs-viewer：单篇产物读取/封面/路径穿越防护（新语义：缺失抛错）。"""
+
+    @pytest.fixture
+    def outputs(self, tmp_path):
+        d = tmp_path / "xhs-main" / "20261012-120000"
+        d.mkdir(parents=True)
+        (d / "drafts.json").write_text(
             json.dumps(
                 {
-                    "topic": "T",
-                    "created_at": "2026-10-10T12:00:00",
+                    "topic": "选题X",
+                    "topic_direction": "方向X",
+                    "created_at": "2026-10-12T12:00:00",
                     "compliance": {"passed": True},
-                    "drafts": {"xhs": {"title": "标题X", "body": "正文", "tags": ["a"]}},
+                    "drafts": {"xhs": {"title": "标题X", "body": "正文X", "tags": []}},
                 }
             ),
             encoding="utf-8",
         )
-        out = workbench.output_detail("xhs-main", "20261010-120000", tmp_path)
-        assert out["drafts"]["xhs"]["title"] == "标题X"
-        assert out["compliance"]["passed"] is True
+        (d / "cover.png").write_bytes(b"\x89PNG fake")
+        return tmp_path
 
-    def test_detail_404(self, tmp_path):
-        assert workbench.output_detail("xhs-main", "ghost", tmp_path) is None
+    def test_detail_full_text(self, outputs):
+        from zimeiti_api.operations import workbench
 
-    def test_detail_traversal_rejected(self, tmp_path):
+        data = workbench.output_detail("xhs-main", "20261012-120000", outputs)
+        assert data["drafts"]["xhs"]["title"] == "标题X"
+        assert data["drafts"]["xhs"]["body"] == "正文X"
+
+    def test_detail_404(self, outputs):
+        from zimeiti_api.operations import workbench
+
+        with pytest.raises(FileNotFoundError):
+            workbench.output_detail("xhs-main", "ghost", outputs)
+
+    def test_path_traversal_rejected(self, outputs):
+        from zimeiti_api.operations import workbench
+
         with pytest.raises(ValueError, match="非法"):
-            workbench.output_detail("xhs-main", "..%2Fetc", tmp_path)
+            workbench.output_detail("xhs-main", "..%2Fsecret", outputs)
+        with pytest.raises(ValueError, match="非法"):
+            workbench.output_detail("../etc", "x", outputs)
+
+    def test_cover_present_and_absent(self, outputs):
+        from zimeiti_api.operations import workbench
+
+        assert workbench.cover_path("xhs-main", "20261012-120000", outputs) is not None
+        assert workbench.cover_path("xhs-main", "ghost", outputs) is None

@@ -1,64 +1,50 @@
-/** 内容库（正文查看器，feat-outputs-viewer）——参考: Easel OutputsPage。 */
+/** 内容库（feat-outputs-viewer：元数据列表 + 展开正文面板）——Easel OutputsPage 对标。 */
 import { useCallback, useEffect, useState } from "react";
-import DOMPurify from "dompurify";
-import { marked } from "marked";
-import { fetchOutputDetail, fetchOutputs, fetchProfiles } from "../lib/api";
 import type { OutputDetail, OutputItem } from "../lib/api";
+import { coverUrl, fetchOutputDetail, fetchOutputs, fetchProfiles } from "../lib/api";
 import { IconFolder } from "./icons";
-
-interface Workspace {
-  account: string;
-  slug: string;
-  platform: string;
-  body: string;
-  title: string;
-  compliance_passed: boolean;
-}
-
-function mdToHtml(md: string): string {
-  return DOMPurify.sanitize(marked.parse(md) as string);
-}
 
 export default function OutputsPage() {
   const [accounts, setAccounts] = useState<{ account: string }[]>([]);
   const [current, setCurrent] = useState("");
   const [items, setItems] = useState<OutputItem[] | null>(null);
+  const [openSlug, setOpenSlug] = useState<string | null>(null);
   const [detail, setDetail] = useState<OutputDetail | null>(null);
-  const [error, setError] = useState("");
-
-  const load = useCallback(async () => {
-    if (!current) return;
-    setError("");
-    try {
-      setItems(await fetchOutputs(current));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-      setItems([]);
-    }
-  }, [current]);
 
   useEffect(() => {
     fetchProfiles()
       .then((a) => {
         setAccounts(a);
-        if (a.length && !current) setCurrent(a[0].account);
+        if (a.length) setCurrent(a[0].account);
       })
       .catch(() => setAccounts([]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (!current) return;
+    setItems(null);
+    setOpenSlug(null);
+    fetchOutputs(current)
+      .then(setItems)
+      .catch(() => setItems([]));
+  }, [current]);
 
-  const openDetail = async (slug: string) => {
-    setError("");
-    try {
-      setDetail(await fetchOutputDetail(current, slug));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    }
-  };
+  const toggle = useCallback(
+    async (slug: string) => {
+      if (openSlug === slug) {
+        setOpenSlug(null);
+        return;
+      }
+      try {
+        const d = await fetchOutputDetail(current, slug);
+        setDetail(d);
+        setOpenSlug(slug);
+      } catch {
+        setDetail(null);
+      }
+    },
+    [current, openSlug],
+  );
 
   return (
     <>
@@ -68,7 +54,7 @@ export default function OutputsPage() {
             <IconFolder />
             内容库
           </div>
-          <div className="page-subtitle">已发布的草稿产物归档（只读，含合规结论与正文查看）</div>
+          <div className="page-subtitle">已发布的草稿产物归档（只读，展开查看两平台正文与封面）</div>
         </div>
         <div className="options">
           {accounts.map((a) => (
@@ -83,7 +69,6 @@ export default function OutputsPage() {
         </div>
       </div>
       <div className="page-body">
-        {error && <div className="notice-error">加载失败：{error}</div>}
         {items === null && <div className="dash-empty">加载中…</div>}
         {items && items.length === 0 && (
           <div className="empty-state">
@@ -92,85 +77,48 @@ export default function OutputsPage() {
             <p>托管循环创作并发布的草稿会归档在这里。</p>
           </div>
         )}
-        {items && items.length > 0 && (
-          <table style={{ marginTop: 14 }}>
-            <thead>
-              <tr>
-                <th>时间</th>
-                <th>标题/选题</th>
-                <th>合规</th>
-                <th>slug</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((o) => (
-                <tr key={o.slug}>
-                  <td>{o.created_at.slice(0, 16).replace("T", " ")}</td>
-                  <td>{o.title || o.topic}</td>
-                  <td>
-                    <span className={o.compliance_passed ? "badge badge-ok" : "badge badge-warn"}>
-                      {o.compliance_passed ? "通过" : "拦截"}
-                    </span>
-                  </td>
-                  <td className="page-subtitle">{o.slug}</td>
-                  <td>
-                    <button className="btn btn-sm" onClick={() => void openDetail(o.slug)}>
-                      查看正文
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-      {detail && (
-        <div className="overlay" onClick={() => setDetail(null)}>
-          <div
-            className="modal"
-            style={{ maxWidth: 860, maxHeight: "86vh", overflowY: "auto" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="page-title" style={{ fontSize: 20 }}>
-              {detail.drafts?.xhs?.title || detail.topic}
-            </div>
-            <div className="page-subtitle">
-              {detail.account} · {detail.slug} · {detail.created_at.slice(0, 16).replace("T", " ")} ·{" "}
-              <span
-                className={detail.compliance?.passed ? "badge badge-ok" : "badge badge-warn"}
-              >
-                合规{detail.compliance?.passed ? "通过" : "拦截"}
-              </span>
-            </div>
-            {(["xhs", "gzh"] as const).map(
-              (p) =>
-                detail.drafts?.[p] && (
-                  <div key={p} style={{ marginTop: 14 }}>
-                    <div className="section-title">
-                      {p === "xhs" ? "小红书稿" : "公众号稿"}
-                      {p === "xhs" && detail.drafts?.xhs?.tags?.length ? (
-                        <span className="badge">{detail.drafts.xhs.tags.join(" / ")}</span>
-                      ) : null}
-                    </div>
-                    <div
-                      className="page-subtitle"
-                      dangerouslySetInnerHTML={{ __html: mdToHtml(detail.drafts[p].body || "") }}
-                    />
+        {items &&
+          items.map((o) => (
+            <div key={o.slug} className="card idea-card" style={{ marginBottom: 8 }}>
+              <div className="idea-card-title">{o.title || o.topic}</div>
+              <div className="idea-card-direction">
+                {o.created_at.slice(0, 16).replace("T", " ")} ·{" "}
+                {o.compliance_passed ? "合规通过" : "合规拦截"}
+              </div>
+              <div className="options">
+                <button className="btn btn-sm" onClick={() => void toggle(o.slug)}>
+                  {openSlug === o.slug ? "收起正文" : "展开正文"}
+                </button>
+              </div>
+              {openSlug === o.slug && detail && (
+                <div style={{ marginTop: 10 }}>
+                  <img
+                    src={coverUrl(current, o.slug)}
+                    alt="封面"
+                    style={{ maxWidth: 220, borderRadius: 8, marginBottom: 10 }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                  <h4 className="idea-card-title">小红书</h4>
+                  <div className="page-subtitle">{detail.drafts.xhs?.title ?? ""}</div>
+                  <p style={{ whiteSpace: "pre-wrap" }}>{detail.drafts.xhs?.body ?? ""}</p>
+                  <div className="options">
+                    {(detail.drafts.xhs?.tags || []).map((t) => (
+                      <span key={t} className="badge badge-accent">
+                        #{t}
+                      </span>
+                    ))}
                   </div>
-                ),
-            )}
-            <div style={{ marginTop: 18, textAlign: "right" }}>
-              <button className="btn" onClick={() => setDetail(null)}>
-                关闭
-              </button>
+                  <h4 className="idea-card-title">公众号</h4>
+                  <div className="page-subtitle">{detail.drafts.gzh?.title ?? ""}</div>
+                  <p className="page-subtitle">{detail.drafts.gzh?.summary ?? ""}</p>
+                  <p style={{ whiteSpace: "pre-wrap" }}>{detail.drafts.gzh?.body ?? ""}</p>
+                </div>
+              )}
             </div>
-          </div>
-        </div>
-      )}
+          ))}
+      </div>
     </>
   );
 }
-
-// Workspace 类型保留（发布编排变更将复用）
-export type { Workspace };
