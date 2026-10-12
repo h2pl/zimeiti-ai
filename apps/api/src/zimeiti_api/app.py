@@ -3,7 +3,7 @@
 import json
 import re
 from collections.abc import AsyncIterator
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
 
@@ -464,14 +464,39 @@ def create_app(lifespan=None) -> FastAPI:
         for e in queue.list_entries():
             if e.get("drafts_path") == drafts_path and e.get("status") == "pending":
                 raise HTTPException(status_code=409, detail="该草稿已在待发布队列")
-        run_at = (
-            str(body.get("run_at"))
-            if body.get("run_at")
-            else datetime.now().isoformat(timespec="seconds")
-        )
+        run_at_raw = body.get("run_at")
+        if run_at_raw:
+            try:
+                run_at_dt = datetime.fromisoformat(str(run_at_raw))
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail="run_at 非法时间格式") from exc
+            if run_at_dt < datetime.now() - timedelta(minutes=1):
+                raise HTTPException(status_code=400, detail="run_at 不能早于当前时间")
+            run_at = run_at_dt.isoformat(timespec="seconds")
+        else:
+            run_at = datetime.now().isoformat(timespec="seconds")
         title = str(body.get("title", ""))
         entry_id = queue.schedule(account, drafts_path, run_at, title=title)
         return {"entry_id": entry_id}
+
+    @app.get("/api/preflight/{account}/{slug}")
+    def preflight_endpoint(account: str, slug: str) -> dict:
+        """发布编排预检（feat-publish-orchestration T2，只读）。"""
+        from zimeiti_api.operations.workbench import preflight_for_draft
+
+        try:
+            return preflight_for_draft(account, slug, Path(OUTPUTS_DIR))
+        except (ValueError, FileNotFoundError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.post("/api/publish-queue/{entry_id}/cancel")
+    def publish_queue_cancel(entry_id: str) -> dict:
+        """取消 pending 队列条目（T3；终态 409 / 不存在 404）。"""
+        from zimeiti_api.governance.queue import mark
+
+        if not mark(entry_id, "cancelled", "用户取消（发布中心）"):
+            raise HTTPException(status_code=409, detail=f"条目不存在或已终态: {entry_id}")
+        return {"entry_id": entry_id, "status": "cancelled"}
 
     @app.get("/api/publish-log")
     def publish_log() -> list[dict]:

@@ -1,0 +1,16 @@
+{
+  "change": "feat-publish-orchestration",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "8014e4fcf1d59489da68ba800ad44c93639537e78e6996b7b39fe5dcd9b7f280",
+  "files": [
+    { "path": "openspec/changes/feat-publish-orchestration/proposal.md", "sha256": "a56b2382656ab251c8883262b68c7d66abeb70f4ca44ca9ec1be9120f6303f86" },
+    { "path": "openspec/changes/feat-publish-orchestration/design.md", "sha256": "b08273df191d75727c7273dcf8d5309d28eff2c5953da29b7a6da22350678a2e" },
+    { "path": "openspec/changes/feat-publish-orchestration/tasks.md", "sha256": "e12d60fe03957a97184d7be906225c28b3ace70510ecaa64b4328d7be88821c8" },
+    { "path": "openspec/changes/feat-publish-orchestration/.openspec.yaml", "sha256": "1dfdca412094f24473d8b842866201ec26f200b29b17064b03f1e4982c35a7b9" },
+    { "path": "openspec/changes/feat-publish-orchestration/specs/publish-center/spec.md", "sha256": "ee8377e90f7c8f24a19336306064b639c3a008bd114a7798420aeff003212380" }
+  ]
+}
