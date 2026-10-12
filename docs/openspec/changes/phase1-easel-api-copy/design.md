@@ -1,3 +1,8 @@
+---
+comet_change: phase1-easel-api-copy
+role: technical-design
+canonical_spec: openspec
+---
 ## Context
 
 全新项目，起点分支 `zimeiti-init` 无代码。本变更复制 Easel 后端；前端复制由 `phase1-easel-web-copy` 承担。
