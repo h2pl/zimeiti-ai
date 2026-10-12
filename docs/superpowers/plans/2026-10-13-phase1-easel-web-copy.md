@@ -2,6 +2,7 @@
 change: phase1-easel-web-copy
 design-doc: docs/openspec/changes/phase1-easel-web-copy/design.md
 base-ref: db02161b0e65318f7a9be4e675a7e8e698376f7e
+archived-with: 2026-10-13-phase1-easel-web-copy
 ---
 
 <!-- comet-task-authority: docs/openspec/changes/phase1-easel-web-copy/tasks.md -->
