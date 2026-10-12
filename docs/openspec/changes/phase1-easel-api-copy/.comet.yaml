@@ -1,6 +1,6 @@
 workflow: full
 language: zh-CN
-phase: build
+phase: verify
 context_compression: off
 build_mode: autonomous
 build_pause: null
@@ -12,7 +12,7 @@ verify_mode: null
 auto_transition: true
 base_ref: db02161b0e65318f7a9be4e675a7e8e698376f7e
 design_doc: docs/openspec/changes/phase1-easel-api-copy/design.md
-plan: null
+plan: docs/superpowers/plans/2026-10-13-phase1-easel-api-copy.md
 verify_result: pending
 verify_failures: 0
 verification_report: null
@@ -28,4 +28,4 @@ handoff_hash: 94f75c125131a00d52931bbce3ace75ca0c79de357c3dd7c75252d35d34208e7
 classic_profile: full
 classic_migration: 1
 run_id: e681af4d-e4f5-475e-a181-745356939d8b
-check_epoch: 2
+check_epoch: 3

@@ -11,7 +11,7 @@
 | `easel/gateway_endpoint.py` | 解析网关 completions/healthz 地址 | app.py `/api/chat/*` | 无需网关——进程内调用 |
 | `easel/gateway_questions.py` | `ask_user` 问题桥（gateway `question.*` RPC + Ed25519 设备签名） | app.py `/api/chat/question/*` | deepagents `ask_human` HITL 原生中断 |
 | `easel/local_agents.py` | 本地 agent 注册/启停 | app.py `/api/settings/local-agents` | deepagents agent 定义管理 |
-| `easel/commands/*.py` | CLI 子命令（gateway/ping/skill/doctor） | cli.py；app.py 经 openclaw_cmd 间接使用 | 由 deepagents 运行时取代 |
+| `easel/commands/doctor.py`、`easel/commands/ping.py`、`easel/commands/skill.py`、`easel/commands/__init__.py` | CLI 子命令（doctor/ping/skill） | cli.py；app.py 经 openclaw_cmd 间接使用 | 由 deepagents 运行时取代 |
 
 ## app.py 中的关键调用点
 
