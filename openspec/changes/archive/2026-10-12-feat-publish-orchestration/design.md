@@ -2,6 +2,8 @@
 comet_change: feat-publish-orchestration
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-12-feat-publish-orchestration
+status: final
 ---
 
 # 设计：feat-publish-orchestration
