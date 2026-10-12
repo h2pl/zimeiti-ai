@@ -230,3 +230,103 @@ class TestChatSessionFields:
     def test_touch_unknown_session_noop(self, tmp_path, monkeypatch):
         monkeypatch.setattr(chat, "registry_path", lambda: tmp_path / "cs.json")
         chat.touch_session("ghost")  # 不抛错即通过
+
+
+# ── feat-chat-resume-tools：resume-stream + tool 帧 ────────────────
+
+
+class ResumeFakeAgent:
+    """astream fake：token + tool 节点 updates + 二次中断。"""
+
+    def astream(self, inp, config, stream_mode=None):
+        from langchain_core.messages import AIMessageChunk
+
+        async def gen():
+            yield ("messages", (AIMessageChunk(content="续跑输出"), {"langgraph_step": 9}))
+            yield ("updates", {"create_drafts": {"ok": True}})
+            interrupt = SimpleNamespace(
+                value={"action_requests": [{"name": "publish", "args": {}}]}
+            )
+            yield ("updates", {"__interrupt__": (interrupt,)})
+
+        return gen()
+
+
+@pytest.fixture
+def resume_env(tmp_path, monkeypatch):
+    """注册会话 + 预置一个 question 类 pending。"""
+    monkeypatch.setattr(chat, "registry_path", lambda: tmp_path / "cs.json")
+    import zimeiti_api.runtime.hosted as hosted_mod
+
+    monkeypatch.setattr(hosted_mod, "PENDING_PATH", tmp_path / "pending.json")
+    s = chat.create_session("xhs-main")
+    hosted_mod._add_pending(
+        s["thread_id"],
+        "",
+        account="xhs-main",
+        kind="question",
+        question={"question": "Q?", "options": ["A"]},
+    )
+    import zimeiti_api.core.models as models_mod
+    import zimeiti_api.runtime.checkpoints as checkpoints_mod
+    import zimeiti_api.runtime.graph as graph_mod
+
+    monkeypatch.setattr(models_mod, "get_model", lambda: None)
+    monkeypatch.setattr(checkpoints_mod, "get_checkpointer", fake_checkpointer)
+    monkeypatch.setattr(graph_mod, "build_minimal_agent", lambda *a, **k: ResumeFakeAgent())
+    return tmp_path
+
+
+def _client():
+    from fastapi.testclient import TestClient
+
+    from zimeiti_api.app import create_app
+
+    return TestClient(create_app())
+
+
+class TestResumeStream:
+    def test_resume_question_streams_and_registers_next_gate(self, resume_env):
+        c = _client()
+        tid = chat.list_sessions()[0]["thread_id"]
+        r = c.post(
+            f"/api/chat/sessions/{tid}/resume-stream", json={"kind": "question", "message": "选A"}
+        )
+        assert r.status_code == 200
+        frames = _sse_frames(r.text)
+        types = [e for e, _ in frames]
+        assert "token" in types and "tool" in types and "interrupt" in types and "done" in types
+        tool = [d for e, d in frames if e == "tool"][0]
+        assert tool["tool"] == "create_drafts" and tool["status"] == "done"
+        # 续跑再次命中闸门 → 新 pending（approval 类，publish 无载荷）
+        pending = json.loads((resume_env / "pending.json").read_text(encoding="utf-8"))
+        assert pending[0]["thread_id"] == tid
+        assert pending[0].get("kind", "approval") == "approval"  # approval 为默认 kind
+
+    def test_resume_missing_pending_404(self, resume_env):
+        c = _client()
+        chat.create_session("xhs-main")
+        c.post("/api/chat/sessions", json={"account": "xhs-main"})
+        # 用不存在 pending 的会话线程
+        s = chat.create_session("gzh-main")
+        r = c.post(
+            f"/api/chat/sessions/{s['thread_id']}/resume-stream",
+            json={"kind": "question", "message": "x"},
+        )
+        assert r.status_code == 404
+
+    def test_resume_bad_kind_400(self, resume_env):
+        c = _client()
+        tid = chat.list_sessions()[0]["thread_id"]
+        r = c.post(
+            f"/api/chat/sessions/{tid}/resume-stream", json={"kind": "nonsense", "message": "x"}
+        )
+        assert r.status_code == 400
+
+    def test_resume_empty_answer_400(self, resume_env):
+        c = _client()
+        tid = chat.list_sessions()[0]["thread_id"]
+        r = c.post(
+            f"/api/chat/sessions/{tid}/resume-stream", json={"kind": "question", "message": ""}
+        )
+        assert r.status_code == 400

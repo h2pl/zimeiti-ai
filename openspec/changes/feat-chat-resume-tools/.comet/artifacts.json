@@ -1,0 +1,9 @@
+{
+  "openspec_proposal": "openspec/changes/feat-chat-resume-tools/proposal.md",
+  "openspec_design": "openspec/changes/feat-chat-resume-tools/design.md",
+  "openspec_tasks": "openspec/changes/feat-chat-resume-tools/tasks.md",
+  "openspec_delta_spec": "openspec/changes/feat-chat-resume-tools/specs/chat-workbench/spec.md",
+  "build_plan": "docs/superpowers/plans/2026-10-12-feat-chat-resume-tools.md",
+  "handoff_context": "openspec/changes/feat-chat-resume-tools/.comet/handoff/design-context.json",
+  "handoff_markdown": "openspec/changes/feat-chat-resume-tools/.comet/handoff/design-context.md"
+}

@@ -1,12 +1,12 @@
-/** 对话工作台（web-chat-publish：SSE 流式 + 内联问题卡片）。
+/** 对话工作台（feat-chat-resume-tools：SSE 流式 + 工具事件行 + 内联续跑）。
  *  SSE 消费参考: Easel api.ts streamChat（ReadableStream 手解帧）。 */
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Approval } from "../lib/api";
-import { answerQuestion, createChatSession, fetchApprovals, fetchChatMessages, fetchChatSessions } from "../lib/api";
+import { createChatSession, fetchApprovals, fetchChatSessions, resumeChatStream } from "../lib/api";
 import { IconSend } from "./icons";
 
 interface Msg {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system";
   content: string;
 }
 
@@ -25,6 +25,16 @@ interface InterruptCard {
 
 type Phase = "idle" | "streaming";
 
+interface SsePayload {
+  text?: string;
+  message?: string;
+  pending?: boolean;
+  question?: string;
+  options?: string[];
+  tool?: string;
+  status?: string;
+}
+
 export default function ChatPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [current, setCurrent] = useState<Session | null>(null);
@@ -32,6 +42,7 @@ export default function ChatPage() {
   const [interrupt, setInterrupt] = useState<InterruptCard | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [input, setInput] = useState("");
+  const [toolLines, setToolLines] = useState<string[]>([]);
   const [toast, setToast] = useState<{ text: string; ok: boolean } | null>(null);
   const streamAbort = useRef<AbortController | null>(null);
 
@@ -41,65 +52,44 @@ export default function ChatPage() {
   };
 
   const loadSessions = useCallback(async () => {
-    try {
-      const list = await fetchChatSessions();
-      setSessions(list);
-    } catch {
-      setSessions([]);
-    }
+    setSessions(await fetchChatSessions().catch(() => []));
   }, []);
 
   useEffect(() => {
     void loadSessions();
+    return () => streamAbort.current?.abort();
   }, [loadSessions]);
 
   const loadHistory = useCallback(async (threadId: string) => {
     try {
-      const body = await fetchChatMessages(threadId);
-      setMessages(body.messages as Msg[]);
+      const r = await fetch(`/api/chat/sessions/${threadId}/messages`);
+      if (!r.ok) return;
+      const body = await r.json();
+      setMessages(body.messages || []);
     } catch {
-      /* 历史读取失败保持本地流 */
+      /* 历史读取失败保持本地 */
     }
   }, []);
 
-  // W4：切换会话/卸载时中止进行中的流
-  useEffect(() => {
-    return () => streamAbort.current?.abort();
-  }, []);
-
-  const switchSession = (s: Session) => {
-    streamAbort.current?.abort();
-    setPhase("idle");
-    setCurrent(s);
-    setInterrupt(null);
-    void loadHistory(s.thread_id);
-  };
-
-  const newSession = async () => {
-    try {
-      const s = await createChatSession("xhs-main", "新对话");
-      await loadSessions();
-      setCurrent(s);
-      setMessages([]);
-      setInterrupt(null);
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : String(e), false);
-    }
-  };
-
-  /** SSE 消费：解析 event/data 帧，token 拼接进当前 assistant 气泡。 */
-  const runStream = async (threadId: string, message: string) => {
-    setPhase("streaming");
-    setMessages((m) => [...m, { role: "user", content: message }, { role: "assistant", content: "" }]);
-    const myController = new AbortController();
-    streamAbort.current = myController;
-    try {
-      const res = await fetch(`/api/chat/sessions/${threadId}/stream`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
-        signal: myController.signal,
+  /** interrupt 帧后从 pending 拉取载荷（question/approval 两类卡片）。 */
+  const handleInterruptFrame = useCallback(async (threadId: string) => {
+    const pending = await fetchApprovals().catch(() => [] as Approval[]);
+    const mine = pending.find((p) => p.thread_id === threadId);
+    if (mine?.kind === "question") {
+      setInterrupt({
+        thread_id: threadId,
+        question: mine.question,
+        options: mine.options,
+        isQuestion: true,
       });
+    } else if (mine) {
+      setInterrupt({ thread_id: threadId, isQuestion: false });
+    }
+  }, []);
+
+  /** SSE 消费（D1/D2）：token/tool/interrupt/error/done 帧。 */
+  const consumeSse = useCallback(
+    async (threadId: string, res: Response) => {
       if (!res.ok || !res.body) throw new Error(`流请求失败 ${res.status}`);
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -115,17 +105,11 @@ export default function ChatPage() {
           const dataLine = frame.split("\n").find((l) => l.startsWith("data: "));
           if (!evLine || !dataLine) continue;
           const event = evLine.slice(7).trim();
-          let payload: {
-            text?: string;
-            message?: string;
-            pending?: boolean;
-            question?: string;
-            options?: string[];
-          };
+          let payload: SsePayload;
           try {
             payload = JSON.parse(dataLine.slice(6));
           } catch {
-            continue; // 单帧损坏跳过，不中断整条流（S1）
+            continue; // 单帧损坏跳过，不中断整条流
           }
           if (event === "token") {
             setMessages((m) => {
@@ -135,21 +119,34 @@ export default function ChatPage() {
               }
               return [...m, { role: "assistant", content: payload.text ?? "" }];
             });
+          } else if (event === "tool") {
+            const line = `⚙ ${payload.tool}（${payload.status}）`;
+            setToolLines((l) => [...l.slice(-4), line]);
           } else if (event === "interrupt") {
-            setInterrupt({ thread_id: threadId, isQuestion: false });
-            // 问题载荷来自 pending 接口（interrupt 帧后拉取）
-            const pending = await fetchApprovals().catch(() => [] as Approval[]);
-            const mine = pending.find((p) => p.thread_id === threadId);
-            if (mine?.kind === "question") {
-              setInterrupt({ thread_id: threadId, question: mine.question, options: mine.options, isQuestion: true });
-            } else if (mine) {
-              setInterrupt({ thread_id: threadId, isQuestion: false });
-            }
+            await handleInterruptFrame(threadId);
           } else if (event === "error") {
             showToast(payload.message ?? "流式请求失败", false);
           }
         }
       }
+    },
+    [handleInterruptFrame],
+  );
+
+  const runStream = async (threadId: string, message: string) => {
+    setPhase("streaming");
+    setToolLines([]);
+    setMessages((m) => [...m, { role: "user", content: message }, { role: "assistant", content: "" }]);
+    const myController = new AbortController();
+    streamAbort.current = myController;
+    try {
+      const res = await fetch(`/api/chat/sessions/${threadId}/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+        signal: myController.signal,
+      });
+      await consumeSse(threadId, res);
     } catch (e) {
       if (!(e instanceof DOMException && e.name === "AbortError")) {
         showToast(e instanceof Error ? e.message : String(e), false);
@@ -158,6 +155,49 @@ export default function ChatPage() {
       setPhase("idle");
       if (streamAbort.current?.signal === myController.signal) streamAbort.current = null;
     }
+  };
+
+  /** 断点续跑（D1）：决策构造收口后端，前端只传 kind+message。 */
+  const resumeStream = async (threadId: string, kind: "question" | "approval" | "reject", message: string) => {
+    setPhase("streaming");
+    setToolLines([]);
+    setInterrupt(null);
+    setMessages((m) => [...m, { role: "assistant", content: "" }]);
+    const myController = new AbortController();
+    streamAbort.current = myController;
+    try {
+      const res = await resumeChatStream(threadId, kind, message);
+      await consumeSse(threadId, res);
+    } catch (e) {
+      if (!(e instanceof DOMException && e.name === "AbortError")) {
+        showToast(e instanceof Error ? e.message : String(e), false);
+      }
+    } finally {
+      setPhase("idle");
+      if (streamAbort.current?.signal === myController.signal) streamAbort.current = null;
+    }
+  };
+
+  const newSession = async () => {
+    try {
+      const s = await createChatSession("xhs-main", "新对话");
+      await loadSessions();
+      setCurrent(s);
+      setMessages([]);
+      setInterrupt(null);
+      setToolLines([]);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : String(e), false);
+    }
+  };
+
+  const switchSession = (s: Session) => {
+    streamAbort.current?.abort();
+    setPhase("idle");
+    setCurrent(s);
+    setInterrupt(null);
+    setToolLines([]);
+    void loadHistory(s.thread_id);
   };
 
   const send = () => {
@@ -173,7 +213,7 @@ export default function ChatPage() {
         <div>
           <div className="page-title">对话工作台</div>
           <div className="page-subtitle">
-            在对话中驱动 agent（选题→创作→审批）；命中人工闸门时出现卡片，回答后续跑
+            在对话中驱动 agent（选题→创作→审批）；工具执行可见，闸门卡片内联处理
           </div>
         </div>
         <button className="btn btn-primary" onClick={() => void newSession()}>
@@ -193,11 +233,20 @@ export default function ChatPage() {
           ))}
         </div>
         <div className="chat-messages">
-          {messages.map((m, i) => (
-            <div key={i} className={m.role === "user" ? "chat-msg user" : "chat-msg"}>
-              {m.content}
-            </div>
-          ))}
+          {messages.map((m, i) =>
+            m.role === "system" ? (
+              <div key={i} className="page-subtitle">
+                {m.content}
+              </div>
+            ) : (
+              <div key={i} className={m.role === "user" ? "chat-msg user" : "chat-msg"}>
+                {m.content}
+              </div>
+            ),
+          )}
+          {toolLines.length > 0 && (
+            <div className="chat-msg page-subtitle">{toolLines[toolLines.length - 1]}</div>
+          )}
           {interrupt && current && (
             <div className="card question" style={{ padding: 14, margin: "10px 0" }}>
               <div className="idea-card-title">
@@ -208,19 +257,30 @@ export default function ChatPage() {
                   <button
                     key={o}
                     className="btn btn-sm"
-                    onClick={() =>
-                      void answerQuestion(interrupt.thread_id, o).then((r) => {
-                        setInterrupt(null);
-                        setMessages((m) => [...m, { role: "assistant", content: r?.last_message ?? "" }]);
-                      })
-                    }
+                    disabled={phase === "streaming"}
+                    onClick={() => void resumeStream(interrupt.thread_id, "question", o)}
                   >
                     {o}
                   </button>
                 ))}
-                <a className="btn btn-sm" href="#/approvals">
-                  前往审批中心
-                </a>
+                {interrupt.isQuestion ? null : (
+                  <>
+                    <button
+                      className="btn btn-sm btn-primary"
+                      disabled={phase === "streaming"}
+                      onClick={() => void resumeStream(interrupt.thread_id, "approval", "")}
+                    >
+                      确认
+                    </button>
+                    <button
+                      className="btn btn-sm btn-danger"
+                      disabled={phase === "streaming"}
+                      onClick={() => void resumeStream(interrupt.thread_id, "reject", "")}
+                    >
+                      拒绝
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )}

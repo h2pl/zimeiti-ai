@@ -1,0 +1,16 @@
+{
+  "change": "feat-chat-resume-tools",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "f8dc1c08dff9b9d350662df18b9d6aacfd4c9062cace8e4faf32a9436ae81c42",
+  "files": [
+    { "path": "openspec/changes/feat-chat-resume-tools/proposal.md", "sha256": "5f153972e7e63b76420a42b20bf6f8f291353f2df4df0a8b0658fedd932c3e6c" },
+    { "path": "openspec/changes/feat-chat-resume-tools/design.md", "sha256": "28c42defec6e6dad35284b6ec625113261569f8a795b2c834b8448682dcce39f" },
+    { "path": "openspec/changes/feat-chat-resume-tools/tasks.md", "sha256": "ba432db31dd6715d5d794d3f1a685179e89ca07126058374bc29a8a1fc9c347b" },
+    { "path": "openspec/changes/feat-chat-resume-tools/.openspec.yaml", "sha256": "1dfdca412094f24473d8b842866201ec26f200b29b17064b03f1e4982c35a7b9" },
+    { "path": "openspec/changes/feat-chat-resume-tools/specs/chat-workbench/spec.md", "sha256": "43a77d12e492567be257a0e36e5b92df09bea25b42a17862882cb8db38174d08" }
+  ]
+}
