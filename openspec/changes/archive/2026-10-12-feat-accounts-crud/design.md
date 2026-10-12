@@ -2,6 +2,8 @@
 comet_change: feat-accounts-crud
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-12-feat-accounts-crud
+status: final
 ---
 
 # 设计：feat-accounts-crud
