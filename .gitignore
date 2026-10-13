@@ -17,11 +17,6 @@ __pycache__/
 Thumbs.db
 .idea/
 .vscode/
-# >>> Comet managed project state >>>
-!/.comet/
-/.comet/*
-!/.comet/config.yaml
-# <<< Comet managed project state <<<
 
 # Node
 node_modules/
@@ -34,3 +29,8 @@ apps/sessions/
 
 # Comet 归档目录内的运行时状态不入库
 docs/openspec/changes/archive/*/.comet/
+# >>> Comet managed project state >>>
+!/.comet/
+/.comet/*
+!/.comet/config.yaml
+# <<< Comet managed project state <<<
