@@ -29,3 +29,6 @@ dist/
 # 后端运行时会话数据（非源码）
 apps/outputs/_sessions/
 apps/sessions/
+
+# Comet 归档目录内的运行时状态不入库
+docs/openspec/changes/archive/*/.comet/
