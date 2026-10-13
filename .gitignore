@@ -27,8 +27,9 @@ Thumbs.db
 node_modules/
 dist/
 
-# 后端运行时会话数据（非源码）
-apps/outputs/_sessions/
+# 后端运行时会话数据（非源码；对齐上游 Easel .gitignore 的 outputs 规则）
+apps/outputs/*
+!apps/outputs/.gitkeep
 apps/sessions/
 
 # Comet 归档目录内的运行时状态不入库
