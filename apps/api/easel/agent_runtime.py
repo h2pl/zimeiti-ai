@@ -44,10 +44,6 @@ SYSTEM_PROMPT = (
 )
 
 
-def runtime_enabled() -> bool:
-    return os.environ.get("ZIMEITI_RUNTIME", "deepagents") == "deepagents"
-
-
 # ---------- 会话历史落盘 ----------
 
 def _session_file(session_key: str) -> Path:
@@ -67,6 +63,34 @@ def _save_messages(session_key: str, messages: list[dict]) -> None:
     _session_file(session_key).write_text(
         json.dumps({"messages": messages}, ensure_ascii=False, indent=1), encoding="utf-8"
     )
+
+
+def delete_session(session_key: str) -> bool:
+    """删除会话的全部本地状态：落盘历史文件 + InMemorySaver checkpoint + 活跃中断登记。
+
+    供 web 端 DELETE /api/session/{key} 调用。落盘文件与 checkpoint 都删净，
+    同 key 再聊才不会「复活」旧上下文。返回是否有任何状态被删除。
+    """
+    deleted = False
+    try:
+        f = _session_file(session_key)   # 内部已做文件名清洗
+        if f.is_file():
+            f.unlink()
+            deleted = True
+    except OSError:
+        pass
+    try:
+        cp = getattr(_AGENT, "checkpointer", None) if _AGENT is not None else None
+        storage = getattr(cp, "storage", None)   # InMemorySaver: {(thread_id, ns, id): ...}
+        if isinstance(storage, dict):
+            for k in [k for k in list(storage) if k and k[0] == session_key]:
+                storage.pop(k, None)
+                deleted = True
+    except Exception:  # noqa: BLE001   checkpoint 清理失败不阻断文件删除
+        pass
+    _LIVE_INTERRUPTS.pop(session_key, None)
+    _LOCKS.pop(session_key, None)
+    return deleted
 
 
 # ---------- HITL pending 问题存储（带 TTL 惰性清理）----------

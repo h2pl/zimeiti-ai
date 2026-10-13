@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILLS = ROOT / "skills" / "openclaw"
+SKILLS = ROOT / "skills" / "builtin"
 FENCE_RE = re.compile(r"```(?:bash|sh|shell)\s*\n(.*?)```", re.S)
 OPTION_RE = re.compile(r"(?<!\S)(--[a-zA-Z][a-zA-Z0-9-]*|-[a-zA-Z])")
 

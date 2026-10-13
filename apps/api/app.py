@@ -1639,14 +1639,12 @@ def _save_turn(sk: str, status: str, text: str, extra: dict | None = None) -> No
         pass
 
 
-# 后台 supervisor 任务集合：持有强引用防被 GC；每个对话流的 openclaw run 跑在这里，
-# 与客户端 SSE 连接解耦（断线不杀 run）。
+# 后台 supervisor 任务集合：持有强引用防被 GC；每个对话流的 deepagents 回合跑在这里，
+# 与客户端 SSE 连接解耦（断线不杀回合）。
 _BG_TASKS: set = set()
 
-# 正在跑的对话 openclaw 进程（sk→proc），供用户**显式「停止」**终止；断线**不**经此路径（断线不杀）。
-_RUNNING_CHAT: dict = {}
-# 被用户显式停止的会话 key：supervisor 据此把本轮当作正常「已停止」收尾（不报「被中断」、释放会话锁）。
-_STOPPED_CHAT: set = set()
+# 正在跑的对话回合（sk→asyncio.Task），供用户**显式「停止」**取消；断线**不**经此路径（断线不杀）。
+_RUNNING_CHAT: dict[str, asyncio.Task] = {}
 
 
 @app.get("/api/chat/last/{session_id}")
@@ -1718,8 +1716,9 @@ async def api_chat_stream(req: ChatRequest):
     client_q: asyncio.Queue = asyncio.Queue()
     CLIENT_DONE = object()
 
-    async def supervisor():
-        sk = req.sessionId or f"web-{int(time.time() * 1000)}"
+    sk = req.sessionId or f"web-{int(time.time() * 1000)}"
+
+    async def supervisor(sk: str):
         pk = f"web:{sk}"                 # 落盘 key（与 /api/chat/last 一致）
         turn_id = req.turnId or uuid.uuid4().hex
         event_seq = 0
@@ -1750,21 +1749,30 @@ async def api_chat_stream(req: ChatRequest):
         # 秒级反馈：发出即亮「已收到」，不等 agent 冷启动（首个 SSE 事件，随流回放必达）
         to_client("activity", "⏳ 已收到，正在唤醒 agent…")
 
-        # deepagents 进程内运行时（替代 OpenClaw 网关；openclaw 已全面移除）。
-        await _agent_runtime.run_turn(
-            sk, message, pk, turn_id, event_path, to_client,
-            lambda: client_q.put_nowait(CLIENT_DONE),
-            save_turn=_save_turn,
-        )
+        # deepagents 进程内运行时（openclaw 已全面移除）。
+        try:
+            await _agent_runtime.run_turn(
+                sk, message, pk, turn_id, event_path, to_client,
+                lambda: client_q.put_nowait(CLIENT_DONE),
+                save_turn=_save_turn,
+            )
+        except asyncio.CancelledError:
+            # 用户经 /api/chat/stop 显式停止：正常收尾（落盘 + 解锁 forward），不当异常上报。
+            to_client("activity", "⏹ 已按要求停止本轮对话")
+            _save_turn(pk, "stopped", "", {"turn_id": turn_id, "stopped": True})
+            client_q.put_nowait(CLIENT_DONE)
+            return
         return
 
 
     # 把 run 跑在独立后台任务里（持强引用防 GC）——客户端断开不取消它。
-    task = asyncio.create_task(supervisor())
+    task = asyncio.create_task(supervisor(sk))
     _BG_TASKS.add(task)
+    _RUNNING_CHAT[sk] = task
 
     def _bg_done(t):
         _BG_TASKS.discard(t)
+        _RUNNING_CHAT.pop(sk, None)
         try:
             exc = t.exception()   # 取出异常避免「never retrieved」告警
         except Exception:
@@ -1846,28 +1854,16 @@ class StopRequest(BaseModel):
 
 @app.post("/api/chat/stop")
 async def api_chat_stop(req: StopRequest):
-    """用户显式停止当前会话正在跑的对话 agent：终止进程 → supervisor 收尾释放会话锁 →
-    下一句立刻能发（不再卡「上一条还在跑」）。仅此显式入口会杀进程；客户端断线不经此路径。"""
+    """用户显式停止当前会话正在跑的 deepagents 回合：取消后台任务 → supervisor 收尾落盘
+    并解锁 forward → 下一句立刻能发。仅此显式入口会取消；客户端断线不经此路径。"""
     sk = (req.sessionId or "").strip()
-    proc = _RUNNING_CHAT.get(sk) if sk else None
-    if proc is not None and proc.poll() is None:
-        _STOPPED_CHAT.add(sk)          # 标记为用户停止，供 supervisor 正常收尾（不报「被中断」）
+    task = _RUNNING_CHAT.get(sk) if sk else None
+    if task is not None and not task.done():
+        task.cancel()
         try:
-            proc.terminate()
-        except OSError:
+            await asyncio.wait({task}, timeout=3)   # 等 supervisor 完成收尾（落盘/解锁）
+        except Exception:  # noqa: BLE001
             pass
-        try:
-            await asyncio.to_thread(proc.wait, timeout=3)
-        except subprocess.TimeoutExpired:
-            try:
-                proc.kill()
-            except OSError:
-                pass
-        # supervisor removes the running marker only after persisting the final
-        # snapshot and releasing both session locks.
-        deadline = time.monotonic() + 5
-        while _RUNNING_CHAT.get(sk) is proc and time.monotonic() < deadline:
-            await asyncio.sleep(0.05)
         return {"stopped": True}
     return {"stopped": False}          # 没有在跑（可能已结束）→ 前端照常清理即可
 
@@ -2912,17 +2908,17 @@ def _write_baseline_profile(name: str, form: dict) -> None:
 
 @app.delete("/api/session/{session_key}")
 async def api_delete_session(session_key: str):
-    """删除 deepagents 本地会话记录（sessions/<session_key>.json 及轮次文件）。"""
-    sess = SESSIONS_DIR / f"{session_key}.json"
-    tf = _turn_file(session_key)
-    deleted = False
-    for p in (sess, tf):
-        if p.is_file():
-            try:
-                p.unlink()
-                deleted = True
-            except OSError:
-                pass
+    """删除 deepagents 会话的本地状态：落盘历史（agent_runtime.SESSIONS_DIR = apps/sessions，
+    含 InMemorySaver checkpoint 清理与活跃中断登记）与轮次结果（apps/outputs/_sessions）。
+    两处都删净，同 key 再聊才不会「复活」旧上下文。文件名经两侧各自的清洗函数处理。"""
+    deleted = _agent_runtime.delete_session(session_key)
+    try:
+        tf = _turn_file(session_key)   # 内部已做文件名安全化
+        if tf.is_file():
+            tf.unlink()
+            deleted = True
+    except OSError:
+        pass
     return {'deleted': deleted}
 
 

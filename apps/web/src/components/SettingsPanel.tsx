@@ -224,7 +224,7 @@ export default function SettingsPanel({ onClose }: Props) {
     }
   }, [refreshEnv]);
 
-  // ── 模型配置可编辑（v2）：保存到 .env / openclaw ──────────
+  // ── 模型配置可编辑（v2）：保存到 .env ──────────
   const [saving, setSaving] = useState(false);
   const [savedNote, setSavedNote] = useState('');
 

@@ -297,7 +297,7 @@ export function deleteOutput(path: string): Promise<{ ok: boolean; deleted: stri
 
 export interface UploadedFile { id: string; name: string; path: string; }
 
-/** OpenClaw ask_user 问答题（SSE question 事件 payload）。 */
+/** ask_user 问答题（SSE question 事件 payload）。 */
 export interface ChatQuestionOption { label: string; description?: string; }
 export interface ChatQuestionItem {
   questionId: string;
