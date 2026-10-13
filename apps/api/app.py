@@ -3,6 +3,15 @@ from __future__ import annotations
 
 import asyncio
 import os
+
+# psycopg 异步（checkpointer）不能用 Windows 默认 ProactorEventLoop，须 Selector
+# 策略（pg-data-layer 变更；旧 zimeiti 同款踩坑结论，psycopg 3.3 实测仍如此）。
+# 注意：`python -m uvicorn app:app` 会先建 loop 再 import 本文件，此处设置对那条
+# 路径已晚——生产启动走 serve.py（建 loop 前设策略），make api 已改。此处保留是
+# 为了「先 import app、后建 loop」的上下文（测试/脚本）同样生效。
+if os.name == "nt":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 import hashlib
 import ipaddress
 import json
@@ -11,6 +20,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import urllib.parse
@@ -35,6 +45,7 @@ if str(PROJECT_ROOT / "scripts") not in sys.path:
 
 from easel.persona import load_profile_text, persona_prefix, chat_turn_message, profile_exists, _FILE_ORDER
 from easel import agent_runtime as _agent_runtime
+from easel import pg as _pg
 
 
 def _load_dotenv(path: Path) -> None:
@@ -303,9 +314,22 @@ AUDIO_EXTS = {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac"}
 
 @asynccontextmanager
 async def _lifespan(_app: FastAPI):
-    """应用生命周期：关机时回收公众号扫码进程（替代已弃用的 on_event）。"""
+    """应用生命周期：启动时校验并初始化 PostgreSQL（fail-fast，见 pg-data-layer
+    变更 D6——DATABASE_URL 缺失/不可达即退出并明确报错，不静默启动后丢数据）；
+    关机时回收公众号扫码进程与 PG 连接池。"""
+    ok, err = await asyncio.to_thread(_pg.verify)
+    if not ok:
+        print("\n[zimeiti] PostgreSQL 不可用，服务退出（fail-fast）。", file=sys.stderr)
+        print(f"  DATABASE_URL = {_pg.database_url()}", file=sys.stderr)
+        print(f"  错误: {err}", file=sys.stderr)
+        print("  排查: 1) PostgreSQL 是否在运行 2) .env 的 DATABASE_URL 是否正确 "
+              "3) 目标库是否已创建", file=sys.stderr)
+        raise RuntimeError(f"PostgreSQL 不可用: {err}")
+    await asyncio.to_thread(_pg.setup)               # 业务表（幂等）
+    await _pg.setup_checkpointer()                   # checkpoint 表 + 连接池
     yield
     _stop_mp_login_on_shutdown()
+    await _pg.close_checkpointer()
 
 
 app = FastAPI(title="Easel", docs_url=None, redoc_url=None, lifespan=_lifespan)
@@ -2948,10 +2972,12 @@ def _write_baseline_profile(name: str, form: dict) -> None:
 
 @app.delete("/api/session/{session_key}")
 async def api_delete_session(session_key: str):
-    """删除 deepagents 会话的本地状态：落盘历史（agent_runtime.SESSIONS_DIR = apps/sessions，
-    含 InMemorySaver checkpoint 清理与活跃中断登记）与轮次结果（apps/outputs/_sessions）。
-    两处都删净，同 key 再聊才不会「复活」旧上下文。文件名经两侧各自的清洗函数处理。"""
-    deleted = _agent_runtime.delete_session(session_key)
+    """删除会话全部状态：PG 消息/会话行 + PG checkpoint + HITL pending
+    （pg-data-layer 变更，历史/checkpoint/pending 均已迁 PostgreSQL，不再是
+    apps/sessions 文件与 InMemorySaver）+ 活跃中断登记 + 轮次结果
+    （apps/outputs/_sessions，按设计留文件）。
+    各处都删净，同 key 再聊才不会「复活」旧上下文。"""
+    deleted = await _agent_runtime.delete_session(session_key)
     try:
         tf = _turn_file(session_key)   # 内部已做文件名安全化
         if tf.is_file():
@@ -3045,26 +3071,19 @@ async def api_trends(platforms: str = "weibo,douyin,zhihu", limit: int = 12):
     return {"trends": result, "updated": int(now)}
 
 
-SCHEDULE_FILE = OUTPUTS_DIR / "_schedule.json"
+SCHEDULE_FILE = OUTPUTS_DIR / "_schedule.json"   # 旧文件存储路径（迁 PG 后仅迁移/兼容引用）
 SCHEDULE_STATUSES = {"idea", "draft", "scheduled", "published"}
 SCHEDULE_KINDS = {"content", "event"}
 
 
 def _read_schedule() -> list[dict]:
-    if not SCHEDULE_FILE.is_file():
-        return []
-    try:
-        d = json.loads(SCHEDULE_FILE.read_text(encoding="utf-8"))
-        return d if isinstance(d, list) else []
-    except Exception:
-        return []
+    """排期列表（PG，pg-data-layer 变更；字段与文件版 JSON 一致）。"""
+    return _pg.schedule_list()
 
 
 def _write_schedule(items: list[dict]) -> None:
-    OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
-    tmp = SCHEDULE_FILE.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
-    tmp.replace(SCHEDULE_FILE)
+    """整表替换（read-modify-write 调用方的 PG 等价，事务内 DELETE+INSERT）。"""
+    _pg.schedule_replace_all(items)
 
 
 class ScheduleItem(BaseModel):
@@ -3146,36 +3165,43 @@ async def api_schedule_delete(sid: str):
 @app.get("/api/schedule/context")
 async def api_schedule_context(days: int = 14):
     """规划摘要（发布节奏/断更缺口 + 待发排期 + 临近节点 + 建议）——薄封装 calendar_ops，
-    前端页头「近期节点/建议」与 Agent 读回共用同一逻辑。失败返回空摘要不抛错。"""
-    cmd = [sys.executable, str(SHARED_SCRIPTS / "calendar_ops.py"),
-           "--data", str(SCHEDULE_FILE), "context", "--days", str(max(1, min(days, 90)))]
+    前端页头「近期节点/建议」与 Agent 读回共用同一逻辑。失败返回空摘要不抛错。
+
+    pg-data-layer 适配：排期已迁 PG，而 calendar_ops 是 vendor 脚本只认
+    `--data <json 文件>`（skills/shared/scripts，与上游一字不差不改动）。
+    此处把 PG 数据投影成临时 JSON 喂它，用完即删——适配层，非第二份存储。
+    """
+    items = _read_schedule()
+    tmp = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8")
     try:
+        json.dump(items, tmp, ensure_ascii=False)
+        tmp.close()
+        cmd = [sys.executable, str(SHARED_SCRIPTS / "calendar_ops.py"),
+               "--data", tmp.name, "context", "--days", str(max(1, min(days, 90)))]
         proc = subprocess.run(cmd, cwd=str(PROJECT_ROOT), env=_proxy_env(),
                               capture_output=True, text=True, timeout=20)
         return json.loads(proc.stdout) if proc.returncode == 0 and proc.stdout.strip() else {}
     except Exception:
         return {}
+    finally:
+        try:
+            os.unlink(tmp.name)
+        except OSError:
+            pass
 
 
-IDEAS_FILE = OUTPUTS_DIR / "_ideas.json"
+IDEAS_FILE = OUTPUTS_DIR / "_ideas.json"   # 旧文件存储路径（迁 PG 后仅迁移/兼容引用）
 IDEA_STATUSES = {"pending", "doing", "done"}
 
 
 def _read_ideas() -> list[dict]:
-    if not IDEAS_FILE.is_file():
-        return []
-    try:
-        d = json.loads(IDEAS_FILE.read_text(encoding="utf-8"))
-        return d if isinstance(d, list) else []
-    except Exception:
-        return []
+    """选题列表（PG，pg-data-layer 变更；字段与文件版 JSON 一致，最新在前）。"""
+    return _pg.ideas_list()
 
 
 def _write_ideas(items: list[dict]) -> None:
-    OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
-    tmp = IDEAS_FILE.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
-    tmp.replace(IDEAS_FILE)
+    """整表替换（read-modify-write 调用方的 PG 等价，反序插入保「最新在前」）。"""
+    _pg.ideas_replace_all(items)
 
 
 class IdeaItem(BaseModel):

@@ -1,8 +1,9 @@
 """deepagents 运行时（phase1-deepagents-runtime）。
 
 用 deepagents（LangGraph）替代 OpenClaw 网关承载对话链路：
-- 会话历史落盘 `PROJECT_ROOT/sessions/<session>.json`（跨重启保留；checkpoint 由
-  InMemorySaver 持有，重启后首轮从落盘历史恢复注入）
+- 会话历史与 HITL pending 存 PostgreSQL（easel/pg.py，pg-data-layer 变更）；
+  checkpoint 经 AsyncPostgresSaver 持久化，重启后从 PG 恢复（thread_id 带
+  租户命名空间，本地版为 '<local>:<session_key>'）
 - `create_deep_agent` 构建 agent，`ask_human` 工具触发 HITL 中断（问题卡内联，
   SSE 连接保持打开，答案经 Command(resume) 注入后同连接续流）
 - 流式输出按 Easel 前端 SSE 契约发帧：token / activity / question / error / done
@@ -27,15 +28,15 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-import re
 import time
 import uuid
 from langchain_core.messages import AIMessageChunk
 from pathlib import Path
 from typing import Any, Callable
 
+from . import pg
+
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
-SESSIONS_DIR = _PROJECT_ROOT / "sessions"
 TTL_SECONDS = 30 * 60
 
 SYSTEM_PROMPT = (
@@ -48,58 +49,46 @@ SYSTEM_PROMPT = (
 )
 
 
-# ---------- 会话历史落盘 ----------
-
-def _session_file(session_key: str) -> Path:
-    safe = re.sub(r"[^A-Za-z0-9_.-]", "_", session_key)
-    return SESSIONS_DIR / f"{safe}.json"
-
+# ---------- 会话历史 / HITL pending（PostgreSQL，见 easel/pg.py） ----------
 
 def _load_messages(session_key: str) -> list[dict]:
-    try:
-        return json.loads(_session_file(session_key).read_text(encoding="utf-8")).get("messages", [])
-    except (OSError, ValueError):
-        return []
+    return pg.messages_load(session_key)
 
 
 def _save_messages(session_key: str, messages: list[dict]) -> None:
-    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
-    _session_file(session_key).write_text(
-        json.dumps({"messages": messages}, ensure_ascii=False, indent=1), encoding="utf-8"
-    )
+    pg.messages_save(session_key, messages)
 
 
-def delete_session(session_key: str) -> bool:
-    """删除会话的全部本地状态：落盘历史文件 + InMemorySaver checkpoint + 活跃中断登记。
+def _load_pending() -> dict:
+    return pg.pending_load()
 
-    供 web 端 DELETE /api/session/{key} 调用。落盘文件与 checkpoint 都删净，
-    同 key 再聊才不会「复活」旧上下文。返回是否有任何状态被删除。
+
+def _save_pending(data: dict) -> None:
+    raise NotImplementedError("pending 已改 PG 粒度操作，请用 pg.pending_set/pending_del")
+
+
+async def delete_session(session_key: str, user_id: str = pg.DEFAULT_USER) -> bool:
+    """删除会话的全部状态：PG 消息/会话行 + PG checkpoint + HITL pending + 活跃中断登记。
+
+    供 web 端 DELETE /api/session/{key} 调用。四类状态都删净，同 key 再聊
+    才不会「复活」旧上下文。返回是否有任何状态被删除。
     """
-    deleted = False
+    deleted = pg.session_delete(session_key, user_id=user_id)
+    deleted = bool(pg.pending_delete_by_session(session_key, user_id=user_id)) or deleted
     try:
-        f = _session_file(session_key)   # 内部已做文件名清洗
-        if f.is_file():
-            f.unlink()
+        saver = pg.get_checkpointer()
+        if saver is not None:
+            await saver.adelete_thread(pg.thread_id(session_key, user_id))
             deleted = True
-    except OSError:
-        pass
-    try:
-        cp = getattr(_AGENT, "checkpointer", None) if _AGENT is not None else None
-        storage = getattr(cp, "storage", None)   # InMemorySaver: {(thread_id, ns, id): ...}
-        if isinstance(storage, dict):
-            for k in [k for k in list(storage) if k and k[0] == session_key]:
-                storage.pop(k, None)
-                deleted = True
-    except Exception:  # noqa: BLE001   checkpoint 清理失败不阻断文件删除
+    except Exception:  # noqa: BLE001   checkpoint 清理失败不阻断消息删除
         pass
     _LIVE_INTERRUPTS.pop(session_key, None)
     _LOCKS.pop(session_key, None)
     return deleted
 
 
-# ---------- HITL pending 问题存储（带 TTL 惰性清理）----------
+# ---------- HITL pending TTL 常量（与 pg.PENDING_TTL_SECONDS 同源） ----------
 
-PENDING_FILE = SESSIONS_DIR / "pending_questions.json"
 _LOCKS: dict[str, asyncio.Lock] = {}
 
 
@@ -107,20 +96,6 @@ def _session_lock(session_key: str) -> asyncio.Lock:
     if session_key not in _LOCKS:
         _LOCKS[session_key] = asyncio.Lock()
     return _LOCKS[session_key]
-
-
-def _load_pending() -> dict:
-    try:
-        raw = json.loads(PENDING_FILE.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-    now = time.time()
-    return {k: v for k, v in raw.items() if now - v.get("created_at", now) < TTL_SECONDS}
-
-
-def _save_pending(data: dict) -> None:
-    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
-    PENDING_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
 def get_pending(question_id: str) -> dict | None:
@@ -154,26 +129,31 @@ def _build_model():
 _AGENT = None
 
 
-def _build_agent():
-    """构建 deepagents agent（进程内缓存；ask_human 触发 HITL 中断）。"""
+async def _build_agent():
+    """构建 deepagents agent（进程内缓存；ask_human 触发 HITL 中断）。
+
+    checkpointer 用 PG（AsyncPostgresSaver，见 easel/pg.py）：异步图必须配
+    异步 saver；实例由 lifespan 经 pg.setup_checkpointer() 预先建好，此处取
+    缓存；若未初始化（如测试直连）则当场建。
+    """
     global _AGENT
     if _AGENT is not None:
         return _AGENT
     from deepagents import create_deep_agent
     from langchain_core.tools import tool
-    from langgraph.checkpoint.memory import InMemorySaver
 
     @tool
     def ask_human(question: str, options: str = "") -> str:
         """向用户提问并等待回答。question 为问题文本；options 用「|」分隔候选答案（可留空）。"""
         return "已提交问题，等待人工回答。"
 
+    checkpointer = await pg.setup_checkpointer()
     _AGENT = create_deep_agent(
         model=_build_model(),
         tools=[ask_human],
         system_prompt=SYSTEM_PROMPT,
         interrupt_on={"ask_human": True},
-        checkpointer=InMemorySaver(),
+        checkpointer=checkpointer,
     )
     return _AGENT
 
@@ -225,10 +205,10 @@ def _to_text(content: Any) -> str:
     return ""
 
 
-def _checkpoint_has_messages(agent, config) -> bool:
+async def _checkpoint_has_messages(agent, config) -> bool:
     """checkpoint 是否已有消息（决定是否注入落盘历史，防重复膨胀）。"""
     try:
-        state = agent.get_state(config)
+        state = await agent.aget_state(config)
         msgs = (state.values or {}).get("messages") if isinstance(state.values, dict) else None
         return bool(msgs)
     except Exception:
@@ -250,18 +230,18 @@ async def run_turn(session_key: str, message: str, pk: str, turn_id: str,
             end()
             return
         try:
-            agent = _build_agent()
+            agent = await _build_agent()
         except Exception as e:  # noqa: BLE001
             emit("error", f"❌ 运行时初始化失败：{str(e)[:180]}")
             emit("done", sessionKey=session_key)
             end()
             return
 
-        config = {"configurable": {"thread_id": session_key}}
+        config = {"configurable": {"thread_id": pg.thread_id(session_key)}}
         from langchain_core.messages import AIMessage, HumanMessage
 
         lc_messages: list = []
-        if not _checkpoint_has_messages(agent, config):
+        if not await _checkpoint_has_messages(agent, config):
             # 仅 checkpoint 为空（新线程 / 重启后首轮）才注入落盘历史，
             # 否则 langgraph 追加语义会让上下文成倍膨胀。
             for m in _load_messages(session_key):
@@ -312,9 +292,8 @@ async def run_turn(session_key: str, message: str, pk: str, turn_id: str,
                 "full_text": full_text, "config": config, "save_turn": save_turn,
                 "pending_ids": [qid],
             }
-            pend = _load_pending()
-            pend[qid] = {"id": qid, "thread_id": session_key, "created_at": time.time()}
-            _save_pending(pend)
+            pg.pending_set(qid, session_key, {"id": qid, "thread_id": session_key,
+                                              "created_at": time.time()})
             # 前端 ChatQuestion 契约：{"id", "questions":[{questionId,question,options}]}
             emit("question", json.dumps(payload, ensure_ascii=False))
             emit("activity", "⏸ 等待人工回答（回答后将自动继续）…")
@@ -345,14 +324,12 @@ def _finish_turn(session_key: str, pk: str, text: str, emit: Callable, end: Call
 
 async def answer(question_id: str, answers: Any, resolved_by: str = "web") -> dict:
     """恢复被 ask_human 中断的 agent：注入人工回答，续流输出到原 SSE 连接。"""
-    pend = _load_pending()
-    payload = pend.get(question_id)
+    payload = pg.pending_get(question_id)
     if payload is None:
         return {"ok": False, "error": "question not found"}
     sk = payload["thread_id"]
     live = _LIVE_INTERRUPTS.pop(sk, None)
-    pend.pop(question_id, None)
-    _save_pending(pend)
+    pg.pending_del(question_id)
 
     # 前端 QuestionCards 提交形如 {questionId: [选中的 label]}；格式化为可读文本注入
     if isinstance(answers, dict):
@@ -364,8 +341,8 @@ async def answer(question_id: str, answers: Any, resolved_by: str = "web") -> di
     else:
         answer_text = str(answers)
 
-    agent = _build_agent()
-    config = payload.get("config") or {"configurable": {"thread_id": sk}}
+    agent = await _build_agent()
+    config = payload.get("config") or {"configurable": {"thread_id": pg.thread_id(sk)}}
     emit = (live or {}).get("emit")
     end = (live or {}).get("end")
     save_turn = (live or {}).get("save_turn")
@@ -419,15 +396,15 @@ async def ask(session_key: str, message: str) -> str:
         if model is None:
             return "❌ 未配置模型：请设置 OPENAI_API_KEY（可选 OPENAI_BASE_URL / ZIMEITI_MODEL）"
         try:
-            agent = _build_agent()
+            agent = await _build_agent()
         except Exception as e:  # noqa: BLE001
             return f"❌ 运行时初始化失败：{str(e)[:180]}"
 
-        config = {"configurable": {"thread_id": session_key}}
+        config = {"configurable": {"thread_id": pg.thread_id(session_key)}}
         from langchain_core.messages import AIMessage, HumanMessage
 
         lc_messages: list = []
-        if not _checkpoint_has_messages(agent, config):
+        if not await _checkpoint_has_messages(agent, config):
             for m in _load_messages(session_key):
                 if m.get("content"):
                     lc_messages.append(

@@ -15,7 +15,7 @@ install: ## 安装/同步依赖（uv sync + npm install）
 	cd $(WEB_DIR) && npm install
 
 api: ## 启动后端 :8000（托管 frontend/dist 构建产物；无 .env 时对话优雅降级）
-	cd $(API_DIR) && uv run python -m uvicorn app:app --host 127.0.0.1 --port 8000
+	cd $(API_DIR) && uv run python serve.py --host 127.0.0.1 --port 8000
 
 web: ## 启动前端 dev :5173（/api 代理转发到 :8000）
 	cd $(WEB_DIR) && npm run dev

@@ -16,10 +16,18 @@ dependencies = [
     "pydantic>=2.7,<3",         # 请求模型
     "segno>=1.6,<2",             # B站扫码登录二维码渲染（纯 Python）
     "python-multipart>=0.0.9,<1", # FastAPI 文件上传 / Form
-    "Pillow>=10,<13", "opencv-python>=4.8,<5", "numpy>=1.26,<3",
-    "pandas>=2,<4", "matplotlib>=3.8,<4", "librosa>=0.10,<1",
-    "faster-whisper>=1,<2", "edge-tts>=6,<8", "playwright>=1.45,<2",
-    "rembg>=2.0,<3", "jieba>=0.42,<1", "snownlp>=0.12,<1",
+    "Pillow>=10,<13",
+    "opencv-python>=4.8,<5",
+    "numpy>=1.26,<3",
+    "pandas>=2,<4",
+    "matplotlib>=3.8,<4",
+    "librosa>=0.10,<1",
+    "faster-whisper>=1,<2",
+    "edge-tts>=6,<8",
+    "playwright>=1.45,<2",
+    "rembg>=2.0,<3",
+    "jieba>=0.42,<1",
+    "snownlp>=0.12,<1",
     # biliup 钉 1.2.9：最后一个带 cp39-abi3 win_amd64 wheel 的版本（兼容 3.9+，含 3.12/3.14）；
     # 1.2.11 只发 sdist，本机无 Rust 工具链时 uv sync 直接失败。
     "biliup==1.2.9",
@@ -29,7 +37,18 @@ dependencies = [
     "langchain-core>=0.3,<3",
     # ChatOpenAI（agent_runtime._build_model）为直接 import，不靠 deepagents 传递
     "langchain-openai>=0.2,<3",
+    "psycopg[binary]>=3.1,<4",
+    "langgraph-checkpoint-postgres>=2.0,<4",
 ]
 
 [tool.setuptools.packages.find]
 include = ["easel*"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<10",             # 测试（apps/api/tests）
+]
+
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
