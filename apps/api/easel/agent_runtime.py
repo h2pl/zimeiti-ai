@@ -30,6 +30,7 @@ import os
 import re
 import time
 import uuid
+from langchain_core.messages import AIMessageChunk
 from pathlib import Path
 from typing import Any, Callable
 
@@ -112,7 +113,7 @@ def _build_model():
     if not api_key:
         return None
     kwargs: dict[str, Any] = {
-        "model": os.environ.get("ZIMEITI_MODEL", "gpt-4o-mini"),
+        "model": os.environ.get("OPENAI_MODEL") or os.environ.get("ZIMEITI_MODEL", "gpt-4o-mini"),
         "api_key": api_key,
         "streaming": True,
     }
@@ -371,3 +372,67 @@ async def answer(question_id: str, answers: Any, resolved_by: str = "web") -> di
     else:
         _save_messages(sk, _load_messages(sk) + [{"role": "assistant", "content": text}])
     return {"ok": True, "last_message": text}
+
+
+def model_configured() -> bool:
+    """模型是否已配置（OPENAI_API_KEY 存在）。供状态面板展示，替代原 OpenClaw 网关探活。"""
+    return _build_model() is not None
+
+
+async def ask(session_key: str, message: str) -> str:
+    """非流式执行一轮，返回最终文本。
+
+    被 ask_human 中断时不续答（非流式无法交互），返回提示文本让调用方改走流式对话。
+    复用与 run_turn 相同的落盘历史 / checkpoint 注入逻辑。
+    """
+    async with _session_lock(session_key):
+        _gc_live()
+        model = _build_model()
+        if model is None:
+            return "❌ 未配置模型：请设置 OPENAI_API_KEY（可选 OPENAI_BASE_URL / ZIMEITI_MODEL）"
+        try:
+            agent = _build_agent()
+        except Exception as e:  # noqa: BLE001
+            return f"❌ 运行时初始化失败：{str(e)[:180]}"
+
+        config = {"configurable": {"thread_id": session_key}}
+        from langchain_core.messages import AIMessage, HumanMessage
+
+        lc_messages: list = []
+        if not _checkpoint_has_messages(agent, config):
+            for m in _load_messages(session_key):
+                if m.get("content"):
+                    lc_messages.append(
+                        HumanMessage(content=m["content"]) if m["role"] == "user"
+                        else AIMessage(content=m["content"])
+                    )
+        lc_messages.append(HumanMessage(content=message))
+
+        full_text: list[str] = []
+        try:
+            async for chunk, _meta in agent.astream(
+                {"messages": lc_messages}, config=config, stream_mode="messages"
+            ):
+                if not isinstance(chunk, AIMessageChunk):
+                    continue
+                text = _to_text(getattr(chunk, "content", None))
+                if text:
+                    full_text.append(text)
+            snapshot = await agent.aget_state(config)
+            interrupted = _extract_interrupt(snapshot)
+        except Exception as e:  # noqa: BLE001
+            return f"❌ agent 运行失败：{str(e)[:180]}"
+
+        if interrupted:
+            return (f"⏸ 该问题需要人工决策：{interrupted['question']}"
+                    f"（请使用流式对话回答）")
+        text = "".join(full_text)
+        _save_messages(session_key, _load_messages(session_key)
+                       + [{"role": "user", "content": message},
+                          {"role": "assistant", "content": text}])
+        return text
+
+
+def ask_sync(session_key: str, message: str) -> str:
+    """同步包装 ask（供线程池 / 同步上下文调用）。"""
+    return asyncio.run(ask(session_key, message))

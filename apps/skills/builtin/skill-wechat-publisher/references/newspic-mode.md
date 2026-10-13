@@ -77,7 +77,7 @@ account: main
 #### 2. 拆卡 + 生成计划
 
 ```bash
-python3 skills/openclaw/skill-wechat-publisher/scripts/newspic_build.py brief.md
+python3 skills/builtin/skill-wechat-publisher/scripts/newspic_build.py brief.md
 # → 同目录写出 card_plan.json,列出每张卡的主副文字 + 完整 Gemini prompt + 目标文件名
 ```
 
@@ -91,7 +91,7 @@ Claude 读 `card_plan.json`,按每张卡的 `prompt` 字段调项目内置 `scri
 
 ```bash
 # publish.py 会自动在发送前跑一次,这里是手动预检
-python3 skills/openclaw/skill-wechat-publisher/scripts/ai_score.py brief.md --mode newspic --threshold 45
+python3 skills/builtin/skill-wechat-publisher/scripts/ai_score.py brief.md --mode newspic --threshold 45
 ```
 
 命中 AI 套话或高频词 → 回去改短文本,重跑直到通过。
@@ -99,9 +99,9 @@ python3 skills/openclaw/skill-wechat-publisher/scripts/ai_score.py brief.md --mo
 #### 4. 发布
 
 ```bash
-python3 skills/openclaw/skill-wechat-publisher/scripts/publish.py --account main --type newspic --brief brief.md --exec
+python3 skills/builtin/skill-wechat-publisher/scripts/publish.py --account main --type newspic --brief brief.md --exec
 # 或显式覆盖风格
-python3 skills/openclaw/skill-wechat-publisher/scripts/publish.py --account main --type newspic --brief brief.md --image-style knowledge-card --exec
+python3 skills/builtin/skill-wechat-publisher/scripts/publish.py --account main --type newspic --brief brief.md --image-style knowledge-card --exec
 ```
 
 `publish.py` 做的事:

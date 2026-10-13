@@ -117,7 +117,7 @@ def _parse_date(s: str):
 # --------------------------------------------------------------------------- #
 def _forward_publish_log(platform: str, title: str, url: str, ptype: str,
                          tags: str, source: str) -> None:
-    # 兼容两种布局：项目根 skills/openclaw/... 与 OpenClaw workspace 拍平后的 skills/...
+    # 兼容两种布局：项目根 skills/builtin/... 与 OpenClaw workspace 拍平后的 skills/...
     candidates = [
         PROJECT_ROOT / "skills" / "openclaw" / "skill-publish-log" / "scripts" / "log.py",
         PROJECT_ROOT / "skills" / "skill-publish-log" / "scripts" / "log.py",

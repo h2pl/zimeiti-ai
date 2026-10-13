@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILLS_DIR = ROOT / "skills" / "openclaw"
+SKILLS_DIR = ROOT / "skills" / "builtin"
 ALLOWED_KEYS = {"name", "description", "layer", "metadata"}
 LAYERS = {"discover", "plan", "produce", "publish", "attribute", "general"}
 INTENTIONAL_NAME_MISMATCHES = {"skill-xhs-analyzer": "redbook"}
@@ -25,13 +25,11 @@ LEGACY_OUTPUT_DIRS = {
     "video-intro-outro", "video-reframe", "video-to-article", "voice-clone",
 }
 PUBLISH_SCRIPT_CONTRACTS = {
-    "skills/openclaw/skill-bilibili-upload/scripts/bili_upload.py": (
-        "content_guard.guard_or_die", 'add_argument("--exec"',
-    ),
-    "skills/openclaw/skill-wechat-publisher/scripts/publish.py": (
+    # 本仓仅复制了 wechat-publisher 技能（Easel 原仓的 bilibili-upload 等未随迁，条目移除）。
+    "skills/builtin/skill-wechat-publisher/scripts/publish.py": (
         "content_guard.guard_or_die", '"--exec"',
     ),
-    "skills/openclaw/skill-wechat-publisher/scripts/multi_publish.py": (
+    "skills/builtin/skill-wechat-publisher/scripts/multi_publish.py": (
         "content_guard.guard_or_die", '"--exec"',
     ),
     "skills/shared/scripts/xhs_publish.py": (
@@ -168,24 +166,13 @@ def validate_execution_contracts() -> list[str]:
             if marker not in text:
                 errors.append(f"{relative_path}: missing safety marker {marker!r}")
 
-    analyzer_docs = [
-        ROOT / "skills/openclaw/skill-xhs-analyzer/SKILL.md",
-        ROOT / "skills/openclaw/skill-xhs-analyzer/references/commands.md",
-        ROOT / "skills/openclaw/skill-xhs-analyzer/references/modules.md",
-    ]
-    forbidden = re.compile(r"redbook\s+(?:post|comment|reply|batch-reply|like|collect)\b")
-    for path in analyzer_docs:
-        if match := forbidden.search(path.read_text(encoding="utf-8")):
-            errors.append(
-                f"{path.relative_to(ROOT)}: analyzer must stay read-only; found {match.group()!r}"
-            )
     return errors
 
 
 def validate_output_layout_references() -> list[str]:
     """Reject examples that teach agents to create root files or generic projects."""
     errors: list[str] = []
-    roots = (ROOT / "skills/openclaw", ROOT / "skills/shared/scripts")
+    roots = (ROOT / "skills/builtin", ROOT / "skills/shared/scripts")
     for base in roots:
         for path in base.rglob("*"):
             if not path.is_file() or path.suffix not in OUTPUT_SCAN_SUFFIXES:
