@@ -25,3 +25,7 @@ Thumbs.db
 # Node
 node_modules/
 dist/
+
+# 后端运行时会话数据（非源码）
+apps/outputs/_sessions/
+apps/sessions/

@@ -43,6 +43,7 @@ from easel.gateway_endpoint import chat_completions_url, healthz_url, port_sourc
 from easel.openclaw_cmd import openclaw_base_cmd
 from easel.persona import load_profile_text, persona_prefix, chat_turn_message, profile_exists, _FILE_ORDER
 from easel.timeouts import TIMEOUT_CHAT, TIMEOUT_DIRECT, TIMEOUT_PRODUCE
+from easel import agent_runtime as _agent_runtime
 try:
     from easel.gateway_questions import (
         GatewayClient, GatewayQuestionError, GatewayUnsupportedError,
@@ -2459,6 +2460,16 @@ async def api_chat_stream(req: ChatRequest):
         # 秒级反馈：发出即亮「已收到」，不等 agent 冷启动（首个 SSE 事件，随流回放必达）
         to_client("activity", "⏳ 已收到，正在唤醒 agent…")
 
+        # phase1-deepagents-runtime：deepagents 进程内运行时（替代 OpenClaw 网关）。
+        # 保留原 CLI/HTTP 双路径于下方（ZIMEITI_RUNTIME=openclaw 可切回）。
+        if _agent_runtime.runtime_enabled():
+            await _agent_runtime.run_turn(
+                sk, message, pk, turn_id, event_path, to_client,
+                lambda: client_q.put_nowait(CLIENT_DONE),
+                save_turn=_save_turn,
+            )
+            return
+
         async def _run_gateway_turn(hproc):
             """HTTP 直连常驻网关跑一轮（OpenAI 兼容端点 /v1/chat/completions，原生 SSE）。
 
@@ -3003,6 +3014,9 @@ class QuestionAnswerRequest(BaseModel):
 @app.post("/api/chat/question/answer")
 async def api_question_answer(req: QuestionAnswerRequest):
     """前端点击 ask_user 选项后调用：转发 gateway question.resolve，让等待的 agent 拿到答案。"""
+    if _agent_runtime.runtime_enabled():
+        # deepagents 运行时：resume 被中断的 agent，续流输出到原 SSE 连接
+        return await _agent_runtime.answer(req.questionId, req.answers or {}, req.resolvedBy)
     if GatewayClient is None:
         return {"ok": False, "error": "gateway question bridge unavailable"}
     client = GatewayClient()
@@ -3023,6 +3037,8 @@ class QuestionStatusRequest(BaseModel):
 @app.post("/api/chat/question/status")
 async def api_question_status(req: QuestionStatusRequest):
     """批量查 question 状态（重放旧事件时过滤已解决的题）。"""
+    if _agent_runtime.runtime_enabled():
+        return {"ok": True, "questions": _agent_runtime.pending_status(req.questionIds)}
     if GatewayClient is None:
         return {"ok": False, "questions": {}}
     client = GatewayClient()
