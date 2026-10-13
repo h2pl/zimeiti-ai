@@ -361,7 +361,19 @@ async def local_write_guard(request: Request, call_next):
         response.headers.update(headers)
         return response
     if request.method not in ('GET', 'HEAD', 'OPTIONS'):
-        allowed = origin in _LOCAL_ORIGINS if origin else _loopback_peer(request)
+        allowed = False
+        if origin:
+            if origin in _LOCAL_ORIGINS:
+                allowed = True
+            else:
+                # 同源放行：页面由本服务托管（如 :8000 直开）时，浏览器对 POST 也会带
+                # 自身 Origin（http://127.0.0.1:8000）——与请求 Host 头一致即同源，
+                # 属于本机工作台自己的页面。Host 头不可被跨站 JS 伪造，判据与 ① 同级。
+                host = request.headers.get('host', '').strip().lower()
+                origin_n = origin.strip().lower().rstrip('/')
+                allowed = bool(host) and origin_n in (f'http://{host}', f'https://{host}')
+        else:
+            allowed = _loopback_peer(request)
         if not allowed:
             return JSONResponse({'detail': '仅允许从本机工作台操作。'}, status_code=403)
     return await call_next(request)
