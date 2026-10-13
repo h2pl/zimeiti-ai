@@ -52,11 +52,11 @@ python3 skills/shared/scripts/weixin_mp_stats.py login
 只有显式选择官方 API 发布时，才执行以下凭证配置与连接检查：
 
 ```bash
-cp skills/builtin/skill-wechat-publisher/wechat-publisher.yaml.example skills/builtin/skill-wechat-publisher/wechat-publisher.yaml
+cp skills/openclaw/skill-wechat-publisher/wechat-publisher.yaml.example skills/openclaw/skill-wechat-publisher/wechat-publisher.yaml
 # 编辑该文件，填写 app_id / app_secret / author / theme，并在公众号后台配置出口 IP 白名单
-python3 skills/builtin/skill-wechat-publisher/scripts/wechat_api.py list-accounts
+python3 skills/openclaw/skill-wechat-publisher/scripts/wechat_api.py list-accounts
 # 验证 API 连接，仅输出状态，不输出 token
-(cd skills/builtin/skill-wechat-publisher/scripts && python3 -c "from wechat_api import get_access_token; get_access_token(); print('OK')")
+(cd skills/openclaw/skill-wechat-publisher/scripts && python3 -c "from wechat_api import get_access_token; get_access_token(); print('OK')")
 ```
 
 官方 API 配置文件固定放 skill 根目录（`config.py::_find_unified_yaml()` 只查此处），所选账号必须有 `app_id` 和 `app_secret`。API 参数细节见 [references/api_reference.md](references/api_reference.md)，错误码见 [references/errors.md](references/errors.md)。这些要求不适用于默认的后台会话发布。
@@ -80,21 +80,21 @@ python3 skills/builtin/skill-wechat-publisher/scripts/wechat_api.py list-account
 
 ### 阶段五：格式转换与排版
 ```bash
-python3 skills/builtin/skill-wechat-publisher/scripts/html_converter.py article.md --theme refined-blue -o article.html
-python3 skills/builtin/skill-wechat-publisher/scripts/html_converter.py article.md --list-themes
+python3 skills/openclaw/skill-wechat-publisher/scripts/html_converter.py article.md --theme refined-blue -o article.html
+python3 skills/openclaw/skill-wechat-publisher/scripts/html_converter.py article.md --list-themes
 ```
 主题一般由 `publish.py --account` 自动从 yaml 读。15 套主题的推荐表与视觉简介见 [references/themes.md](references/themes.md)，行内标色系统见 [references/inline-markup.md](references/inline-markup.md)。主题预览：`assets/theme-previews/index.html`。
 
 ### 阶段 5.5：AI 味自检 gate（publish.py 内置强制拦截）
 `publish.py` 发草稿前自动调 `ai_score.check_ai_score()`，分数 ≥ 阈值（默认 45）直接拦住。阈值：<35 🟢PASS / 35-45 🟡WARN / ≥45 🔴FAIL。手动看细节报告：
 ```bash
-python3 skills/builtin/skill-wechat-publisher/scripts/ai_score.py outputs/主题名/article.md --threshold 45
+python3 skills/openclaw/skill-wechat-publisher/scripts/ai_score.py outputs/主题名/article.md --threshold 45
 ```
 命中时按脚本列出的 AI 套话/高频词逐句**重写整个句式**（不只换词），重跑到通过。可选双保险：朱雀 / GPTZero 第三方检测。
 
 ### 阶段六：发布到草稿箱（默认走后台会话，不自动群发）
 ```bash
-python3 skills/builtin/skill-wechat-publisher/scripts/publish.py --account main \
+python3 skills/openclaw/skill-wechat-publisher/scripts/publish.py --account main \
   --input outputs/主题名/article.md \
   --cover .../cover.jpg --title "标题" --digest "120 字以内摘要" --exec
 ```

@@ -19,7 +19,7 @@
    ```
 5. 自检:
    ```bash
-   python3 skills/builtin/skill-wechat-publisher/scripts/multi_publish.py --check
+   python3 skills/openclaw/skill-wechat-publisher/scripts/multi_publish.py --check
    ```
    两项都打 `✓` 说明就绪。
 
@@ -27,7 +27,7 @@
 
 **方式 A:命令行显式指定平台(最常用)**
 ```bash
-python3 skills/builtin/skill-wechat-publisher/scripts/publish.py --account main \
+python3 skills/openclaw/skill-wechat-publisher/scripts/publish.py --account main \
   --input outputs/主题名/article.md \
   --cover outputs/主题名/cover.jpg \
   --sync zhihu,juejin,csdn --exec
@@ -44,12 +44,12 @@ accounts:
 ```
 然后发布时加 `--sync-from-config`:
 ```bash
-python3 skills/builtin/skill-wechat-publisher/scripts/publish.py --account main --input x.md --cover x.jpg --sync-from-config --exec
+python3 skills/openclaw/skill-wechat-publisher/scripts/publish.py --account main --input x.md --cover x.jpg --sync-from-config --exec
 ```
 
 **方式 C:独立跑(不发微信,只同步)**
 ```bash
-python3 skills/builtin/skill-wechat-publisher/scripts/multi_publish.py --input x.md --platforms zhihu,juejin --exec
+python3 skills/openclaw/skill-wechat-publisher/scripts/multi_publish.py --input x.md --platforms zhihu,juejin --exec
 ```
 
 #### 图片注意事项
