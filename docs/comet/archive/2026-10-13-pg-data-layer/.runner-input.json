@@ -1,0 +1,35 @@
+{
+  "kind": "builder-handoff",
+  "summary": "pg-data-layer 修复轮：①修复 Verifier 抓出的 A9 实证缺口——DELETE /api/session 未清 hitl_pending。新增 pg.pending_delete_by_session 并在 agent_runtime.delete_session 联动调用（现删消息/会话行/checkpoint/pending 四类状态），delete_session 增加 user_id 参数贯通多租户维度；新增 2 项单测（pg 层 session 级删除隔离 + delete_session 接线层联动清 pending），单测 12/12。②新增自包含运行时验收脚本 apps/scripts/verify_pg_data_layer.py（restart 模式验 A1 重启回忆暗号/A2 pending 跨重启存活/A6 fail-fast；e2e 模式自起 zimeiti+Easel 双服务跑 55 项对比验 A3/A8），本地实跑 restart 4/4、e2e 2/2 全过。修复过程还顺带修正了脚本自身两处 bug（_pg_run 未 print 导致 A2 误报、REPO 路径少爬一级）。",
+  "addressed_acceptance_ids": ["A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9"],
+  "acceptance_review": [
+    {"id": "A1", "status": "implemented-with-evidence", "evidence": ["verify_pg_data_layer.py restart：首轮写入随机暗号 → 杀进程重启 → 同 session 二轮准确回忆（暗号命中），4/4 通过", "checkpoint 经 AsyncPostgresSaver 持久化，thread_id 带 <local>: 命名空间；重启后 _checkpoint_has_messages 命中 PG 不重复注入落盘历史"], "note": "本轮补运行时证据（上一轮因 Verifier 无 shell 被 blocked）"},
+    {"id": "A2", "status": "implemented-with-evidence", "evidence": ["verify_pg_data_layer.py restart：子进程写入 pending → 重启服务 → 另一子进程 pending_get 读回（跨进程持久化）", "tests/test_pg_data.py::test_pending_lifecycle / test_pending_ttl_expired"], "note": "数据级跨重启存活已验证；SSE 级 resume 依赖同进程 _LIVE_INTERRUPTS，重启后走落库分支（实现方声明限制，Verifier 已认可该描述）"},
+    {"id": "A3", "status": "implemented-with-evidence", "evidence": ["verify_pg_data_layer.py e2e：自起 zimeiti:8055 + Easel:8056，e2e_parity_check --writes exit=0 全部一致（55 项），含 schedule/ideas 增改删两边 200", "tests/test_pg_data.py::test_ideas_order_and_crud / test_schedule_order_and_crud"], "note": "整表替换函数保序与字段契约同文件版"},
+    {"id": "A4", "status": "implemented-with-evidence", "evidence": ["e2e 55 项含 /api/chat/last 契约一致", "git diff 确认 _turn_file/save_turn 代码零改动"], "note": "轮次结果缓存按设计留文件"},
+    {"id": "A5", "status": "implemented-with-evidence", "evidence": ["真实数据导入：3 会话/6 消息，复跑全部跳过", "tests/test_pg_data.py::test_import_idempotent"], "note": "自然键判重：会话 key / pending qid / (user_id,id)"},
+    {"id": "A6", "status": "implemented-with-evidence", "evidence": ["verify_pg_data_layer.py restart：坏 DATABASE_URL 启动，退出码=3，输出含 fail-fast 文案与三步排查指引"], "note": "lifespan verify() 失败即 raise"},
+    {"id": "A7", "status": "implemented-with-evidence", "evidence": ["tests/test_pg_data.py::test_user_id_dimension：五表 user_id 列存在、默认 'local'、NOT NULL"], "note": "checkpoint 表无 user_id 列，经 thread_id 命名空间隔离（已在文档披露）"},
+    {"id": "A8", "status": "implemented-with-evidence", "evidence": ["verify_pg_data_layer.py e2e：55/55 一致（画像/技能/7 平台登录态/analytics/趋势/排期/选题）"], "note": "技能数 114 vs 114 全交集"},
+    {"id": "A9", "status": "implemented-with-evidence", "evidence": ["修复：pg.pending_delete_by_session + delete_session 联动；tests/test_pg_data.py::test_delete_session_wiring_clears_pending 断言 delete_session 后消息与 pending 均删净", "tests/test_pg_data.py::test_pending_delete_by_session_only_touches_that_session 断言不影响其他 session"], "note": "上一轮 Verifier 抓出的实证缺口已修复；checkpoint 经 adelete_thread 清（delete_session 内 try 保护）"}
+  ],
+  "checks": [
+    {"name": "pytest tests/（apps/api）", "result": "passed", "note": "12 passed（含 A9 修复后的 2 项新测试）"},
+    {"name": "verify_pg_data_layer.py restart（A1/A2/A6）", "result": "passed", "note": "4/4：暗号跨重启命中、pending 跨重启存活、fail-fast 退出码 3"},
+    {"name": "verify_pg_data_layer.py e2e（A3/A8）", "result": "passed", "note": "自起双服务，55/55 一致"},
+    {"name": "py_compile 全部改动文件", "result": "passed", "note": "app.py/easel pg+agent_runtime/serve.py/两个 scripts"}
+  ],
+  "verification_checks": [
+    {"id": "unit-tests", "name": "pytest tests/ -q（apps/api）", "executable": "E:/Projects/zimeiti-ai/apps/api/.venv/Scripts/python.exe", "argv": ["-m", "pytest", "tests/", "-q"], "cwdRef": "apps/api", "timeoutMs": 180000, "repeatable": true},
+    {"id": "restart-checks", "name": "verify_pg_data_layer.py restart（A1 重启回忆/A2 pending 跨重启/A6 fail-fast）", "executable": "E:/Projects/zimeiti-ai/apps/api/.venv/Scripts/python.exe", "argv": ["E:/Projects/zimeiti-ai/apps/scripts/verify_pg_data_layer.py", "restart"], "cwdRef": ".", "timeoutMs": 600000, "repeatable": true},
+    {"id": "e2e-parity", "name": "verify_pg_data_layer.py e2e（A3/A8 双服务 55 项对比）", "executable": "E:/Projects/zimeiti-ai/apps/api/.venv/Scripts/python.exe", "argv": ["E:/Projects/zimeiti-ai/apps/scripts/verify_pg_data_layer.py", "e2e"], "cwdRef": ".", "timeoutMs": 900000, "repeatable": true}
+  ],
+  "known_limits": [
+    "A2 的 SSE 级 resume 未端到端复现（需模型主动调用 ask_human，不可确定触发）；以数据级跨重启存活（Runtime check）+ 单测 + resume 代码路径覆盖",
+    "启动必须经 serve.py（或等效先设 Selector 策略再 uvicorn.run）：python -m uvicorn app:app 在 win32 上 uvicorn 硬编码 ProactorEventLoop，checkpointer 池初始化会 PoolTimeout",
+    "ideas/schedule 为整表替换语义（与文件版 read-modify-write 一致），非粒度并发安全——与迁移前等同",
+    "apps/outputs/_sessions 轮次结果缓存按设计留文件，未迁 PG",
+    "e2e 对比依赖兄弟目录 E:/Projects/Easel（上游参照物，本机存在）；e2e check 在无 Easel 的环境会失败",
+    "测试直连本地 PG zimeiti-ai 库，用独立 user_id 命名空间并清理"
+  ]
+}

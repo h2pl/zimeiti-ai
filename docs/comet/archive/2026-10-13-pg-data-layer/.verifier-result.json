@@ -1,0 +1,32 @@
+{
+  "kind": "verifier-response",
+  "candidateId": "bfcadc9e-da08-46dc-837b-346304742423",
+  "verifierExecutionRef": "skill-coordinated:verifier:351872e7-da9d-4240-a134-fb736f802de3",
+  "response": {
+    "kind": "final-result",
+    "result": {
+      "iteration": 1,
+      "attempt": 1,
+      "verdict": "fail",
+      "acceptance": [
+        {"id": "A1", "result": "blocked", "reason": "需运行时重启复验，Verifier 会话无 shell 无法实跑。代码路径已审：config.thread_id=pg.thread_id(session_key)，checkpoint 经 AsyncPostgresSaver 持久化于 PG；仅在 checkpoint 无消息时才注入落盘历史，重启后不重复注入防成倍膨胀。逻辑成立但跨重启真实恢复需实跑确认。"},
+        {"id": "A2", "result": "blocked", "reason": "需运行时且依赖模型主动调用 ask_human，无法实跑。数据级跨重启存活代码链完整：pending 存 hitl_pending，answer() 从 pg.pending_get 恢复、pg.pending_del、用同 thread_id Command(resume) 续跑。SSE 级 resume 依赖同进程 _LIVE_INTERRUPTS，重启后走落库分支。因无法实跑且 ask_human 不可确定触发，故 blocked。"},
+        {"id": "A3", "result": "passed", "reason": "代码级判定：schedule/ideas CRUD 响应体字段与文件版一致，仅存储后端换 PG，保留 HTTPException(404)；test_pg_data.py 断言字段集合一致、保序、粒度 CRUD 可用。"},
+        {"id": "A4", "result": "passed", "reason": "代码级判定：/api/chat/last 读 _turn_file，轮次结果缓存仍是文件未迁 PG，status/text/at 结构未变，符合保留文件设计。"},
+        {"id": "A5", "result": "passed", "reason": "代码级+测试判定：导入脚本按自然键判重（会话 key / pending qid / ideas 与 schedule 的 (user_id,id)），过期 pending 跳过；test_import_idempotent 断言第二次运行 imported 全 0。"},
+        {"id": "A6", "result": "passed", "reason": "代码级判定：lifespan 内 verify() 失败即打印 DATABASE_URL、错误与三步排查指引并 raise RuntimeError，uvicorn 退出，不静默启动。"},
+        {"id": "A7", "result": "passed", "reason": "DDL 源确定：五张业务表均含 user_id TEXT NOT NULL DEFAULT 'local'；checkpoint 为 langgraph 官方表无 user_id 列，经 thread_id 命名空间隔离并已在文档披露；单测断言默认值与非空。"},
+        {"id": "A8", "result": "passed", "reason": "代码级判定：画像/技能/登录态端点仍基于 persona.py 与文件，diff 未触及这些路径。"},
+        {"id": "A9", "result": "failed", "reason": "实证缺口：DELETE /api/session/{key} 经 delete_session 删消息、会话行与 checkpoint，但未删该 session 的 hitl_pending 行——pending_del 仅支持按 question_id 删，全仓无 session 级 pending 删除函数。未过期 pending 行在删会话后仍残留 PG，pending_status 仍报 pending，不满足『消息、checkpoint、pending 全部删净』；现有单测也未覆盖 pending 删除。"}
+      ],
+      "risks": [
+        "A9 未清 hitl_pending：delete_session 缺 session 级 pending 删除，需补 pending_delete_by_session 并调用，否则删会话后 pending 残留至 TTL 到期。",
+        "Verifier 无 shell，A1/A2 运行时复验 blocked，A3/A5/A6/A8 为代码级判定，需运行时证据补全。",
+        "checkpoint 表无 user_id 列，隔离依赖 thread_id 命名空间约定。",
+        "启动强依赖 serve.py（python -m uvicorn app:app 在 Windows 会崩 psycopg 异步）。",
+        "ideas/schedule 为整表替换语义，并发写互相覆盖（与文件版等同，未退化）。"
+      ],
+      "summary": "迁移整体落地质量较高，但 A9 存在实证缺口：DELETE /api/session/{key} 未删除该 session 的 hitl_pending 行，不满足『消息、checkpoint、pending 全部删净』；A1/A2 因无运行时执行能力 blocked。verdict=fail。"
+    }
+  }
+}
