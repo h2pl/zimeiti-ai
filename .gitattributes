@@ -1,0 +1,4 @@
+# Comet 归档 skill 快照按字节哈希校验（sha256 记录于快照目录内），
+# 禁止 git 做行尾转换，否则 autocrlf 环境下 checkout 会把 LF 改成 CRLF、
+# 重算哈希失配，guard archive 阶段报 "Existing Skill snapshot is invalid"。
+**/.comet/skill-snapshots/** -text
