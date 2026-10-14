@@ -85,6 +85,9 @@ exclude_lines = ["if TYPE_CHECKING:", "raise NotImplementedError"]
 # B404/B603：subprocess 是登录/发布/whoami 的产品核心路径，且全部不带 shell=True（B603 本身即推荐用法）。
 skips = ["B110", "B112", "B404", "B603"]
 
+[project.scripts]
+zimeiti-api = "zimeiti_api.__main__:main"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8,<10",             # 测试（apps/api/tests）
@@ -98,3 +101,6 @@ dev = [
 [[tool.uv.index]]
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = true
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"

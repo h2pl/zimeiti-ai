@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from fastapi.routing import APIRoute, _IncludedRouter
 
-import app
+from zimeiti_api import app
 
 
 def _api_routes() -> list[APIRoute]:

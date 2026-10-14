@@ -52,7 +52,7 @@ def imported_modules(tree: ast.AST) -> set[str]:
 def main() -> int:
     failures: list[str] = []
 
-    py_files = [API / "app.py", *sorted((API / "zimeiti_api").rglob("*.py"))]
+    py_files = [API / "zimeiti_api" / "app.py", *sorted((API / "zimeiti_api").rglob("*.py"))]
     for py in py_files:
         tree = ast.parse(py.read_text(encoding="utf-8"), filename=str(py))
         for mod in imported_modules(tree):
@@ -70,7 +70,7 @@ def main() -> int:
                     failures.append(f"{py.name}: references banned symbol {n} (line {node.lineno})")
 
     sys.path.insert(0, str(API))
-    import app  # noqa: E402
+    from zimeiti_api import app  # noqa: E402
 
     # Starlette 的 include_router 会把子路由包进 _IncludedRouter，需递归收集真实路径。
     from fastapi.routing import APIRoute, _IncludedRouter

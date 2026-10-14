@@ -15,7 +15,7 @@ install: ## 安装/同步依赖（uv sync + npm install）
 	cd $(WEB_DIR) && npm install
 
 api: ## 启动后端 :8000（托管 apps/web/dist 构建产物；无 .env 时对话优雅降级）
-	cd $(API_DIR) && uv run python serve.py --host 127.0.0.1 --port 8000
+	cd $(API_DIR) && uv run python -m zimeiti_api --host 127.0.0.1 --port 8000
 
 web: ## 启动前端 dev :5173（/api 代理转发到 :8000）
 	cd $(WEB_DIR) && npm run dev
@@ -35,9 +35,9 @@ verify: ## 验收：openclaw 归零脚本 + 技能校验 + skill 测试套件
 test: verify ## 别名
 
 check: ## 质量门禁五连：format → lint → types → security → tests+coverage≥80（对齐 Comet 家规 check-api.sh）
-	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync ruff format app.py zimeiti_api tests
-	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync ruff check app.py zimeiti_api tests
-	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync mypy app.py zimeiti_api
+	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync ruff format zimeiti_api tests
+	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync ruff check zimeiti_api tests
+	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync mypy zimeiti_api
 	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync bandit -q -c pyproject.toml -r zimeiti_api
 	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync pytest tests/ -q --cov=zimeiti_api --cov-report=term --cov-fail-under=80
 	@echo "== 全部门禁通过 =="

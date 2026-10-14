@@ -22,13 +22,12 @@ import sys
 
 # psycopg 异步（checkpointer）不能用 Windows 默认 ProactorEventLoop，须 Selector
 # 策略（pg-data-layer 变更）。`python -m uvicorn app:app` 先建 loop 再 import 本
-# 文件、设置已晚——生产启动走 serve.py（建 loop 前设策略）；此处保留服务
+# 文件、设置已晚——生产启动走 `python -m zimeiti_api`（建 loop 前设策略）；此处保留服务
 # 「先 import app、后建 loop」的上下文（测试/脚本）。
 if os.name == "nt":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -43,7 +42,7 @@ from zimeiti_api.content import trends as _trends_router
 from zimeiti_api.content import uploads as _uploads_router
 from zimeiti_api.core import pg as _pg
 from zimeiti_api.core.dotenv import _load_dotenv
-from zimeiti_api.core.paths import REACT_DIR, STATIC_DIR
+from zimeiti_api.core.paths import ENV_FILE, REACT_DIR, STATIC_DIR
 from zimeiti_api.governance import guard as _guard
 from zimeiti_api.operations import env as _env_router
 from zimeiti_api.operations import models as _models_router
@@ -61,7 +60,7 @@ from zimeiti_api.runtime import status as _status_router
 # 由本组装层把 runtime.agent_runtime.ask_sync 注入 personas（backend-restructure）。
 _personas_router.set_enhance_runtime(_agent_runtime.ask_sync)
 
-_load_dotenv(Path(__file__).resolve().parent / ".env")
+_load_dotenv(ENV_FILE)  # 单一真相源：apps/api/.env（曾用 __file__ 相对定位，入口迁包后失配）
 
 
 @asynccontextmanager

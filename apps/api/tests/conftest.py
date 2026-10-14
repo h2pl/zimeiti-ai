@@ -45,7 +45,7 @@ def client():
     """TestClient：base_url 用 127.0.0.1（过 TrustedHost 白名单）；上下文进入触发 lifespan。"""
     from fastapi.testclient import TestClient
 
-    import app  # noqa: E402
+    from zimeiti_api import app  # noqa: E402
 
     with TestClient(
         app.app,
