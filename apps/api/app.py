@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import sys
 
 # psycopg 异步（checkpointer）不能用 Windows 默认 ProactorEventLoop，须 Selector
 # 策略（pg-data-layer 变更）。`python -m uvicorn app:app` 先建 loop 再 import 本
