@@ -304,3 +304,36 @@ def test_timeouts():
     assert TIMEOUT_PRODUCE == 7200
     assert TIMEOUT_DIRECT == 300
     assert TIMEOUT_CHAT == TIMEOUT_PRODUCE
+
+
+# ---------- 本机任意端口来源（Vite 自动升端口场景，真实栈回归） ----------
+
+
+def test_origin_is_local():
+    assert guard._origin_is_local("http://localhost:5175") is True
+    assert guard._origin_is_local("http://127.0.0.1:59999") is True
+    assert guard._origin_is_local("https://foo.localhost") is True
+    assert guard._origin_is_local("http://localhost") is True
+    assert guard._origin_is_local("https://evil.com") is False
+    assert guard._origin_is_local("http://192.168.1.9:5173") is False
+    assert guard._origin_is_local("ftp://localhost:5173") is False
+    assert guard._origin_is_local("not a url") is False
+
+
+def test_write_guard_allows_local_origin_any_port():
+    import asyncio
+
+    loop = asyncio.new_event_loop()
+    try:
+        # Vite 自动升端口场景（真实栈回归）：Origin 5175 + Host 8000
+        req = FakeRequest(headers={"origin": "http://localhost:5175", "host": "localhost:8000"})
+        assert loop.run_until_complete(guard.local_write_guard(req, _next_ok(req))) == "OK"
+        # 任意本地端口都放行（根治端口白名单这类 bug）
+        req2 = FakeRequest(headers={"origin": "http://127.0.0.1:65123", "host": "localhost:8000"})
+        assert loop.run_until_complete(guard.local_write_guard(req2, _next_ok(req2))) == "OK"
+        # 跨站攻击页面仍然拒绝
+        req3 = FakeRequest(headers={"origin": "https://evil.com", "host": "localhost:8000"})
+        resp = loop.run_until_complete(guard.local_write_guard(req3, _next_ok(req3)))
+        assert resp.status_code == 403
+    finally:
+        loop.close()

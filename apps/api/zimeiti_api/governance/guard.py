@@ -53,6 +53,24 @@ if _proxy_origin:
     _LOCAL_ORIGINS.append(_proxy_origin[1])
 
 
+def _origin_is_local(origin: str) -> bool:
+    """Origin 是否指向本机回环主机（任意端口）。
+
+    Vite 端口被占会自动 +N（5173→5175…），枚举端口永远追不上；本地工作台
+    的判定标准是「源主机是回环」，不是「源端口在名单里」。安全性：跨站攻击
+    页面的 Origin 是攻击者自己的域名（浏览器不可伪造 Origin），指向回环的
+    Origin 只可能来自受害者本机上真实运行的开发服务。
+    """
+    try:
+        parsed = urllib.parse.urlparse(origin)
+    except ValueError:
+        return False
+    if parsed.scheme not in ("http", "https"):
+        return False
+    host = (parsed.hostname or "").lower()
+    return host in ("localhost", "127.0.0.1", "::1") or host.endswith(".localhost")
+
+
 def _forwarded_origin(request: Request) -> str | None:
     """从 X-Forwarded-Host/Proto 还原外部访问的完整 origin。
 
@@ -117,7 +135,7 @@ async def local_write_guard(request: Request, call_next):
     if request.method not in ("GET", "HEAD", "OPTIONS"):
         allowed = False
         if origin:
-            if origin in _LOCAL_ORIGINS:
+            if origin in _LOCAL_ORIGINS or _origin_is_local(origin):
                 allowed = True
             else:
                 origin_n = origin.strip().lower().rstrip("/")
