@@ -16,7 +16,7 @@ import pytest
 API_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(API_DIR))
 
-from easel import pg  # noqa: E402
+from zimeiti_api.core import pg  # noqa: E402
 
 
 @pytest.fixture(scope="session", autouse=True)

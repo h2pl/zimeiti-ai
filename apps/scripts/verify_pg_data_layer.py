@@ -91,8 +91,8 @@ def _start_server(env_extra: dict | None = None) -> subprocess.Popen:
 
 
 def _pg_run(stmt: str) -> tuple[int, str]:
-    """在独立子进程里执行一条 easel.pg 语句（证明跨进程持久性）。"""
-    code = f"import sys; sys.path.insert(0, {str(API_DIR)!r}); from easel import pg; {stmt}"
+    """在独立子进程里执行一条 zimeiti_api.core.pg 语句（证明跨进程持久性）。"""
+    code = f"import sys; sys.path.insert(0, {str(API_DIR)!r}); from zimeiti_api.core import pg; {stmt}"
     proc = subprocess.run([str(VENV_PY), "-c", code], capture_output=True, text=True, timeout=60)
     return proc.returncode, (proc.stdout or "").strip()
 

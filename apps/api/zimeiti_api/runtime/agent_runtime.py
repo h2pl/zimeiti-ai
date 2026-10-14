@@ -1,7 +1,7 @@
 """deepagents 运行时（phase1-deepagents-runtime）。
 
 用 deepagents（LangGraph）替代 OpenClaw 网关承载对话链路：
-- 会话历史与 HITL pending 存 PostgreSQL（easel/pg.py，pg-data-layer 变更）；
+- 会话历史与 HITL pending 存 PostgreSQL（zimeiti_api/core/pg.py，pg-data-layer 变更）；
   checkpoint 经 AsyncPostgresSaver 持久化，重启后从 PG 恢复（thread_id 带
   租户命名空间，本地版为 '<local>:<session_key>'）
 - `create_deep_agent` 构建 agent，`ask_human` 工具触发 HITL 中断（问题卡内联，
@@ -34,9 +34,9 @@ from langchain_core.messages import AIMessageChunk
 from pathlib import Path
 from typing import Any, Callable
 
-from . import pg
+from ..core import pg
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+_PROJECT_ROOT = Path(__file__).resolve().parents[3]
 TTL_SECONDS = 30 * 60
 
 SYSTEM_PROMPT = (
@@ -49,7 +49,7 @@ SYSTEM_PROMPT = (
 )
 
 
-# ---------- 会话历史 / HITL pending（PostgreSQL，见 easel/pg.py） ----------
+# ---------- 会话历史 / HITL pending（PostgreSQL，见 zimeiti_api/core/pg.py） ----------
 
 def _load_messages(session_key: str) -> list[dict]:
     return pg.messages_load(session_key)
@@ -132,7 +132,7 @@ _AGENT = None
 async def _build_agent():
     """构建 deepagents agent（进程内缓存；ask_human 触发 HITL 中断）。
 
-    checkpointer 用 PG（AsyncPostgresSaver，见 easel/pg.py）：异步图必须配
+    checkpointer 用 PG（AsyncPostgresSaver，见 zimeiti_api/core/pg.py）：异步图必须配
     异步 saver；实例由 lifespan 经 pg.setup_checkpointer() 预先建好，此处取
     缓存；若未初始化（如测试直连）则当场建。
     """

@@ -24,7 +24,7 @@ from pathlib import Path
 APPS_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(APPS_ROOT / "api"))
 
-from easel import pg  # noqa: E402  （path 注入后再 import）
+from zimeiti_api.core import pg  # noqa: E402  （path 注入后再 import）
 
 
 def _load_json(path: Path):

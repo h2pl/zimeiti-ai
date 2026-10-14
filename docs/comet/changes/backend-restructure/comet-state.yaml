@@ -1,0 +1,84 @@
+schema: comet.native.v4
+name: backend-restructure
+language: zh-CN
+phase: build
+status: active
+state_version: 3
+brief: brief.md
+document_constraints_version: 2
+shape_confirmation_hash: a7e064944307ef10e71df5bf6eb7018c04fd3881747345161567e8d700624139
+spec_changes:
+  - capability: backend-structure
+    operation: create
+    source: specs/backend-structure/spec.md
+workspace:
+  isolation: current
+  change_branch: h2pl/zimeiti-ai
+  target_branch: h2pl/zimeiti-ai
+  finish: null
+loop:
+  stage: building
+  goal_cycle: 1
+  iteration: 1
+  attempt: 0
+  retry_epoch: 0
+  failed_iteration_count: 0
+  no_progress_count: 0
+  execution_failure_count: 0
+  previous_unresolved_ids: []
+  next_action: submit-builder-candidate
+acceptance:
+  - id: A1
+    source: brief.md
+    text: "A1: Given 重构完成，When 检查 `apps/api/src/zimeiti_api/` 结构，Then 6 个领域子包存在且
+      `app.py` 只含组装代码（建 app/中间件/include routers），业务端点定义在各域模块"
+    result: pending
+    reason: null
+  - id: A2
+    source: brief.md
+    text: "A2: Given 重构后的服务，When 运行 `verify_pg_data_layer.py e2e`（自起双服务 55 项对比），Then
+      与 Easel 上游全部一致（55/55）——行为零变化"
+    result: pending
+    reason: null
+  - id: A3
+    source: brief.md
+    text: "A3: Given 重构后的代码，When 运行 `pytest tests/`，Then 既有 12 项单测全过（测试镜像归位后）"
+    result: pending
+    reason: null
+  - id: A4
+    source: brief.md
+    text: "A4: Given 入口矩阵，When 逐个执行（serve.py 启动、make
+      api、migrate_files_to_pg、verify_pg_data_layer、verify_openclaw_removal、e2e_\
+      parity_check、pytest），Then 全部可用"
+    result: pending
+    reason: null
+  - id: A5
+    source: brief.md
+    text: 'A5: Given 重构完成，When 全仓 grep 旧路径（`from easel`、`import
+      easel`、`easel.`、`apps/api/easel/`、`name = "easel"`），Then 零残留'
+    result: pending
+    reason: null
+  - id: A6
+    source: brief.md
+    text: "A6: Given 分层规则，When 做 import 静态检查（域间依赖），Then 无环且方向合规（core 不 import
+      业务包；反向依赖为零）"
+    result: pending
+    reason: null
+builder_handoff: null
+blockers: []
+verification: null
+history: []
+history_overflow:
+  dropped_entries: 0
+  first_dropped_at: null
+  last_dropped_at: null
+  outcome_counts:
+    pass: 0
+    fail: 0
+    blocked: 0
+    execution-error: 0
+    recovery: 0
+verification_result: pending
+verification_report: null
+archived: false
+created_at: 2026-10-13T15:47:57.475Z
