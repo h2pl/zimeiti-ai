@@ -37,7 +37,7 @@ base-ref: 485670448f4f2bf5b2b34368e06362fb30fd98bd
 
 ## 3. 测试扩充（cov ≥80%）
 
-<!-- comet-task-ref:073f80d5-fba1-441b-8a11-f69812fa08b533 -->
+<!-- comet-task-ref:073f80d5-fba1-441b-8a11-f69812fa08b7 -->
 - **3.1 conftest**：保留 PG 库/uid 租户 fixture；新增 `client` fixture（TestClient base_url=`http://127.0.0.1` 过 TrustedHost）；`pytest.ini` 或 pyproject 配 coverage。
   - RED：`pytest --cov` 报告覆盖率基线（预计 <30%）。
 

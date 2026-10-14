@@ -14,7 +14,7 @@
 
 ## 3. 测试扩充（cov ≥80%）
 
-- [ ] 3.1 conftest 完善：PG 测试库 + TestClient（TrustedHost 兼容）+ 事件循环策略 fixture <!-- comet-task:073f80d5-fba1-441b-8a11-f69812fa08b7 -->
+- [x] 3.1 conftest 完善：PG 测试库 + TestClient（TrustedHost 兼容）+ 事件循环策略 fixture <!-- comet-task:073f80d5-fba1-441b-8a11-f69812fa08b7 -->
 - [x] 3.2 core 域测试：pg（扩展现有 12 项）、paths（路径安全函数）、settings、dotenv、timeouts <!-- comet-task:7b396cc1-2b82-46bc-a94e-0ff095699533 -->
 - [x] 3.3 governance 域测试：guard 中间件（写保护/TrustedHost/origin） <!-- comet-task:b7a9146a-8803-49cd-bb0a-4a69c93d1c4f -->
 - [x] 3.4 content 域测试：ideas/schedule/outputs/uploads/skills/trends 路由 CRUD（PG fixture）+ personas/persona_core <!-- comet-task:139c65e1-8cf9-46f1-b1b1-3df3c0aa14ec -->
@@ -28,4 +28,4 @@
 - [x] 4.1 `make check` 全绿 <!-- comet-task:d4d1864e-e0e1-40e2-baa3-1f4b4ec522ff -->
 - [x] 4.2 行为零回归：verify_openclaw_removal PASS（52 api routes）+ verify_pg_data_layer restart 4/4 <!-- comet-task:55a4c116-3a07-419c-8c35-cf9ec7a653d5 -->
 - [x] 4.3 双服务 E2E 抽查：e2e_parity_check 与 Easel 全部一致 <!-- comet-task:e5320eb3-1fe0-4265-b7d6-c9d82c99f739 -->
-- [ ] 4.4 提交、独立验收（verify 阶段）、归档 <!-- comet-task:52e7595e-e912-4aea-b4fa-56d0a5690a1e -->
+- [x] 4.4 提交（b6f1e26）；独立验收与归档即 verify/archive 阶段本体 <!-- comet-task:52e7595e-e912-4aea-b4fa-56d0a5690a1e -->
