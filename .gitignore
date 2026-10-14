@@ -34,3 +34,4 @@ docs/openspec/changes/archive/*/.comet/
 /.comet/*
 !/.comet/config.yaml
 # <<< Comet managed project state <<<
+_api.log
