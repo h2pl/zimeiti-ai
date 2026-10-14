@@ -32,7 +32,6 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse
 
 from zimeiti_api.content import ideas as _ideas_router
@@ -95,10 +94,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=["localhost", "127.0.0.1"] + _guard._EXTRA_HOSTS,
-)
+# Host 校验（governance）：本机名单 + 本地代理转发识别（IDE 端口转发场景）
+app.middleware("http")(_guard.trusted_host_guard)
 
 # 护栏中间件（governance）：仅放行本机工作台发起的写请求
 app.middleware("http")(_guard.local_write_guard)

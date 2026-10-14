@@ -27,6 +27,10 @@ def main() -> None:
     ap.add_argument("--port", type=int, default=8000)
     args = ap.parse_args()
 
+    # 守卫白名单按端口计算（guard 导入期读取 EASEL_PORT）——必须在 import app 前设置，
+    # 否则自定义端口跑时浏览器自己的写请求会被 local_write_guard 403。
+    os.environ["EASEL_PORT"] = str(args.port)
+
     import uvicorn
 
     # loop="none"：让 uvicorn 不指定 loop factory，回退到「当前 policy 建 loop」——

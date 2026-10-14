@@ -380,3 +380,55 @@ def test_trends_endpoint_cache(monkeypatch, client):
     r3 = client.get("/api/trends", params={"platforms": pf})
     assert r3.json()["trends"][0]["items"]  # 旧缓存兜底
     trends_mod._TREND_CACHE.clear()
+
+
+# ---------- GET /api/output/{path} 与 /api/media/{path}（覆盖审计补缺） ----------
+
+
+def test_output_get_text_and_binary(fake_outputs, client):
+    (fake_outputs / "proj").mkdir()
+    (fake_outputs / "proj" / "note.md").write_text("# 笔记", encoding="utf-8")
+    (fake_outputs / "proj" / "pic.png").write_bytes(b"\x89PNG")
+    r = client.get("/api/output/proj/note.md")
+    assert r.json() == {
+        "path": "proj/note.md",
+        "content": "# 笔记",
+        "kind": "text",
+        "isBinary": False,
+    }
+    r2 = client.get("/api/output/proj/pic.png")
+    assert r2.json()["isBinary"] is True and r2.json()["content"] == ""
+    # 不存在 → 404
+    assert client.get("/api/output/proj/ghost.md").status_code == 404
+    # 路径穿越 → 404（_safe_output_path 拦截）
+    assert client.get("/api/output/../secrets.txt").status_code == 404
+
+
+def test_media_serves_file_with_cache_control(fake_outputs, client):
+    (fake_outputs / "proj").mkdir()
+    (fake_outputs / "proj" / "a.html").write_text("<html></html>", encoding="utf-8")
+    (fake_outputs / "proj" / "b.png").write_bytes(
+        b"\x89PNG",
+    )
+    r = client.get("/api/media/proj/a.html")
+    assert r.status_code == 200
+    assert "no-cache" in r.headers.get("cache-control", "")  # HTML 禁缓存
+    r2 = client.get("/api/media/proj/b.png")
+    assert r2.status_code == 200 and r2.content == b"\x89PNG"
+    assert "no-cache" not in r2.headers.get("cache-control", "").lower()
+    assert client.get("/api/media/proj/ghost.png").status_code == 404
+
+
+def test_personas_route(tmp_path, monkeypatch, client):
+    from zimeiti_api.content import persona_core
+    from zimeiti_api.content import personas as personas_mod
+
+    pd = tmp_path / "profiles"
+    pd.mkdir()
+    monkeypatch.setattr(personas_mod, "PROFILES_DIR", pd)
+    monkeypatch.setattr(persona_core, "PROFILES_DIR", pd)
+    assert client.get("/api/personas").json() == []  # 空目录
+    (pd / "alice").mkdir()
+    (pd / "alice" / "identity.md").write_text("# 身份\n\n简介一行", encoding="utf-8")
+    lst = client.get("/api/personas").json()
+    assert lst == [{"name": "alice", "description": "简介一行"}]

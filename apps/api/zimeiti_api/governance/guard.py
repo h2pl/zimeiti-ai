@@ -7,6 +7,7 @@ local_write_guard：仅放行本机工作台发起的写请求（同源/回环�
 from __future__ import annotations
 
 import ipaddress
+import logging
 import os
 import re
 import urllib.parse
@@ -19,7 +20,7 @@ def _local_ports(env_port: str) -> set[str]:
     """本机写守卫放行的端口集合：固定的 7860/7870/5173，加上 `--port`/EASEL_PORT
     实际配置的端口——否则自定义端口跑 Easel 时，前端自己发的写请求（包括发消息
     的 /api/chat/stream）会被 local_write_guard 当跨站请求 403 掉。"""
-    return {"7860", "7870", "5173", (env_port or "").strip() or "7860"}
+    return {"7860", "7870", "8000", "5173", (env_port or "").strip() or "8000"}
 
 
 _LOCAL_PORTS = _local_ports(os.environ.get("EASEL_PORT", ""))
@@ -30,6 +31,7 @@ _LOCAL_ORIGINS += [
     o.strip() for o in os.environ.get("EASEL_EXTRA_ORIGINS", "").split(",") if o.strip()
 ]
 _EXTRA_HOSTS = [h.strip() for h in os.environ.get("EASEL_EXTRA_HOSTS", "").split(",") if h.strip()]
+_ALLOWED_HOSTS = {"localhost", "127.0.0.1", "[::1]"}
 
 
 # VSCode/code-server 等远程开发环境常通过 VSCODE_PROXY_URI 这个反代域名访问 Easel
@@ -49,6 +51,23 @@ _proxy_origin = _proxy_uri_origin(os.environ.get("VSCODE_PROXY_URI", ""))
 if _proxy_origin:
     _EXTRA_HOSTS.append(_proxy_origin[0])
     _LOCAL_ORIGINS.append(_proxy_origin[1])
+
+
+def _forwarded_origin(request: Request) -> str | None:
+    """从 X-Forwarded-Host/Proto 还原外部访问的完整 origin。
+
+    IDE 端口转发/反向代理会把 Host 头改写成内部地址（127.0.0.1:8000），
+    浏览器 Origin 却是外部代理域名——直接对比必 403。本地代理约定俗成会
+    带这两个转发头，用它们还原「用户浏览器实际所在的源」做同源判定。
+    安全性：跨站 fetch 携带自定义头会触发 CORS 预检（被 CORSMiddleware
+    按 Origin 白名单拒绝），no-cors 表单 POST 无法设置自定义头——浏览器
+    CSRF 无法借此伪造同源。
+    """
+    fwd_host = (request.headers.get("x-forwarded-host") or "").split(",")[0].strip()
+    if not fwd_host:
+        return None
+    proto = (request.headers.get("x-forwarded-proto") or "").split(",")[0].strip() or "https"
+    return f"{proto}://{fwd_host}"
 
 
 def _loopback_peer(request: Request) -> bool:
@@ -101,17 +120,65 @@ async def local_write_guard(request: Request, call_next):
             if origin in _LOCAL_ORIGINS:
                 allowed = True
             else:
-                # 同源放行：页面由本服务托管（如 :8000 直开）时，浏览器对 POST 也会带
-                # 自身 Origin（http://127.0.0.1:8000）——与请求 Host 头一致即同源，
-                # 属于本机工作台自己的页面。Host 头不可被跨站 JS 伪造，判据与 ① 同级。
-                host = request.headers.get("host", "").strip().lower()
                 origin_n = origin.strip().lower().rstrip("/")
-                allowed = bool(host) and origin_n in (
-                    f"http://{host}",
-                    f"https://{host}",
-                )
+                # 同源放行（三种形态，任一命中即本机工作台自己的页面）：
+                # a) 页面由本服务托管（:8000 直开）：Origin 与 Host 头一致
+                # b) 经 IDE 端口转发/反代：Origin 与 X-Forwarded-Host/Proto 还原的外部源一致
+                cand: set[str] = set()
+                bare_host = request.headers.get("host", "").strip().lower()
+                if bare_host:
+                    cand |= {f"http://{bare_host}", f"https://{bare_host}"}
+                fwd = _forwarded_origin(request)
+                if fwd:
+                    cand.add(fwd)  # 已是完整 origin，不再加前缀
+                allowed = origin_n in cand
+                if not allowed:
+                    logging.getLogger(__name__).warning(
+                        "写请求被守卫拒绝：method=%s path=%s origin=%r host=%r "
+                        "x-forwarded-host=%r client=%s（若属合法入口，把它加进"
+                        " EASEL_EXTRA_ORIGINS 或 VSCODE_PROXY_URI）",
+                        request.method,
+                        request.url.path,
+                        origin,
+                        request.headers.get("host"),
+                        request.headers.get("x-forwarded-host"),
+                        request.client,
+                    )
         else:
             allowed = _loopback_peer(request)
         if not allowed:
-            return JSONResponse({"detail": "仅允许从本机工作台操作。"}, status_code=403)
+            fwd = _forwarded_origin(request)
+            return JSONResponse(
+                {
+                    "detail": "仅允许从本机工作台操作。",
+                    "hint": "若你经 IDE 端口转发/代理访问，把该地址加入 EASEL_EXTRA_ORIGINS",
+                    "seen": {
+                        "origin": origin,
+                        "host": request.headers.get("host"),
+                        "forwarded": fwd,
+                    },
+                },
+                status_code=403,
+            )
     return await call_next(request)
+
+
+async def trusted_host_guard(request: Request, call_next):
+    """Host 校验（替代 TrustedHostMiddleware）：本机名单 + 本地代理转发识别。
+
+    代理（IDE 端口转发）来自本机回环且带 X-Forwarded-Host——放行其转发域名；
+    其余未知 Host 一律 400（与原 TrustedHostMiddleware 行为一致）。
+    """
+    host = (request.headers.get("host") or "").rsplit(":", 1)[0].strip().lower()
+    if host in _ALLOWED_HOSTS:
+        return await call_next(request)
+    fwd_host = (request.headers.get("x-forwarded-host") or "").split(",")[0].strip().lower()
+    if fwd_host and _loopback_peer(request):
+        return await call_next(request)
+    logging.getLogger(__name__).warning(
+        "请求 Host 未通过校验：host=%r x-forwarded-host=%r client=%s",
+        host,
+        fwd_host,
+        request.client,
+    )
+    return JSONResponse({"detail": "非法 Host 头。"}, status_code=400)
