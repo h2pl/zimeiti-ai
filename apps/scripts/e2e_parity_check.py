@@ -31,6 +31,10 @@ TIMEOUT = 60  # analytics 走 Playwright 的端点约 20s，留足余量
 STATIC_GETS: list[tuple[str, str, bool]] = [
     ("页面", "/", False),
     ("单页", "/onepage", False),
+    # 不存在的静态/构建资源必须两边同为 404（曾因 HTTPException 未导入 404→500，
+    # 且不在常规覆盖面内——verify 轮独立验收发现的证据盲区，补此处防回归）
+    ("静态资源-不存在", "/static/__no_such__.js", False),
+    ("构建资源-不存在", "/assets/__no_such__.js", False),
     ("状态", "/api/status", False),  # 运行时不同（deepagents vs openclaw），仅比状态码
     ("画像列表", "/api/personas", True),
     ("技能列表", "/api/skills", False),  # 数量差异为有意裁剪（仅移植 wechat-publisher），只比状态码
