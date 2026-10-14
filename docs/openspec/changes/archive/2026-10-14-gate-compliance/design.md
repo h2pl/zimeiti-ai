@@ -2,6 +2,7 @@
 comet_change: gate-compliance
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-14-gate-compliance
 status: final
 ---
 

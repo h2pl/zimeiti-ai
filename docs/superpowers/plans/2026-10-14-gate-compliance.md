@@ -2,6 +2,7 @@
 change: gate-compliance
 design-doc: docs/openspec/changes/gate-compliance/design.md
 base-ref: 485670448f4f2bf5b2b34368e06362fb30fd98bd
+archived-with: 2026-10-14-gate-compliance
 ---
 
 # gate-compliance 实施计划
