@@ -1,0 +1,428 @@
+schema: comet.native.v4
+name: backend-restructure
+language: zh-CN
+phase: archive
+status: done
+state_version: 11
+brief: brief.md
+document_constraints_version: 2
+shape_confirmation_hash: a7e064944307ef10e71df5bf6eb7018c04fd3881747345161567e8d700624139
+spec_changes:
+  - capability: backend-structure
+    operation: create
+    source: specs/backend-structure/spec.md
+workspace:
+  isolation: current
+  change_branch: h2pl/zimeiti-ai
+  target_branch: h2pl/zimeiti-ai
+  finish: null
+loop:
+  stage: done
+  goal_cycle: 1
+  iteration: 2
+  attempt: 1
+  retry_epoch: 0
+  failed_iteration_count: 1
+  no_progress_count: 0
+  execution_failure_count: 0
+  previous_unresolved_ids: []
+  next_action: null
+acceptance:
+  - id: A1
+    source: brief.md
+    text: "A1: Given 重构完成，When 检查 `apps/api/src/zimeiti_api/` 结构，Then 6 个领域子包存在且
+      `app.py` 只含组装代码（建 app/中间件/include routers），业务端点定义在各域模块"
+    result: passed
+    reason:
+      text: apps/api/app.py 共 153 行且为纯组装层：FastAPI() 创建 L86、中间件 L89-93、静态路由 L96-131、16
+        个域 router include 循环 L135-153、组装层 DI L62；六域子包均有实质模块。两轮独立复核一致。
+      truncated: false
+  - id: A2
+    source: brief.md
+    text: "A2: Given 重构后的服务，When 运行 `verify_pg_data_layer.py e2e`（自起双服务 55 项对比），Then
+      与 Easel 上游全部一致（55/55）——行为零变化"
+    result: passed
+    reason:
+      text: 证据链核查，未重跑双服务。app.py L32 已导入 HTTPException，4 个 raise
+        点全覆盖；e2e_parity_check.py L36-37 新增两项 404 静态路径防回归检查且逻辑正确；git reflog 证实
+        b725929 修复提交；builder 双服务复跑记录 57/57 一致（含新增项双边 404）；Runtime log 佐证 import
+        app 成功（52 api routes）且 F821 归零。
+      truncated: false
+  - id: A3
+    source: brief.md
+    text: "A3: Given 重构后的代码，When 运行 `pytest tests/`，Then 既有 12 项单测全过（测试镜像归位后）"
+    result: passed
+    reason:
+      text: Runtime 正式检查记录 9499ebf9-...-pytest.log：'............ [100%] / 12 passed in
+        1.73s'。
+      truncated: false
+  - id: A4
+    source: brief.md
+    text: "A4: Given 入口矩阵，When 逐个执行（serve.py 启动、make
+      api、migrate_files_to_pg、verify_pg_data_layer、verify_openclaw_removal、e2e_\
+      parity_check、pytest），Then 全部可用"
+    result: passed
+    reason:
+      text: 本轮 Runtime 已补跑全部剩余项并留档（54b467ea- 系列 log）：serve-entry-status → 'status ->
+        200'（同一 app 对象+lifespan PG 初始化）；make-api-entry → 'cd apps/api && uv run
+        python serve.py --host 127.0.0.1 --port
+        8000'（入口指向正确）；migrate-files-to-pg → 幂等（导入 0/跳过
+        3）；verify-pg-data-layer-restart → 4/4 通过。加上首轮留档的
+        verify_openclaw_removal（OK, 52 api routes）与 pytest（12 passed），入口矩阵七项全部有
+        Runtime 独立运行记录。
+      truncated: false
+  - id: A5
+    source: brief.md
+    text: 'A5: Given 重构完成，When 全仓 grep 旧路径（`from easel`、`import
+      easel`、`easel.`、`apps/api/easel/`、`name = "easel"`），Then 零残留'
+    result: passed
+    reason:
+      text: 全 apps/ 树 grep 仅 1 处命中
+        apps/skills/builtin/video-production/scripts/video_pipeline.py L75（brief
+        声明'保留不动'的 vendor 技能目录，非重构目标）；重构目标范围零命中。两轮独立复核一致。
+      truncated: false
+  - id: A6
+    source: brief.md
+    text: "A6: Given 分层规则，When 做 import 静态检查（域间依赖），Then 无环且方向合规（core 不 import
+      业务包；反向依赖为零）"
+    result: passed
+    reason:
+      text: 全量提取 zimeiti_api 跨包 import 边 25 条：core
+        零反向依赖；content/operations/platforms→core；runtime→{content,core}；wechat↔publish/login
+        潜在环已用函数内局部导入化解（含防环注释），顶层 import 图无环，分层违例 NONE。两轮独立复核一致。
+      truncated: false
+builder_handoff:
+  candidate_id: ccd1289d-ab83-4be9-8dbe-098a1059907b
+  identity_provider: skill-coordinated
+  builder_execution_ref: skill-coordinated:builder:e93bec9d-e200-4501-b934-12514ca7f3ed
+  iteration: 2
+  summary:
+    text: 修复轮：修复独立验收发现的 app.py HTTPException 未导入（静态资源 404→500 确定性回归，commit
+      b725929），e2e_parity_check 补 404 静态路径两项（55→57）关闭证据盲区并复跑 57/57 一致，ruff F821
+      扫描范围修正为含顶层 app.py，pytest 复跑 12 passed。A2/A3/A4 以修复后新证据重新提交；A1/A5/A6
+      沿用仍然有效的证据（行号已按 b725929 后校正）。
+    truncated: false
+  addressed_acceptance_ids:
+    - A1
+    - A2
+    - A3
+    - A4
+    - A5
+    - A6
+  acceptance_review:
+    - id: A1
+      status: implemented-with-evidence
+      evidence:
+        - apps/api/zimeiti_api/{core,governance,platforms,content,operations,runtime}/
+          六域子包全部存在
+        - apps/api/app.py 共 153 行且仅含组装代码：FastAPI()
+          创建（L86）、中间件注册（L89-90）、静态路由（L96 起）、16 个域 router 的 include 循环（止于
+          L153）、组装层依赖注入 set_enhance_runtime（L62）
+        - import app 成功，顶层路由 21 条（5 静态 + 16 域 router）
+        - 独立验收 A1 判 passed（结构实质达成）；对验收文字 src 布局偏差已记入 risks，实际 flat 布局为既定决策
+      note: 上一轮 Verifier 已判 passed，本轮仅按 b725929 后行号校正证据，结构未变。
+    - id: A2
+      status: implemented-with-evidence
+      evidence:
+        - 修复 commit b725929：app.py 补 from fastapi import HTTPException（上一轮
+          Verifier 发现的 404→500 确定性回归）
+        - apps/scripts/e2e_parity_check.py 新增
+          ('静态资源-不存在','/static/__no_such__.js') 与
+          ('构建资源-不存在','/assets/__no_such__.js') 两项对比，关闭 55 项的证据盲区
+        - 双服务复跑（zimeiti :8000 / Easel :7860，PYTHONUTF8=1）：57/57 全部一致；新增两项双边同为 404
+        - TestClient
+          本地验证：/static/__no_such__.js→404、/assets/__no_such__.js→404、/static/onepage.html→200
+      note: 针对 Verifier 指出的行为回归与证据盲区均已修复并复跑；'55 项' 语义扩展为 57 项全一致（含新增防回归项）。
+    - id: A3
+      status: implemented-with-evidence
+      evidence:
+        - cd apps/api && uv run pytest -q → 12 passed（修复后复跑）
+        - 本轮同时把 pytest 提交为 Runtime 正式执行的 verification_checks（消除上轮'仅 builder
+          自跑'的受阻点）
+      note: 运行级结果将以 Runtime 执行的正式检查记录为准。
+    - id: A4
+      status: implemented-with-evidence
+      evidence:
+        - serve.py 启动 :8000 → /api/status 200（本轮 E2E 复跑期间实起）
+        - make api 与 serve.py 同一入口（Makefile）
+        - migrate_files_to_pg.py 幂等执行：导入 0 / 跳过 3
+        - verify_pg_data_layer.py restart：4/4 通过（含缺库 fail-fast，app.py 缺 sys 的真
+          bug 已修，commit 5e1771e）
+        - verify_openclaw_removal.py：PASS；e2e_parity_check.py：57/57；pytest：12/12
+      note: 入口矩阵七项全部实跑通过。上轮受阻仅因 Verifier 环境无命令通道，本轮修复证据齐备且 pytest/脚本类检查交 Runtime 正式执行。
+    - id: A5
+      status: implemented-with-evidence
+      evidence:
+        - grep 'from easel|import easel|name = "easel"' 于
+          apps/api、apps/scripts、Makefile：零命中
+        - grep 'apps/api/easel' 于代码与 Makefile：零命中（仅 docs/superpowers/plans/
+          历史计划文档提及过去变更，非代码）
+        - 上一轮 Verifier 独立复扫 apps/ 全树判定 passed（唯一命中在 brief 声明'保留不动'的 vendor
+          技能目录，已记入 risks）
+      note: 沿用上轮 Verifier passed 判定；vendor 目录规范冲突作为风险记录，不在本变更范围。
+    - id: A6
+      status: implemented-with-evidence
+      evidence:
+        - AST import 图（zimeiti_api 六域全文件）：edges = content→core, operations→core,
+          platforms→core, runtime→content, runtime→core
+        - 分层违例：NONE；环：NONE
+        - 上一轮 Verifier 独立提取 25 条跨包 import 边复核，判定 passed
+        - 结构调整记录：路径安全/媒体常量下沉 core/paths；附件身份函数归 content/uploads；personas
+          画像增强改组装层依赖注入（app.py L62）；publish 直调 core.pg；wechat 对 login 引用改函数内局部导入
+      note: 沿用上轮 Verifier passed 判定，本轮结构未变。
+  checks:
+    - name:
+        text: pytest (apps/api/tests)
+        truncated: false
+      result: passed
+      note:
+        text: 12 passed（b725929 后复跑）
+        truncated: false
+    - name:
+        text: verify_openclaw_removal.py
+        truncated: false
+      result: passed
+      note:
+        text: 52 api routes + runtime API 完整 + openclaw 零残留
+        truncated: false
+    - name:
+        text: e2e_parity_check.py（只读+writes，57 项）
+        truncated: false
+      result: passed
+      note:
+        text: 57/57 与 Easel 上游一致（含新增 404 静态路径两项）
+        truncated: false
+    - name:
+        text: verify_pg_data_layer.py restart
+        truncated: false
+      result: passed
+      note:
+        text: 4/4（修复 import sys 后）
+        truncated: false
+    - name:
+        text: migrate_files_to_pg.py
+        truncated: false
+      result: passed
+      note:
+        text: 幂等：导入 0 / 跳过 3
+        truncated: false
+    - name:
+        text: ruff F821/F811 扫描（含顶层 app.py）
+        truncated: false
+      result: passed
+      note:
+        text: 归零；扫描范围已按上轮 Verifier 指出修正，覆盖 app.py
+        truncated: false
+    - name:
+        text: A6 包依赖图 AST 检查
+        truncated: false
+      result: passed
+      note:
+        text: 分层违例 NONE、环 NONE（Verifier 独立复核一致）
+        truncated: false
+  checks_truncated: false
+  known_limits:
+    - text: 测试覆盖远低于 comet 家规（check-api.sh 要求 cov>=80%，当前 1 个测试文件/12 用例，无
+        mypy/bandit/pytest-cov 工具链）——已立项后续 Classic 变更 gate-compliance 补齐
+      truncated: false
+    - text: validate_skill_commands.py 报 77 处文档内 Easel 版式脚本路径（skills 原样复制债务，commit
+        12216f0 已知，不属本变更范围）
+      truncated: false
+    - text: 实际布局为 apps/api/zimeiti_api/（flat），brief/spec 文字写 src 布局——结构实质达成，文字偏差已记入
+        risks
+      truncated: false
+  known_limits_truncated: false
+  review: null
+  submitted_at: 2026-10-14T06:57:01.880Z
+blockers: []
+verification:
+  candidate_id: ccd1289d-ab83-4be9-8dbe-098a1059907b
+  identity_provider: skill-coordinated
+  verifier_execution_ref: skill-coordinated:verifier:92ce4898-bdae-4d37-9f62-fd0b66f81c1f
+  iteration: 2
+  attempt: 1
+  assurance: skill-coordinated
+  verdict: pass
+  checks:
+    - id: pytest
+      name:
+        text: pytest
+        truncated: false
+      argv_display:
+        - text: run
+          truncated: false
+        - text: pytest
+          truncated: false
+        - text: -q
+          truncated: false
+      argv_truncated: false
+      cwd_ref: apps/api
+      status: passed
+      exit_code: 0
+      duration_ms: 3041
+    - id: verify_openclaw_removal
+      name:
+        text: verify_openclaw_removal
+        truncated: false
+      argv_display:
+        - text: run
+          truncated: false
+        - text: python
+          truncated: false
+        - text: ../scripts/verify_openclaw_removal.py
+          truncated: false
+      argv_truncated: false
+      cwd_ref: apps/api
+      status: passed
+      exit_code: 0
+      duration_ms: 990
+    - id: ruff-undefined-names
+      name:
+        text: ruff-undefined-names
+        truncated: false
+      argv_display:
+        - text: run
+          truncated: false
+        - text: ruff
+          truncated: false
+        - text: check
+          truncated: false
+        - text: app.py
+          truncated: false
+        - text: zimeiti_api
+          truncated: false
+        - text: --select
+          truncated: false
+        - text: F821,F811
+          truncated: false
+      argv_truncated: false
+      cwd_ref: apps/api
+      status: passed
+      exit_code: 0
+      duration_ms: 143
+    - id: serve-entry-status
+      name:
+        text: serve 入口等价验证：同一 app 对象 + lifespan PG 初始化 + /api/status 200（TestClient
+          同构造，不占端口）
+        truncated: false
+      argv_display:
+        - text: run
+          truncated: false
+        - text: python
+          truncated: false
+        - text: -c
+          truncated: false
+        - text: from fastapi.testclient import TestClient; import app; c =
+            TestClient(app.app, base_url='http://127.0.0.1'); r =
+            c.get('/api/status'); print('status ->', r.status_code); assert
+            r.status_code == 200
+          truncated: false
+      argv_truncated: false
+      cwd_ref: apps/api
+      status: passed
+      exit_code: 0
+      duration_ms: 2750
+    - id: make-api-entry
+      name:
+        text: make api 入口核对（dry-run 打印实际命令，应指向 serve.py）
+        truncated: false
+      argv_display:
+        - text: -n
+          truncated: false
+        - text: api
+          truncated: false
+      argv_truncated: false
+      cwd_ref: .
+      status: passed
+      exit_code: 0
+      duration_ms: 139
+    - id: migrate-files-to-pg
+      name:
+        text: migrate_files_to_pg 幂等执行（判重不重复导入）
+        truncated: false
+      argv_display:
+        - text: run
+          truncated: false
+        - text: python
+          truncated: false
+        - text: ../scripts/migrate_files_to_pg.py
+          truncated: false
+      argv_truncated: false
+      cwd_ref: apps/api
+      status: passed
+      exit_code: 0
+      duration_ms: 571
+    - id: verify-pg-data-layer-restart
+      name:
+        text: verify_pg_data_layer restart 模式（4 项运行时验收：对话/跨重启回忆/pending 存活/缺库 fail-fast）
+        truncated: false
+      argv_display:
+        - text: run
+          truncated: false
+        - text: python
+          truncated: false
+        - text: ../scripts/verify_pg_data_layer.py
+          truncated: false
+        - text: restart
+          truncated: false
+      argv_truncated: false
+      cwd_ref: apps/api
+      status: passed
+      exit_code: 0
+      duration_ms: 26793
+  summary:
+    text: 修复轮复验通过：上轮唯一行为回归（app.py HTTPException 未导入致 404→500）已经 commit b725929
+      修复，e2e 对比脚本补 404 防回归项后 57/57 一致；A1/A5/A6 维持 passed；A3/A4 由 Runtime
+      正式执行的检查记录关闭（pytest 12 passed；入口矩阵七项全部留档）。6/6 验收项全部 passed。
+    truncated: false
+  risks:
+    - text: A2 双服务 E2E 复跑（57/57）为 builder 自述，本轮未重跑；脚本逻辑、commit 事实与 Runtime 记录自洽，残余风险低
+      truncated: false
+    - text: ruff-undefined-names log 不含扫描范围元信息，覆盖 app.py 依赖 builder 修正陈述（argv 可从
+        runner-input.json 核实）
+      truncated: false
+    - text: vendor 技能目录一处 easel 引用与 spec/brief 文字 src 布局偏差，均为范围外已知债务，已在前轮记录
+      truncated: false
+  risks_truncated: false
+  completed_at: 2026-10-14T07:07:46.374Z
+history:
+  - goal_cycle: 1
+    iteration: 1
+    attempt: 1
+    outcome: fail
+    unresolved_ids:
+      - A2
+      - A3
+      - A4
+    summary:
+      text: 结构重构实质达成：六域分包、app.py 收敛为组装层、分层单向无环、旧包名在重构目标范围零残留均经独立静态核查证实（A1/A5/A6
+        passed）。但发现 1 个重构引入的确定性运行时回归——app.py 静态资源路由使用未导入的 HTTPException，404 路径将
+        500，且恰好落在 E2E 对比的证据盲区外（A2 failed）；另 pytest 与入口矩阵因验证环境无命令执行通道未能独立复跑（A3/A4
+        blocked）。建议 builder 修复 HTTPException 导入并补 ruff F821 对 app.py 的扫描后重新提交验证。
+      truncated: false
+    completed_at: 2026-10-14T06:47:46.397Z
+  - goal_cycle: 1
+    iteration: 2
+    attempt: 1
+    outcome: pass
+    unresolved_ids: []
+    summary:
+      text: 修复轮复验通过：上轮唯一行为回归（app.py HTTPException 未导入致 404→500）已经 commit b725929
+        修复，e2e 对比脚本补 404 防回归项后 57/57 一致；A1/A5/A6 维持 passed；A3/A4 由 Runtime
+        正式执行的检查记录关闭（pytest 12 passed；入口矩阵七项全部留档）。6/6 验收项全部 passed。
+      truncated: false
+    completed_at: 2026-10-14T07:07:46.374Z
+history_overflow:
+  dropped_entries: 0
+  first_dropped_at: null
+  last_dropped_at: null
+  outcome_counts:
+    pass: 0
+    fail: 0
+    blocked: 0
+    execution-error: 0
+    recovery: 0
+verification_result: pass
+verification_report: verification.md
+archived: true
+created_at: 2026-10-13T15:47:57.475Z
