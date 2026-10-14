@@ -12,8 +12,12 @@ from ..core.paths import PROFILES_DIR
 
 # 六维画像文件的固定顺序（identity/style/... 先，其余 .md 追加在后）
 _FILE_ORDER = [
-    "identity.md", "style.md", "audience.md",
-    "platforms.md", "preferences.md", "memory.md",
+    "identity.md",
+    "style.md",
+    "audience.md",
+    "platforms.md",
+    "preferences.md",
+    "memory.md",
 ]
 
 
@@ -22,8 +26,7 @@ def list_personas() -> list[str]:
     if not PROFILES_DIR.is_dir():
         return []
     return sorted(
-        d.name for d in PROFILES_DIR.iterdir()
-        if d.is_dir() and not d.name.startswith("_")
+        d.name for d in PROFILES_DIR.iterdir() if d.is_dir() and not d.name.startswith("_")
     )
 
 
@@ -76,7 +79,8 @@ TURN_REMINDER = (
     "有对应或相邻的 SKILL 就读进来、按它的流程/数据源/工具做，别凭记忆或通用知识裸做；"
     "五层（含制作层：图文/图/视频/成片/长稿等）都由你自己按对应 SKILL 产出成品文件到 outputs/；"
     "问「我的账号/帖子/粉丝/最近发了啥」先查已登录账号、别回问用户要账号名；"
-    "要发到公开平台的文案/评论绝不写入密钥/内部地址/代理/路径/env 名等敏感信息，也别随手自曝「由 AI 生成/某工具做的」。"
+    "要发到公开平台的文案/评论绝不写入密钥/内部地址/代理/路径/env 名等敏感信息，"
+    "也别随手自曝「由 AI 生成/某工具做的」。"
 )
 
 

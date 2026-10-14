@@ -44,9 +44,47 @@ dependencies = [
 [tool.setuptools.packages.find]
 include = ["zimeiti_api*"]
 
+# ---- 质量门禁配置（对齐 comet-integration 家规 check-api.sh）----
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["."]
+
+[tool.ruff.lint]
+# 家规窄 select：E(pycodestyle)/F(pyflakes)/I(isort)/UP(pyupgrade)/B(bugbear)。
+# BLE/S/PL 等不启用——上游 Easel 风格的宽捕获（try-except-pass）属产品行为，不强制改写。
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# B008：FastAPI 依赖注入惯用法（File()/Form() 作参数默认值），框架设计如此。
+"zimeiti_api/content/uploads.py" = ["B008"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = false
+
+[tool.coverage.run]
+source = ["zimeiti_api"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+exclude_lines = ["if TYPE_CHECKING:", "raise NotImplementedError"]
+
+[tool.bandit]
+# B110/B112：上游 Easel 风格的 try-except-pass/continue（清理/降级路径）属产品行为；
+# B404/B603：subprocess 是登录/发布/whoami 的产品核心路径，且全部不带 shell=True（B603 本身即推荐用法）。
+skips = ["B110", "B112", "B404", "B603"]
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8,<10",             # 测试（apps/api/tests）
+    "pytest-cov>=5,<8",          # 覆盖率门禁（make check 第 5 道）
+    "ruff>=0.6",                 # format + lint 门禁
+    "mypy>=1.10",                # 类型门禁
+    "bandit>=1.7",               # 安全扫描门禁
 ]
 
 [[tool.uv.index]]

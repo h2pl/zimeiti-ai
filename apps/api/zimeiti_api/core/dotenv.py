@@ -2,10 +2,12 @@
 
 在包 import 时执行一次：已存在的环境变量优先，.env 损坏不阻断启动。
 """
+
 from __future__ import annotations
 
 import os
 from pathlib import Path
+
 
 def _load_dotenv(path: Path) -> None:
     """把 .env 文件加载进 os.environ（已存在的环境变量优先，不覆盖）。

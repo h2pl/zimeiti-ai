@@ -30,9 +30,11 @@ import json
 import os
 import time
 import uuid
-from langchain_core.messages import AIMessageChunk
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
+
+from langchain_core.messages import AIMessageChunk
 
 from ..core import pg
 
@@ -50,6 +52,7 @@ SYSTEM_PROMPT = (
 
 
 # ---------- 会话历史 / HITL pending（PostgreSQL，见 zimeiti_api/core/pg.py） ----------
+
 
 def _load_messages(session_key: str) -> list[dict]:
     return pg.messages_load(session_key)
@@ -108,6 +111,7 @@ def pending_status(question_ids: list[str]) -> dict[str, dict]:
 
 
 # ---------- 模型与 agent ----------
+
 
 def _build_model():
     from langchain_openai import ChatOpenAI
@@ -215,15 +219,25 @@ async def _checkpoint_has_messages(agent, config) -> bool:
         return False
 
 
-async def run_turn(session_key: str, message: str, pk: str, turn_id: str,
-                   event_path: Path, emit: Callable, end: Callable,
-                   save_turn: Callable | None = None) -> None:
+async def run_turn(
+    session_key: str,
+    message: str,
+    pk: str,
+    turn_id: str,
+    event_path: Path,
+    emit: Callable,
+    end: Callable,
+    save_turn: Callable | None = None,
+) -> None:
     """跑一轮 deepagents 对话，按 Easel SSE 契约发帧；结束负责落盘与 done 帧。"""
     async with _session_lock(session_key):
         _gc_live()
         model = _build_model()
         if model is None:
-            emit("error", "❌ 未配置模型：请设置 OPENAI_API_KEY（可选 OPENAI_BASE_URL / ZIMEITI_MODEL）")
+            emit(
+                "error",
+                "❌ 未配置模型：请设置 OPENAI_API_KEY（可选 OPENAI_BASE_URL / ZIMEITI_MODEL）",
+            )
             if save_turn:
                 save_turn(pk, "error", "", {"turn_id": turn_id})
             emit("done", sessionKey=session_key)
@@ -247,7 +261,8 @@ async def run_turn(session_key: str, message: str, pk: str, turn_id: str,
             for m in _load_messages(session_key):
                 if m.get("content"):
                     lc_messages.append(
-                        HumanMessage(content=m["content"]) if m["role"] == "user"
+                        HumanMessage(content=m["content"])
+                        if m["role"] == "user"
                         else AIMessage(content=m["content"])
                     )
         lc_messages.append(HumanMessage(content=message))
@@ -282,35 +297,62 @@ async def run_turn(session_key: str, message: str, pk: str, turn_id: str,
 
         if interrupted:
             qid = uuid.uuid4().hex
-            payload = {"id": qid, "thread_id": session_key, "turn_id": turn_id,
-                       "created_at": time.time(),
-                       "questions": [{"questionId": qid,
-                                      "question": interrupted["question"],
-                                      "options": interrupted["options"]}]}
+            payload = {
+                "id": qid,
+                "thread_id": session_key,
+                "turn_id": turn_id,
+                "created_at": time.time(),
+                "questions": [
+                    {
+                        "questionId": qid,
+                        "question": interrupted["question"],
+                        "options": interrupted["options"],
+                    }
+                ],
+            }
             _LIVE_INTERRUPTS[session_key] = {
-                "emit": emit, "end": end, "pk": pk, "ts": time.monotonic(),
-                "full_text": full_text, "config": config, "save_turn": save_turn,
+                "emit": emit,
+                "end": end,
+                "pk": pk,
+                "ts": time.monotonic(),
+                "full_text": full_text,
+                "config": config,
+                "save_turn": save_turn,
                 "pending_ids": [qid],
             }
-            pg.pending_set(qid, session_key, {"id": qid, "thread_id": session_key,
-                                              "created_at": time.time()})
+            pg.pending_set(
+                qid,
+                session_key,
+                {"id": qid, "thread_id": session_key, "created_at": time.time()},
+            )
             # 前端 ChatQuestion 契约：{"id", "questions":[{questionId,question,options}]}
             emit("question", json.dumps(payload, ensure_ascii=False))
             emit("activity", "⏸ 等待人工回答（回答后将自动继续）…")
             return  # 不发 done：SSE 保持打开，resume 后在同一连接续流
 
         text = "".join(full_text)
-        _save_messages(session_key, _load_messages(session_key)
-                       + [{"role": "user", "content": message},
-                          {"role": "assistant", "content": text}])
+        _save_messages(
+            session_key,
+            _load_messages(session_key)
+            + [
+                {"role": "user", "content": message},
+                {"role": "assistant", "content": text},
+            ],
+        )
         if save_turn:
             save_turn(pk, "done", text, {"turn_id": turn_id})
         emit("done", sessionKey=session_key)
         end()
 
 
-def _finish_turn(session_key: str, pk: str, text: str, emit: Callable, end: Callable,
-                 save_turn: Callable | None = None) -> None:
+def _finish_turn(
+    session_key: str,
+    pk: str,
+    text: str,
+    emit: Callable,
+    end: Callable,
+    save_turn: Callable | None = None,
+) -> None:
     history = _load_messages(session_key)
     _save_messages(session_key, history + [{"role": "assistant", "content": text}])
     if save_turn:
@@ -355,7 +397,8 @@ async def answer(question_id: str, answers: Any, resolved_by: str = "web") -> di
     try:
         async for chunk, _meta in agent.astream(
             Command(resume={"decisions": [{"type": "respond", "message": answer_text}]}),
-            config=config, stream_mode="messages",
+            config=config,
+            stream_mode="messages",
         ):
             if not isinstance(chunk, AIMessageChunk):
                 continue
@@ -373,7 +416,7 @@ async def answer(question_id: str, answers: Any, resolved_by: str = "web") -> di
 
     text = "".join(full_text)
     if live_stream and emit and end:
-        _finish_turn(sk, pk, text, emit, end, save_turn)
+        _finish_turn(sk, pk, text, emit, end, save_turn)  # type: ignore[arg-type]  # 上游行为：live 无 pk 时传 None，_finish_turn 内部容忍
     else:
         _save_messages(sk, _load_messages(sk) + [{"role": "assistant", "content": text}])
     return {"ok": True, "last_message": text}
@@ -408,7 +451,8 @@ async def ask(session_key: str, message: str) -> str:
             for m in _load_messages(session_key):
                 if m.get("content"):
                     lc_messages.append(
-                        HumanMessage(content=m["content"]) if m["role"] == "user"
+                        HumanMessage(content=m["content"])
+                        if m["role"] == "user"
                         else AIMessage(content=m["content"])
                     )
         lc_messages.append(HumanMessage(content=message))
@@ -429,12 +473,16 @@ async def ask(session_key: str, message: str) -> str:
             return f"❌ agent 运行失败：{str(e)[:180]}"
 
         if interrupted:
-            return (f"⏸ 该问题需要人工决策：{interrupted['question']}"
-                    f"（请使用流式对话回答）")
+            return f"⏸ 该问题需要人工决策：{interrupted['question']}（请使用流式对话回答）"
         text = "".join(full_text)
-        _save_messages(session_key, _load_messages(session_key)
-                       + [{"role": "user", "content": message},
-                          {"role": "assistant", "content": text}])
+        _save_messages(
+            session_key,
+            _load_messages(session_key)
+            + [
+                {"role": "user", "content": message},
+                {"role": "assistant", "content": text},
+            ],
+        )
         return text
 
 

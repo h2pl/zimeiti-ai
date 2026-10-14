@@ -5,6 +5,7 @@ fixture 断言失败而非跳过——验收要求测试真实运行（comet ver
 skipped 计为通过）。每个测试用独立 user_id 命名空间（多租户维度的另一用途），
 结束后清理，不污染本地版 'local' 数据。
 """
+
 from __future__ import annotations
 
 import sys
@@ -37,3 +38,18 @@ def uid():
             conn.execute("DELETE FROM ideas WHERE user_id=%s", (u,))
             conn.execute("DELETE FROM schedule_items WHERE user_id=%s", (u,))
             conn.execute("DELETE FROM hitl_pending WHERE user_id=%s", (u,))
+
+
+@pytest.fixture
+def client():
+    """TestClient：base_url 用 127.0.0.1（过 TrustedHost 白名单）；上下文进入触发 lifespan。"""
+    from fastapi.testclient import TestClient
+
+    import app  # noqa: E402
+
+    with TestClient(
+        app.app,
+        base_url="http://127.0.0.1:8000",
+        headers={"Origin": "http://127.0.0.1:8000"},
+    ) as c:
+        yield c

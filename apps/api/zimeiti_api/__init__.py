@@ -8,8 +8,11 @@ from pathlib import Path as _Path
 #   parents[1]=apps/api, parents[2]=apps（数据目录与 skills 实际所在）
 _API_DIR = _Path(__file__).resolve().parents[1]
 _REPO_ROOT = _Path(__file__).resolve().parents[2]
-for _p in (str(_API_DIR), str(_REPO_ROOT / "scripts"),
-           str(_REPO_ROOT / "skills" / "shared" / "scripts")):
+for _p in (
+    str(_API_DIR),
+    str(_REPO_ROOT / "scripts"),
+    str(_REPO_ROOT / "skills" / "shared" / "scripts"),
+):
     if _p not in _sys.path:
         _sys.path.insert(0, _p)
 

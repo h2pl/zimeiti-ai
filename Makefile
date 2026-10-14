@@ -5,7 +5,7 @@ API_DIR := apps/api
 WEB_DIR := apps/web
 PYTHON  ?= python
 
-.PHONY: help install api web dev build-web verify test clean
+.PHONY: help install api web dev build-web verify test check clean
 
 help: ## 显示全部目标
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
@@ -33,6 +33,14 @@ verify: ## 验收：openclaw 归零脚本 + 技能校验 + skill 测试套件
 	cd apps/skills/builtin/skill-wechat-publisher/tests && PYTHONUTF8=1 $(PYTHON) -m pytest -q
 
 test: verify ## 别名
+
+check: ## 质量门禁五连：format → lint → types → security → tests+coverage≥80（对齐 Comet 家规 check-api.sh）
+	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync ruff format app.py zimeiti_api tests
+	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync ruff check app.py zimeiti_api tests
+	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync mypy app.py zimeiti_api
+	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync bandit -q -c pyproject.toml -r zimeiti_api
+	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync pytest tests/ -q --cov=zimeiti_api --cov-report=term --cov-fail-under=80
+	@echo "== 全部门禁通过 =="
 
 clean: ## 清理构建产物与缓存
 	rm -rf $(WEB_DIR)/dist

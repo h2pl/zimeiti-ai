@@ -1,24 +1,30 @@
 """环境面板（operations）：.env 保存/工具安装/任务进度。"""
+
 from __future__ import annotations
 
 import asyncio
 import json
-import re
 import subprocess
 import sys
 import threading
 import time
 import uuid
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from ..core.paths import ENV_FILE, PROJECT_ROOT, SHARED_SCRIPTS
-from ..core.settings import (_ENV_ALLOWLIST, _guard_env_values, _is_set, _key_configured,
-                             _mask, _read_env, _skill_api_configured, _write_env,
-                             SKILL_API_REQUIREMENTS)
+from ..core.paths import PROJECT_ROOT, SHARED_SCRIPTS
+from ..core.settings import (
+    _ENV_ALLOWLIST,
+    SKILL_API_REQUIREMENTS,
+    _read_env,
+    _skill_api_configured,
+    _write_env,
+)
 
 router = APIRouter()
+
 
 class EnvUpdateRequest(BaseModel):
     updates: dict[str, str]
@@ -54,18 +60,25 @@ async def api_env_tools(refresh: bool = False):
     if not refresh and _ENV_TOOLS_CACHE["data"] and time.time() - _ENV_TOOLS_CACHE["ts"] < 15:
         return _ENV_TOOLS_CACHE["data"]
     try:
-        proc = await asyncio.to_thread(lambda: subprocess.run(
-            [sys.executable, str(INSTALL_TOOL), "--json", "check"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-            timeout=240, cwd=str(PROJECT_ROOT)))
+        proc = await asyncio.to_thread(
+            lambda: subprocess.run(
+                [sys.executable, str(INSTALL_TOOL), "--json", "check"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=240,
+                cwd=str(PROJECT_ROOT),
+            )
+        )
     except subprocess.TimeoutExpired:
-        raise HTTPException(504, "环境体检超时，请稍后再试")
+        raise HTTPException(504, "环境体检超时，请稍后再试") from None
     if proc.returncode != 0 or not (proc.stdout or "").strip():
         raise HTTPException(500, f"环境体检失败：{(proc.stderr or '').strip()[-300:] or '无输出'}")
     try:
         data = json.loads(proc.stdout)
     except json.JSONDecodeError as e:
-        raise HTTPException(500, f"体检输出解析失败：{e}")
+        raise HTTPException(500, f"体检输出解析失败：{e}") from e
     data["cachedAt"] = int(time.time())
     _ENV_TOOLS_CACHE.update({"ts": time.time(), "data": data})
     return data
@@ -84,9 +97,15 @@ def _install_tool_ids() -> frozenset[str]:
     if _INSTALL_IDS_CACHE["ids"] and time.time() - _INSTALL_IDS_CACHE["ts"] < 300:
         return _INSTALL_IDS_CACHE["ids"]
     try:
-        p = subprocess.run([sys.executable, str(INSTALL_TOOL), "--json", "list"],
-                           capture_output=True, text=True, encoding="utf-8",
-                           errors="replace", timeout=30, cwd=str(PROJECT_ROOT))
+        p = subprocess.run(
+            [sys.executable, str(INSTALL_TOOL), "--json", "list"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=30,
+            cwd=str(PROJECT_ROOT),
+        )
         ids = frozenset(t["id"] for t in (json.loads(p.stdout).get("tools") or []) if t.get("id"))
     except Exception:  # noqa: BLE001
         return _INSTALL_IDS_CACHE["ids"]
@@ -103,12 +122,21 @@ async def api_env_install(req: EnvInstallRequest):
     if tid not in known:
         raise HTTPException(400, f"无效的工具 id：{tid[:40]!r}")
     job_id = uuid.uuid4().hex[:16]
-    if len(_ENV_JOBS) >= 200:                   # 任务表不能无限长：清掉最老的已结束任务
-        for k, _ in sorted((kv for kv in _ENV_JOBS.items() if kv[1].get("ended")),
-                           key=lambda kv: kv[1]["ended"])[:100]:
+    if len(_ENV_JOBS) >= 200:  # 任务表不能无限长：清掉最老的已结束任务
+        for k, _ in sorted(
+            (kv for kv in _ENV_JOBS.items() if kv[1].get("ended")),
+            key=lambda kv: kv[1]["ended"],
+        )[:100]:
             _ENV_JOBS.pop(k, None)
-    job = {"jobId": job_id, "id": tid, "state": "running", "lines": [],
-           "result": None, "started": int(time.time()), "ended": None}
+    job: dict[str, Any] = {
+        "jobId": job_id,
+        "id": tid,
+        "state": "running",
+        "lines": [],
+        "result": None,
+        "started": int(time.time()),
+        "ended": None,
+    }
     _ENV_JOBS[job_id] = job
 
     def _run() -> None:
@@ -116,20 +144,32 @@ async def api_env_install(req: EnvInstallRequest):
         try:
             proc = subprocess.Popen(
                 [sys.executable, str(INSTALL_TOOL), "--json", "install", tid],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                text=True, encoding="utf-8", errors="replace", cwd=str(PROJECT_ROOT))
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                cwd=str(PROJECT_ROOT),
+            )
+            out_f, err_f = proc.stdout, proc.stderr
+            if out_f is None or err_f is None:  # pragma: no cover —— PIPE 已指定，不可能为 None
+                raise RuntimeError("Popen stdout/stderr 缺失")
             # stdout 必须**并发**抽干：串行地先读完 stderr 再读 stdout，子进程一旦往 stdout
             # 写满管道缓冲（64K）就会阻塞，而我们还堵在 stderr 上——双向死锁。
             _out: list[str] = []
-            t_out = threading.Thread(target=lambda: _out.append(proc.stdout.read() or ""), daemon=True)
+            t_out = threading.Thread(target=lambda: _out.append(out_f.read() or ""), daemon=True)
             t_out.start()
-            for line in proc.stderr:            # 引擎进度日志走 stderr
+            for line in err_f:  # 引擎进度日志走 stderr
                 line = line.rstrip()
                 if line:
-                    job["lines"] = (job["lines"] + [line])[-40:]   # 只留最近 40 行（换列表，避免读端正在序列化时被就地改）
+                    job["lines"] = (job["lines"] + [line])[
+                        -40:
+                    ]  # 只留最近 40 行（换列表，避免读端正在序列化时被就地改）
             try:
                 proc.wait(timeout=3600)
-            except subprocess.TimeoutExpired:   # 卡死的安装进程必须真的杀掉，否则线程与子进程永久泄漏
+            except (
+                subprocess.TimeoutExpired
+            ):  # 卡死的安装进程必须真的杀掉，否则线程与子进程永久泄漏
                 proc.kill()
                 proc.wait(timeout=30)
                 raise
@@ -140,10 +180,14 @@ async def api_env_install(req: EnvInstallRequest):
             job["state"] = "ok" if (job["result"] or {}).get("state") == "ok" else "fail"
         except Exception as e:  # noqa: BLE001
             job["state"] = "fail"
-            job["result"] = {"id": tid, "state": "fail", "detail": f"{type(e).__name__}: {e}"}
+            job["result"] = {
+                "id": tid,
+                "state": "fail",
+                "detail": f"{type(e).__name__}: {e}",
+            }
         finally:
             job["ended"] = int(time.time())
-            _ENV_TOOLS_CACHE["ts"] = 0.0        # 装完让下一次体检不吃旧缓存
+            _ENV_TOOLS_CACHE["ts"] = 0.0  # 装完让下一次体检不吃旧缓存
 
     threading.Thread(target=_run, daemon=True).start()
     return {"jobId": job_id, "id": tid, "state": "running"}

@@ -13,6 +13,7 @@
 分层单向：runtime → {governance, platforms, content, operations, core}；
 content/operations/platforms → core；core 不依赖业务包。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -34,9 +35,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse
 
-from zimeiti_api.core import pg as _pg
-from zimeiti_api.core.dotenv import _load_dotenv
-from zimeiti_api.core.paths import REACT_DIR, STATIC_DIR
 from zimeiti_api.content import ideas as _ideas_router
 from zimeiti_api.content import outputs as _outputs_router
 from zimeiti_api.content import personas as _personas_router
@@ -44,6 +42,9 @@ from zimeiti_api.content import schedule as _schedule_router
 from zimeiti_api.content import skills as _skills_router
 from zimeiti_api.content import trends as _trends_router
 from zimeiti_api.content import uploads as _uploads_router
+from zimeiti_api.core import pg as _pg
+from zimeiti_api.core.dotenv import _load_dotenv
+from zimeiti_api.core.paths import REACT_DIR, STATIC_DIR
 from zimeiti_api.governance import guard as _guard
 from zimeiti_api.operations import env as _env_router
 from zimeiti_api.operations import models as _models_router
@@ -73,11 +74,13 @@ async def _lifespan(_app: FastAPI):
         print("\n[zimeiti] PostgreSQL 不可用，服务退出（fail-fast）。", file=sys.stderr)
         print(f"  DATABASE_URL = {_pg.database_url()}", file=sys.stderr)
         print(f"  错误: {err}", file=sys.stderr)
-        print("  排查: 1) PostgreSQL 是否在运行 2) .env 的 DATABASE_URL 是否正确 "
-              "3) 目标库是否已创建", file=sys.stderr)
+        print(
+            "  排查: 1) PostgreSQL 是否在运行 2) .env 的 DATABASE_URL 是否正确 3) 目标库是否已创建",
+            file=sys.stderr,
+        )
         raise RuntimeError(f"PostgreSQL 不可用: {err}")
-    await asyncio.to_thread(_pg.setup)               # 业务表（幂等）
-    await _pg.setup_checkpointer()                   # checkpoint 表 + 连接池
+    await asyncio.to_thread(_pg.setup)  # 业务表（幂等）
+    await _pg.setup_checkpointer()  # checkpoint 表 + 连接池
     yield
     _stop_mp_login_on_shutdown()
     await _pg.close_checkpointer()
@@ -86,16 +89,28 @@ async def _lifespan(_app: FastAPI):
 app = FastAPI(title="Zimeiti AI", docs_url=None, redoc_url=None, lifespan=_lifespan)
 
 # 跨域 / Host 中间件（governance）：放行本机工作台回环来源（对齐旧 app.py 中间件层）
-app.add_middleware(CORSMiddleware, allow_origins=_guard._LOCAL_ORIGINS, allow_methods=["*"], allow_headers=["*"])
-app.add_middleware(TrustedHostMiddleware, allowed_hosts=['localhost', '127.0.0.1'] + _guard._EXTRA_HOSTS)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_guard._LOCAL_ORIGINS,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=["localhost", "127.0.0.1"] + _guard._EXTRA_HOSTS,
+)
 
 # 护栏中间件（governance）：仅放行本机工作台发起的写请求
 app.middleware("http")(_guard.local_write_guard)
 
+
 # ---- 静态资源（app 级，非业务端点）----
 @app.get("/")
 async def index():
-    no_cache = {"Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache"}
+    no_cache = {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+    }
     react_index = REACT_DIR / "index.html"
     if react_index.is_file():
         return FileResponse(react_index, media_type="text/html", headers=no_cache)
@@ -126,28 +141,31 @@ async def static_file(path: str):
         raise HTTPException(403, "非法路径")
     if not fp.is_file():
         raise HTTPException(404)
-    headers = {"Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache"} \
-        if fp.suffix.lower() in {".html", ".htm"} else {}
+    headers = (
+        {"Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache"}
+        if fp.suffix.lower() in {".html", ".htm"}
+        else {}
+    )
     return FileResponse(fp, headers=headers)
 
 
 # ---- 各域路由（注册序即匹配序：/api/analytics/platforms 先于 /api/analytics/{platform}）----
 for _r in (
-    _status_router.router,        # /api/status
-    _personas_router.router,      # /api/personas, /api/persona/{name}...
-    _skills_router.router,        # /api/skills, /api/skill/{name}
-    _env_router.router,           # /api/env...
-    _models_router.router,        # /api/settings/models...
-    _chat_router.router,          # /api/chat..., /api/skill, /api/session/{key}
-    _outputs_router.router,       # /api/outputs, /api/output/{path}, /api/media/{path}
-    _uploads_router.router,       # /api/upload...
-    _login_router.router,         # /api/accounts, /api/login/{platform}..., /api/logout/{platform}
-    _accounts_router.router,      # /api/accounts, /api/accounts/{platform}/whoami
-    _wechat_router.router,        # /api/accounts/{platform}/credentials|mp-login（wechat-oa 凭证/扫码）
-    _analytics_router.router,     # /api/analytics...
-    _publish_router.router,       # /api/publish...
-    _ideas_router.router,         # /api/ideas...
-    _schedule_router.router,      # /api/schedule...
-    _trends_router.router,        # /api/trends
+    _status_router.router,  # /api/status
+    _personas_router.router,  # /api/personas, /api/persona/{name}...
+    _skills_router.router,  # /api/skills, /api/skill/{name}
+    _env_router.router,  # /api/env...
+    _models_router.router,  # /api/settings/models...
+    _chat_router.router,  # /api/chat..., /api/skill, /api/session/{key}
+    _outputs_router.router,  # /api/outputs, /api/output/{path}, /api/media/{path}
+    _uploads_router.router,  # /api/upload...
+    _login_router.router,  # /api/accounts, /api/login/{platform}..., /api/logout/{platform}
+    _accounts_router.router,  # /api/accounts, /api/accounts/{platform}/whoami
+    _wechat_router.router,  # /api/accounts/{platform}/credentials|mp-login（wechat-oa 凭证/扫码）
+    _analytics_router.router,  # /api/analytics...
+    _publish_router.router,  # /api/publish...
+    _ideas_router.router,  # /api/ideas...
+    _schedule_router.router,  # /api/schedule...
+    _trends_router.router,  # /api/trends
 ):
     app.include_router(_r)

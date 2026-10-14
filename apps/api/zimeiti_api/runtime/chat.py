@@ -2,10 +2,10 @@
 
 agent 执行委托 runtime.agent_runtime；历史与 checkpoint 在 PG（core.pg）。
 """
+
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import json
 import os
 import re
@@ -17,15 +17,17 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
-from . import agent_runtime as _agent_runtime
-from ..content.uploads import _attachment_id, _attachment_scope
-from ..content.personas import chat_turn_message, _persona_prefix
+from ..content.personas import _persona_prefix, chat_turn_message
 from ..content.skills import find_skill
-from ..core import pg
-from ..core.paths import (DEBUG_DIR, OUTPUTS_DIR, PROJECT_ROOT, SESSIONS_DIR, SHARED_SCRIPTS,
-                          _safe_output_target)
+from ..content.uploads import _attachment_id, _attachment_scope
+from ..core.paths import (
+    SESSIONS_DIR,
+    _safe_output_target,
+)
+from . import agent_runtime as _agent_runtime
 
 router = APIRouter()
+
 
 class AttachmentRef(BaseModel):
     id: str
@@ -73,7 +75,7 @@ def _attachment_context(req: ChatRequest) -> str:
         "只允许使用下列当前会话附件；禁止扫描、枚举或猜测 outputs/_inbox 中的其他文件：\n"
         + "\n".join(rows)
         + "\n需要纳入内容项目时，将清单内文件复制到 outputs/<项目>/assets/ 后再使用；"
-          "保留 inbox 原件，确保重试仍可复现。"
+        "保留 inbox 原件，确保重试仍可复现。"
     )
 
 
@@ -147,7 +149,11 @@ def _save_turn(sk: str, status: str, text: str, extra: dict | None = None) -> No
     """
     try:
         SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
-        payload = {"status": status, "text": text, "at": time.strftime("%Y-%m-%dT%H:%M:%S")}
+        payload = {
+            "status": status,
+            "text": text,
+            "at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        }
         if extra:
             payload.update(extra)
         tmp = _turn_file(sk).with_suffix(".tmp")
@@ -211,11 +217,14 @@ async def api_chat_job_stream(turn_id: str, after: int = 0):
                     idle_since = time.monotonic()
                 await asyncio.sleep(0.25)
 
-    return EventSourceResponse(events(), headers={
-        "Cache-Control": "no-cache, no-transform",
-        "X-Accel-Buffering": "no",
-        "Content-Encoding": "identity",
-    })
+    return EventSourceResponse(
+        events(),
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+            "Content-Encoding": "identity",
+        },
+    )
 
 
 @router.post("/api/chat/stream")
@@ -237,7 +246,7 @@ async def api_chat_stream(req: ChatRequest):
     sk = req.sessionId or f"web-{int(time.time() * 1000)}"
 
     async def supervisor(sk: str):
-        pk = f"web:{sk}"                 # 落盘 key（与 /api/chat/last 一致）
+        pk = f"web:{sk}"  # 落盘 key（与 /api/chat/last 一致）
         turn_id = req.turnId or uuid.uuid4().hex
         event_seq = 0
 
@@ -254,7 +263,7 @@ async def api_chat_stream(req: ChatRequest):
         def to_client(kind, text=None, **extra):
             nonlocal event_seq
             event_seq += 1
-            data = ({"sessionKey": extra.get("sessionKey")} if kind == "done" else text)
+            data = {"sessionKey": extra.get("sessionKey")} if kind == "done" else text
             event = {"id": event_seq, "event": kind, "data": data}
             try:
                 with event_path.open("a", encoding="utf-8") as ef:
@@ -270,7 +279,12 @@ async def api_chat_stream(req: ChatRequest):
         # deepagents 进程内运行时（openclaw 已全面移除）。
         try:
             await _agent_runtime.run_turn(
-                sk, message, pk, turn_id, event_path, to_client,
+                sk,
+                message,
+                pk,
+                turn_id,
+                event_path,
+                to_client,
                 lambda: client_q.put_nowait(CLIENT_DONE),
                 save_turn=_save_turn,
             )
@@ -282,7 +296,6 @@ async def api_chat_stream(req: ChatRequest):
             return
         return
 
-
     # 把 run 跑在独立后台任务里（持强引用防 GC）——客户端断开不取消它。
     task = asyncio.create_task(supervisor(sk))
     _BG_TASKS.add(task)
@@ -292,7 +305,7 @@ async def api_chat_stream(req: ChatRequest):
         _BG_TASKS.discard(t)
         _RUNNING_CHAT.pop(sk, None)
         try:
-            exc = t.exception()   # 取出异常避免「never retrieved」告警
+            exc = t.exception()  # 取出异常避免「never retrieved」告警
         except Exception:
             exc = None
         if exc is not None:
@@ -301,6 +314,7 @@ async def api_chat_stream(req: ChatRequest):
                 client_q.put_nowait(CLIENT_DONE)
             except Exception:
                 pass
+
     task.add_done_callback(_bg_done)
 
     async def forward():
@@ -313,34 +327,66 @@ async def api_chat_stream(req: ChatRequest):
         while True:
             try:
                 item = await asyncio.wait_for(client_q.get(), timeout=10)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # 长时间无输出（等模型长回复 / 制作类长任务）→ 发心跳，让用户知道没卡死。
                 # 用独立的 `heartbeat` 事件，不走 `activity`：否则会覆盖掉真实的
                 # 「🧠 正在思考…/🛠️ 制作中…」状态与思考流（防呆消息把思考设计顶掉的根因）。
                 # 发出后重置 idle_since → 心跳按 30s 一次的节奏，不再每 10s 重复刷屏。
                 if time.monotonic() - idle_since >= 30:
                     idle_since = time.monotonic()
-                    yield {"event": "heartbeat", "data": json.dumps(
-                        "仍在处理中，未卡住…（复杂或制作类任务会花点时间）", ensure_ascii=False)}
+                    yield {
+                        "event": "heartbeat",
+                        "data": json.dumps(
+                            "仍在处理中，未卡住…（复杂或制作类任务会花点时间）",
+                            ensure_ascii=False,
+                        ),
+                    }
                 continue
             if item is CLIENT_DONE:
                 break
             idle_since = time.monotonic()
             t = item["t"]
             if t == "token":
-                yield {"id": str(item["id"]), "event": "token", "data": json.dumps(item["text"], ensure_ascii=False)}
+                yield {
+                    "id": str(item["id"]),
+                    "event": "token",
+                    "data": json.dumps(item["text"], ensure_ascii=False),
+                }
             elif t == "thinking":
-                yield {"id": str(item["id"]), "event": "thinking", "data": json.dumps(item["text"], ensure_ascii=False)}
+                yield {
+                    "id": str(item["id"]),
+                    "event": "thinking",
+                    "data": json.dumps(item["text"], ensure_ascii=False),
+                }
             elif t == "activity":
-                yield {"id": str(item["id"]), "event": "activity", "data": json.dumps(item["text"], ensure_ascii=False)}
+                yield {
+                    "id": str(item["id"]),
+                    "event": "activity",
+                    "data": json.dumps(item["text"], ensure_ascii=False),
+                }
             elif t == "question":
                 yield {"id": str(item["id"]), "event": "question", "data": item["text"]}
             elif t == "error":
-                yield {"id": str(item["id"]), "event": "error", "data": json.dumps(item["text"], ensure_ascii=False)}
+                yield {
+                    "id": str(item["id"]),
+                    "event": "error",
+                    "data": json.dumps(item["text"], ensure_ascii=False),
+                }
             elif t == "done":
-                yield {"id": str(item["id"]), "event": "done", "data": json.dumps({"sessionKey": item.get("sessionKey")}, ensure_ascii=False)}
+                yield {
+                    "id": str(item["id"]),
+                    "event": "done",
+                    "data": json.dumps({"sessionKey": item.get("sessionKey")}, ensure_ascii=False),
+                }
 
-    return EventSourceResponse(forward(), headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no", "Content-Encoding": "identity"})
+    return EventSourceResponse(
+        forward(),
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+            "Content-Encoding": "identity",
+        },
+    )
 
 
 class QuestionAnswerRequest(BaseModel):
@@ -353,7 +399,7 @@ class QuestionAnswerRequest(BaseModel):
 @router.post("/api/chat/question/answer")
 async def api_question_answer(req: QuestionAnswerRequest):
     """前端点击 ask_user 选项后调用：resume 被中断的 deepagents，续流输出到原 SSE 连接。"""
-    return await _agent_runtime.answer(req.questionId, req.answers or {}, req.resolvedBy)
+    return await _agent_runtime.answer(req.questionId, req.answers or {}, req.resolvedBy)  # type: ignore[arg-type]  # 与旧单体一致：resolvedBy 允许 None
 
 
 class QuestionStatusRequest(BaseModel):
@@ -379,11 +425,11 @@ async def api_chat_stop(req: StopRequest):
     if task is not None and not task.done():
         task.cancel()
         try:
-            await asyncio.wait({task}, timeout=3)   # 等 supervisor 完成收尾（落盘/解锁）
+            await asyncio.wait({task}, timeout=3)  # 等 supervisor 完成收尾（落盘/解锁）
         except Exception:  # noqa: BLE001
             pass
         return {"stopped": True}
-    return {"stopped": False}          # 没有在跑（可能已结束）→ 前端照常清理即可
+    return {"stopped": False}  # 没有在跑（可能已结束）→ 前端照常清理即可
 
 
 @router.post("/api/chat")
@@ -401,6 +447,7 @@ class SkillRequest(BaseModel):
     skill: str
     input: str
     persona: str | None = None
+    sessionId: str | None = None  # 会话键；缺省时服务端生成一次性键
 
 
 @router.post("/api/skill")
@@ -423,13 +470,13 @@ async def api_delete_session(session_key: str):
     各处都删净，同 key 再聊才不会「复活」旧上下文。"""
     deleted = await _agent_runtime.delete_session(session_key)
     try:
-        tf = _turn_file(session_key)   # 内部已做文件名安全化
+        tf = _turn_file(session_key)  # 内部已做文件名安全化
         if tf.is_file():
             tf.unlink()
             deleted = True
     except OSError:
         pass
-    return {'deleted': deleted}
+    return {"deleted": deleted}
 
 
 TREND_SOURCES: dict[str, tuple[str, str | None]] = {
@@ -449,5 +496,3 @@ TREND_LABELS = {
     "toutiao": "头条",
 }
 _TREND_CACHE: dict[str, tuple[float, list]] = {}
-
-

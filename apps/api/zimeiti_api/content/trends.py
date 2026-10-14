@@ -1,4 +1,5 @@
 """热点趋势（content，多平台只读聚合）。"""
+
 from __future__ import annotations
 
 import asyncio
@@ -6,7 +7,7 @@ import json
 import time
 import urllib.request
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from ..core.paths import OUTPUTS_DIR
 
@@ -33,7 +34,7 @@ _TREND_CACHE: dict[str, tuple[float, list]] = {}
 
 def _http_get_json(url: str, timeout: int = 8):
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 Easel"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with urllib.request.urlopen(req, timeout=timeout) as r:  # nosec B310 —— URL 全部来自模块级 TREND_SOURCES 常量表（固定 https）
         return json.loads(r.read().decode("utf-8", "replace"))
 
 
@@ -49,11 +50,13 @@ def _parse_hot(obj: dict) -> list[dict]:
             title = it.get("title") or it.get("word") or it.get("name") or it.get("keyword")
             if not title:
                 continue
-            out.append({
-                "title": str(title),
-                "hot": str(it.get("hot") or it.get("hot_value") or it.get("num") or ""),
-                "url": it.get("url") or it.get("link") or it.get("mobil_url") or "",
-            })
+            out.append(
+                {
+                    "title": str(title),
+                    "hot": str(it.get("hot") or it.get("hot_value") or it.get("num") or ""),
+                    "url": it.get("url") or it.get("link") or it.get("mobil_url") or "",
+                }
+            )
     return out
 
 
@@ -87,16 +90,16 @@ async def api_trends(platforms: str = "weibo,douyin,zhihu", limit: int = 12):
                 _TREND_CACHE[pf] = (now, items)
             elif c:
                 items = c[1]
-        result.append({
-            "platform": pf,
-            "label": TREND_LABELS.get(pf, pf),
-            "items": items[:max(1, min(limit, 30))],
-        })
+        result.append(
+            {
+                "platform": pf,
+                "label": TREND_LABELS.get(pf, pf),
+                "items": items[: max(1, min(limit, 30))],
+            }
+        )
     return {"trends": result, "updated": int(now)}
 
 
-SCHEDULE_FILE = OUTPUTS_DIR / "_schedule.json"   # 旧文件存储路径（迁 PG 后仅迁移/兼容引用）
+SCHEDULE_FILE = OUTPUTS_DIR / "_schedule.json"  # 旧文件存储路径（迁 PG 后仅迁移/兼容引用）
 SCHEDULE_STATUSES = {"idea", "draft", "scheduled", "published"}
 SCHEDULE_KINDS = {"content", "event"}
-
-

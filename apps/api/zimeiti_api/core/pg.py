@@ -32,8 +32,9 @@ import json
 import os
 import time
 import uuid
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Any, Iterator
+from typing import Any
 
 import psycopg
 
@@ -79,7 +80,8 @@ _DDL = [
         created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
     )
     """,
-    "CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages (user_id, session_key, id)",
+    "CREATE INDEX IF NOT EXISTS idx_chat_messages_session "
+    "ON chat_messages (user_id, session_key, id)",
     """
     CREATE TABLE IF NOT EXISTS hitl_pending (
         question_id TEXT PRIMARY KEY,
@@ -161,15 +163,15 @@ async def setup_checkpointer() -> Any:
     global _CHECKPOINTER, _POOL
     if _CHECKPOINTER is not None:
         return _CHECKPOINTER
-    from psycopg_pool import AsyncConnectionPool
-    from psycopg.rows import dict_row
-
     from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+    from psycopg.rows import dict_row
+    from psycopg_pool import AsyncConnectionPool
 
     async def _configure(conn):
         conn.prepare_threshold = 0
         conn.row_factory = dict_row
-        await conn.set_autocommit(True)   # 异步连接的 autocommit 只读，须 await set；对齐官方 from_conn_string（setup 的 CONCURRENTLY 禁事务）
+        await conn.set_autocommit(True)  # 异步连接的 autocommit 只读，须 await set；
+        # 对齐官方 from_conn_string（setup 的 CONCURRENTLY 禁事务）
 
     _POOL = AsyncConnectionPool(database_url(), open=False, configure=_configure)
     await _POOL.open(wait=True, timeout=10)
@@ -198,6 +200,7 @@ def thread_id(session_key: str, user_id: str = DEFAULT_USER) -> str:
 
 # ---------- 会话历史 ----------
 
+
 def session_touch(session_key: str, user_id: str = DEFAULT_USER) -> None:
     with connect() as conn:
         conn.execute(
@@ -213,7 +216,8 @@ def session_touch(session_key: str, user_id: str = DEFAULT_USER) -> None:
 def messages_load(session_key: str, user_id: str = DEFAULT_USER) -> list[dict]:
     with connect() as conn:
         rows = conn.execute(
-            "SELECT role, content FROM chat_messages WHERE user_id=%s AND session_key=%s ORDER BY id",
+            "SELECT role, content FROM chat_messages "
+            "WHERE user_id=%s AND session_key=%s ORDER BY id",
             (user_id, session_key),
         ).fetchall()
     return [{"role": r[0], "content": r[1]} for r in rows]
@@ -230,7 +234,8 @@ def messages_save(session_key: str, messages: list[dict], user_id: str = DEFAULT
             for m in messages:
                 if m.get("content"):
                     conn.execute(
-                        "INSERT INTO chat_messages (user_id, session_key, role, content) VALUES (%s,%s,%s,%s)",
+                        "INSERT INTO chat_messages (user_id, session_key, role, content) "
+                        "VALUES (%s,%s,%s,%s)",
                         (user_id, session_key, m.get("role", "user"), m["content"]),
                     )
             conn.execute(
@@ -269,8 +274,10 @@ def session_exists(session_key: str, user_id: str = DEFAULT_USER) -> bool:
 
 # ---------- HITL pending（带 TTL，与文件版语义一致） ----------
 
-def pending_set(question_id: str, session_key: str, payload: dict,
-                user_id: str = DEFAULT_USER) -> None:
+
+def pending_set(
+    question_id: str, session_key: str, payload: dict, user_id: str = DEFAULT_USER
+) -> None:
     with connect() as conn:
         conn.execute(
             """
@@ -278,7 +285,12 @@ def pending_set(question_id: str, session_key: str, payload: dict,
             VALUES (%s,%s,%s,%s)
             ON CONFLICT (question_id) DO UPDATE SET payload=EXCLUDED.payload, created_at=now()
             """,
-            (question_id, user_id, session_key, json.dumps(payload, ensure_ascii=False)),
+            (
+                question_id,
+                user_id,
+                session_key,
+                json.dumps(payload, ensure_ascii=False),
+            ),
         )
         conn.commit()
 
@@ -310,14 +322,16 @@ def pending_exists(question_id: str) -> bool:
 
 
 def _pending_alive_where() -> str:
-    return "created_at > now() - interval '%s seconds'" % PENDING_TTL_SECONDS
+    # noqa: UP031 —— %s 是 psycopg 占位符不是 %-format，禁止改 f-string
+    return "created_at > now() - interval '%s seconds'" % PENDING_TTL_SECONDS  # noqa: UP031
 
 
 def pending_load(user_id: str = DEFAULT_USER) -> dict:
     """全部未过期 pending（TTL 过滤在 SQL 侧做）。"""
     with connect() as conn:
         rows = conn.execute(
-            f"SELECT question_id, payload FROM hitl_pending WHERE user_id=%s AND {_pending_alive_where()}",
+            f"SELECT question_id, payload FROM hitl_pending "
+            f"WHERE user_id=%s AND {_pending_alive_where()}",  # nosec B608 —— WHERE 片段为模块级常量函数（int TTL），用户值走 %s 参数化
             (user_id,),
         ).fetchall()
     return {r[0]: r[1] for r in rows}
@@ -326,7 +340,8 @@ def pending_load(user_id: str = DEFAULT_USER) -> dict:
 def pending_get(question_id: str, user_id: str = DEFAULT_USER) -> dict | None:
     with connect() as conn:
         row = conn.execute(
-            f"SELECT payload FROM hitl_pending WHERE question_id=%s AND user_id=%s AND {_pending_alive_where()}",
+            f"SELECT payload FROM hitl_pending "
+            f"WHERE question_id=%s AND user_id=%s AND {_pending_alive_where()}",  # nosec B608 —— WHERE 片段为模块级常量函数（int TTL），用户值走 %s 参数化
             (question_id, user_id),
         ).fetchone()
     return row[0] if row else None
@@ -336,11 +351,9 @@ def pending_status(question_ids: list[str], user_id: str = DEFAULT_USER) -> dict
     if not question_ids:
         return {}
     with connect() as conn:
-        rows = conn.execute(
-            f"""
-            SELECT question_id FROM hitl_pending
-            WHERE user_id=%s AND question_id = ANY(%s) AND {_pending_alive_where()}
-            """,
+        rows = conn.execute(  # nosec B608 —— 常量 WHERE 片段 + ANY(%s) 参数化
+            f"SELECT question_id FROM hitl_pending "
+            f"WHERE user_id=%s AND question_id = ANY(%s) AND {_pending_alive_where()}",  # nosec B608 —— WHERE 片段为模块级常量（int TTL），用户值走 %s 参数化
             (user_id, question_ids),
         ).fetchall()
     alive = {r[0] for r in rows}
@@ -349,14 +362,23 @@ def pending_status(question_ids: list[str], user_id: str = DEFAULT_USER) -> dict
 
 # ---------- ideas ----------
 
+
 def ideas_list(user_id: str = DEFAULT_USER) -> list[dict]:
     with connect() as conn:
         rows = conn.execute(
-            "SELECT id, title, note, source, status, created FROM ideas WHERE user_id=%s ORDER BY seq DESC",
+            "SELECT id, title, note, source, status, created FROM ideas "
+            "WHERE user_id=%s ORDER BY seq DESC",
             (user_id,),
         ).fetchall()
     return [
-        {"id": r[0], "title": r[1], "note": r[2], "source": r[3], "status": r[4], "created": r[5]}
+        {
+            "id": r[0],
+            "title": r[1],
+            "note": r[2],
+            "source": r[3],
+            "status": r[4],
+            "created": r[5],
+        }
         for r in rows
     ]
 
@@ -391,14 +413,21 @@ def ideas_update(iid: str, fields: dict, user_id: str = DEFAULT_USER) -> dict | 
     assignments = ", ".join(f"{k}=%({k})s" for k in sets)
     with connect() as conn:
         row = conn.execute(
-            f"UPDATE ideas SET {assignments} WHERE user_id=%(user_id)s AND id=%(id)s "
+            f"UPDATE ideas SET {assignments} WHERE user_id=%(user_id)s AND id=%(id)s "  # nosec B608 —— 列名经白名单过滤、值走 %(k)s 参数化，无注入面
             "RETURNING id, title, note, source, status, created",
             {**sets, "user_id": user_id, "id": iid},
         ).fetchone()
         conn.commit()
     if not row:
         return None
-    return {"id": row[0], "title": row[1], "note": row[2], "source": row[3], "status": row[4], "created": row[5]}
+    return {
+        "id": row[0],
+        "title": row[1],
+        "note": row[2],
+        "source": row[3],
+        "status": row[4],
+        "created": row[5],
+    }
 
 
 def ideas_delete(iid: str, user_id: str = DEFAULT_USER) -> bool:
@@ -410,20 +439,43 @@ def ideas_delete(iid: str, user_id: str = DEFAULT_USER) -> bool:
 
 # ---------- schedule ----------
 
-_SCHEDULE_FIELDS = ("title", "date", "platform", "time", "status", "note",
-                    "kind", "url", "source", "event_type", "end_date")
+_SCHEDULE_FIELDS = (
+    "title",
+    "date",
+    "platform",
+    "time",
+    "status",
+    "note",
+    "kind",
+    "url",
+    "source",
+    "event_type",
+    "end_date",
+)
 
 
 def _schedule_row(r) -> dict:
-    return {"id": r[0], "title": r[1], "date": r[2], "platform": r[3], "time": r[4],
-            "status": r[5], "note": r[6], "kind": r[7], "url": r[8], "source": r[9],
-            "event_type": r[10], "end_date": r[11]}
+    return {
+        "id": r[0],
+        "title": r[1],
+        "date": r[2],
+        "platform": r[3],
+        "time": r[4],
+        "status": r[5],
+        "note": r[6],
+        "kind": r[7],
+        "url": r[8],
+        "source": r[9],
+        "event_type": r[10],
+        "end_date": r[11],
+    }
 
 
 def schedule_list(user_id: str = DEFAULT_USER) -> list[dict]:
     with connect() as conn:
         rows = conn.execute(
-            "SELECT id, title, date, platform, time, status, note, kind, url, source, event_type, end_date "
+            "SELECT id, title, date, platform, time, status, note, "
+            "kind, url, source, event_type, end_date "
             "FROM schedule_items WHERE user_id=%s ORDER BY seq",
             (user_id,),
         ).fetchall()
@@ -456,8 +508,9 @@ def schedule_update(sid: str, fields: dict, user_id: str = DEFAULT_USER) -> dict
     assignments = ", ".join(f"{k}=%({k})s" for k in sets)
     with connect() as conn:
         row = conn.execute(
-            f"UPDATE schedule_items SET {assignments} WHERE user_id=%(user_id)s AND id=%(id)s "
-            "RETURNING id, title, date, platform, time, status, note, kind, url, source, event_type, end_date",
+            f"UPDATE schedule_items SET {assignments} WHERE user_id=%(user_id)s AND id=%(id)s "  # nosec B608 —— 列名经白名单过滤、值走 %(k)s 参数化，无注入面
+            "RETURNING id, title, date, platform, time, status, "
+            "note, kind, url, source, event_type, end_date",
             {**sets, "user_id": user_id, "id": sid},
         ).fetchone()
         conn.commit()
@@ -472,6 +525,7 @@ def schedule_delete(sid: str, user_id: str = DEFAULT_USER) -> bool:
 
 
 # ---------- 整表替换（read-modify-write 调用方的 PG 等价，事务内 DELETE+INSERT） ----------
+
 
 def ideas_replace_all(items: list[dict], user_id: str = DEFAULT_USER) -> None:
     """整表替换 ideas。

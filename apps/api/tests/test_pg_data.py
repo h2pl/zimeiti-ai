@@ -7,27 +7,32 @@
 - A9 会话删除清尽全部状态（test_session_delete_removes_all）
 - HITL pending TTL 语义与文件版一致（test_pending_*）
 """
+
 from __future__ import annotations
 
 import json
 import time
 import uuid
 
-import pytest
-
 from zimeiti_api.core import pg
-
 
 # ---------- schema / 多租户预留（A7） ----------
 
+
 def test_setup_idempotent():
     pg.setup()
-    pg.setup()   # 第二次不报错、不丢数据
+    pg.setup()  # 第二次不报错、不丢数据
 
 
 def test_user_id_dimension():
     """本变更新建的业务表都必须带 user_id 列且默认 'local'（A7）。"""
-    tables = ["chat_sessions", "chat_messages", "hitl_pending", "ideas", "schedule_items"]
+    tables = [
+        "chat_sessions",
+        "chat_messages",
+        "hitl_pending",
+        "ideas",
+        "schedule_items",
+    ]
     with pg.connect() as conn:
         for t in tables:
             row = conn.execute(
@@ -45,13 +50,19 @@ def test_user_id_dimension():
 
 # ---------- 会话历史 ----------
 
+
 def test_messages_roundtrip_and_delete(uid):
     sk = f"sess-{uuid.uuid4().hex[:8]}"
-    pg.messages_save(sk, [{"role": "user", "content": "你好"},
-                          {"role": "assistant", "content": "在的"}], user_id=uid)
+    pg.messages_save(
+        sk,
+        [{"role": "user", "content": "你好"}, {"role": "assistant", "content": "在的"}],
+        user_id=uid,
+    )
     msgs = pg.messages_load(sk, user_id=uid)
-    assert msgs == [{"role": "user", "content": "你好"},
-                    {"role": "assistant", "content": "在的"}]
+    assert msgs == [
+        {"role": "user", "content": "你好"},
+        {"role": "assistant", "content": "在的"},
+    ]
     # 整表替换语义：再保存两条覆盖为一条
     pg.messages_save(sk, [{"role": "user", "content": "第二条"}], user_id=uid)
     assert pg.messages_load(sk, user_id=uid) == [{"role": "user", "content": "第二条"}]
@@ -115,6 +126,7 @@ def test_session_tenant_isolation(uid):
 
 # ---------- HITL pending（TTL 语义与文件版一致） ----------
 
+
 def test_pending_lifecycle(uid):
     qid = uuid.uuid4().hex
     sk = f"sess-{uuid.uuid4().hex[:8]}"
@@ -142,7 +154,12 @@ def test_pending_ttl_expired(uid):
             INSERT INTO hitl_pending (question_id, user_id, session_key, payload, created_at)
             VALUES (%s,%s,%s,%s, now() - interval '40 minutes')
             """,
-            (qid, uid, sk, json.dumps({"id": qid, "thread_id": sk}, ensure_ascii=False)),
+            (
+                qid,
+                uid,
+                sk,
+                json.dumps({"id": qid, "thread_id": sk}, ensure_ascii=False),
+            ),
         )
         conn.commit()
     assert pg.pending_get(qid, user_id=uid) is None
@@ -153,20 +170,33 @@ def test_pending_ttl_expired(uid):
 
 # ---------- ideas / schedule（A3 字段与文件版一致） ----------
 
+
 def test_ideas_order_and_crud(uid):
     """ideas 展示序=最新在前；replace_all 保序；粒度 CRUD 可用。"""
-    older = {"id": uuid.uuid4().hex[:12], "title": "旧选题", "note": "", "source": "",
-             "status": "done", "created": int(time.time()) - 100}
-    newer = {"id": uuid.uuid4().hex[:12], "title": "新选题", "note": "n", "source": "chat",
-             "status": "pending", "created": int(time.time())}
-    pg.ideas_replace_all([newer, older], user_id=uid)   # 调用方传入展示序
+    older = {
+        "id": uuid.uuid4().hex[:12],
+        "title": "旧选题",
+        "note": "",
+        "source": "",
+        "status": "done",
+        "created": int(time.time()) - 100,
+    }
+    newer = {
+        "id": uuid.uuid4().hex[:12],
+        "title": "新选题",
+        "note": "n",
+        "source": "chat",
+        "status": "pending",
+        "created": int(time.time()),
+    }
+    pg.ideas_replace_all([newer, older], user_id=uid)  # 调用方传入展示序
     items = pg.ideas_list(user_id=uid)
-    assert [i["title"] for i in items] == ["新选题", "旧选题"]   # 最新在前不回退
+    assert [i["title"] for i in items] == ["新选题", "旧选题"]  # 最新在前不回退
     assert set(items[0]) == {"id", "title", "note", "source", "status", "created"}
 
     row = pg.ideas_insert({"title": "插入的", "status": "doing"}, user_id=uid)
     assert row["title"] == "插入的" and len(row["id"]) == 12
-    assert pg.ideas_list(user_id=uid)[0]["title"] == "插入的"   # 插在最前
+    assert pg.ideas_list(user_id=uid)[0]["title"] == "插入的"  # 插在最前
 
     updated = pg.ideas_update(row["id"], {"title": "改过的", "status": "done"}, user_id=uid)
     assert updated["title"] == "改过的" and updated["status"] == "done"
@@ -178,17 +208,45 @@ def test_ideas_order_and_crud(uid):
 
 def test_schedule_order_and_crud(uid):
     """schedule 展示序=追加序；replace_all 保序；字段与文件版 ScheduleItem 一致。"""
-    first = {"id": uuid.uuid4().hex[:12], "title": "周一发", "date": "2026-10-19",
-             "platform": "小红书", "time": "09:00", "status": "scheduled",
-             "note": "", "kind": "content", "url": "", "source": "manual",
-             "event_type": "", "end_date": ""}
-    second = {"id": uuid.uuid4().hex[:12], "title": "活动", "date": "2026-10-20",
-              "kind": "event", "status": "idea", "event_type": "平台活动"}
+    first = {
+        "id": uuid.uuid4().hex[:12],
+        "title": "周一发",
+        "date": "2026-10-19",
+        "platform": "小红书",
+        "time": "09:00",
+        "status": "scheduled",
+        "note": "",
+        "kind": "content",
+        "url": "",
+        "source": "manual",
+        "event_type": "",
+        "end_date": "",
+    }
+    second = {
+        "id": uuid.uuid4().hex[:12],
+        "title": "活动",
+        "date": "2026-10-20",
+        "kind": "event",
+        "status": "idea",
+        "event_type": "平台活动",
+    }
     pg.schedule_replace_all([first, second], user_id=uid)
     items = pg.schedule_list(user_id=uid)
-    assert [i["title"] for i in items] == ["周一发", "活动"]   # 追加序不回退
-    assert set(items[0]) == {"id", "title", "date", "platform", "time", "status",
-                             "note", "kind", "url", "source", "event_type", "end_date"}
+    assert [i["title"] for i in items] == ["周一发", "活动"]  # 追加序不回退
+    assert set(items[0]) == {
+        "id",
+        "title",
+        "date",
+        "platform",
+        "time",
+        "status",
+        "note",
+        "kind",
+        "url",
+        "source",
+        "event_type",
+        "end_date",
+    }
     assert items[1]["kind"] == "event" and items[1]["event_type"] == "平台活动"
 
     updated = pg.schedule_update(first["id"], {"status": "published"}, user_id=uid)
@@ -199,22 +257,52 @@ def test_schedule_order_and_crud(uid):
 
 # ---------- 一次性导入脚本幂等（A5） ----------
 
+
 def _write_fixture(root, sk="sess-abc123", qid="q-abc123"):
     (root / "sessions").mkdir(parents=True, exist_ok=True)
     (root / "outputs").mkdir(parents=True, exist_ok=True)
-    (root / "sessions" / f"{sk}.json").write_text(json.dumps(
-        {"messages": [{"role": "user", "content": "历史1"},
-                      {"role": "assistant", "content": "回复1"}]}, ensure_ascii=False),
-        encoding="utf-8")
-    (root / "sessions" / "pending_questions.json").write_text(json.dumps(
-        {qid: {"id": qid, "thread_id": sk, "created_at": time.time()}}, ensure_ascii=False),
-        encoding="utf-8")
-    (root / "outputs" / "_ideas.json").write_text(json.dumps(
-        [{"id": "idea-1", "title": "导入选题", "note": "", "source": "",
-          "status": "pending", "created": 1}], ensure_ascii=False), encoding="utf-8")
-    (root / "outputs" / "_schedule.json").write_text(json.dumps(
-        [{"id": "sch-1", "title": "导入排期", "date": "2026-10-14"}], ensure_ascii=False),
-        encoding="utf-8")
+    (root / "sessions" / f"{sk}.json").write_text(
+        json.dumps(
+            {
+                "messages": [
+                    {"role": "user", "content": "历史1"},
+                    {"role": "assistant", "content": "回复1"},
+                ]
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    (root / "sessions" / "pending_questions.json").write_text(
+        json.dumps(
+            {qid: {"id": qid, "thread_id": sk, "created_at": time.time()}},
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    (root / "outputs" / "_ideas.json").write_text(
+        json.dumps(
+            [
+                {
+                    "id": "idea-1",
+                    "title": "导入选题",
+                    "note": "",
+                    "source": "",
+                    "status": "pending",
+                    "created": 1,
+                }
+            ],
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    (root / "outputs" / "_schedule.json").write_text(
+        json.dumps(
+            [{"id": "sch-1", "title": "导入排期", "date": "2026-10-14"}],
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
     return sk, qid
 
 
@@ -238,13 +326,20 @@ def test_import_idempotent(tmp_path, uid):
     assert first["imported"]["schedule"] == 1
 
     second = mod.migrate(tmp_path, user_id=uid)
-    assert second["imported"] == {"sessions": 0, "messages": 0, "pending": 0,
-                                  "ideas": 0, "schedule": 0}
+    assert second["imported"] == {
+        "sessions": 0,
+        "messages": 0,
+        "pending": 0,
+        "ideas": 0,
+        "schedule": 0,
+    }
     assert second["skipped"] == {"sessions": 1, "pending": 1, "ideas": 1, "schedule": 1}
 
     # 落库内容与文件一致
     assert pg.messages_load(sk, user_id=uid) == [
-        {"role": "user", "content": "历史1"}, {"role": "assistant", "content": "回复1"}]
+        {"role": "user", "content": "历史1"},
+        {"role": "assistant", "content": "回复1"},
+    ]
     assert pg.pending_get(qid, user_id=uid) is not None
     assert [i["title"] for i in pg.ideas_list(user_id=uid)] == ["导入选题"]
     assert [i["title"] for i in pg.schedule_list(user_id=uid)] == ["导入排期"]

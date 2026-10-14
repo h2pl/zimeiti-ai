@@ -2,6 +2,7 @@
 
 context 端点把 PG 数据投影临时 JSON 喂 vendor 脚本 calendar_ops。
 """
+
 from __future__ import annotations
 
 import json
@@ -21,6 +22,7 @@ from .trends import SCHEDULE_KINDS, SCHEDULE_STATUSES
 
 router = APIRouter()
 
+
 def _read_schedule() -> list[dict]:
     """排期列表（PG，pg-data-layer 变更；字段与文件版 JSON 一致）。"""
     return pg.schedule_list()
@@ -38,11 +40,11 @@ class ScheduleItem(BaseModel):
     time: str = ""
     status: str = "idea"
     note: str = ""
-    kind: str = "content"          # content（内容/发布）| event（平台活动/节日/特殊日期）
-    url: str = ""                  # 已发布内容链接（可选）
-    source: str = "manual"         # manual | publish-page | chat | scheduler
-    event_type: str = ""           # event 专属：节日/电商/平台活动/行业
-    end_date: str = ""             # event 专属：活动区间结束日
+    kind: str = "content"  # content（内容/发布）| event（平台活动/节日/特殊日期）
+    url: str = ""  # 已发布内容链接（可选）
+    source: str = "manual"  # manual | publish-page | chat | scheduler
+    event_type: str = ""  # event 专属：节日/电商/平台活动/行业
+    end_date: str = ""  # event 专属：活动区间结束日
 
 
 @router.get("/api/schedule")
@@ -65,7 +67,9 @@ async def api_schedule_create(req: ScheduleItem):
         "note": req.note,
         "kind": kind,
         "url": req.url,
-        "source": req.source if req.source in {"manual", "publish-page", "chat", "scheduler"} else "manual",
+        "source": req.source
+        if req.source in {"manual", "publish-page", "chat", "scheduler"}
+        else "manual",
         "event_type": req.event_type,
         "end_date": req.end_date,
     }
@@ -80,18 +84,22 @@ async def api_schedule_update(sid: str, req: ScheduleItem):
     for it in items:
         if it.get("id") == sid:
             kind = req.kind if req.kind in SCHEDULE_KINDS else it.get("kind", "content")
-            it.update({
-                "title": req.title.strip() or it.get("title", "未命名"),
-                "date": req.date,
-                "platform": req.platform,
-                "time": req.time,
-                "status": req.status if req.status in SCHEDULE_STATUSES else it.get("status", "idea"),
-                "note": req.note,
-                "kind": kind,
-                "url": req.url,
-                "event_type": req.event_type,
-                "end_date": req.end_date,
-            })
+            it.update(
+                {
+                    "title": req.title.strip() or it.get("title", "未命名"),
+                    "date": req.date,
+                    "platform": req.platform,
+                    "time": req.time,
+                    "status": req.status
+                    if req.status in SCHEDULE_STATUSES
+                    else it.get("status", "idea"),
+                    "note": req.note,
+                    "kind": kind,
+                    "url": req.url,
+                    "event_type": req.event_type,
+                    "end_date": req.end_date,
+                }
+            )
             _write_schedule(items)
             return it
     raise HTTPException(404, "排期不存在")
@@ -121,10 +129,23 @@ async def api_schedule_context(days: int = 14):
     try:
         json.dump(items, tmp, ensure_ascii=False)
         tmp.close()
-        cmd = [sys.executable, str(SHARED_SCRIPTS / "calendar_ops.py"),
-               "--data", tmp.name, "context", "--days", str(max(1, min(days, 90)))]
-        proc = subprocess.run(cmd, cwd=str(PROJECT_ROOT), env=_proxy_env(),
-                              capture_output=True, text=True, timeout=20)
+        cmd = [
+            sys.executable,
+            str(SHARED_SCRIPTS / "calendar_ops.py"),
+            "--data",
+            tmp.name,
+            "context",
+            "--days",
+            str(max(1, min(days, 90))),
+        ]
+        proc = subprocess.run(
+            cmd,
+            cwd=str(PROJECT_ROOT),
+            env=_proxy_env(),
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
         return json.loads(proc.stdout) if proc.returncode == 0 and proc.stdout.strip() else {}
     except Exception:
         return {}
@@ -135,7 +156,5 @@ async def api_schedule_context(days: int = 14):
             pass
 
 
-IDEAS_FILE = OUTPUTS_DIR / "_ideas.json"   # 旧文件存储路径（迁 PG 后仅迁移/兼容引用）
+IDEAS_FILE = OUTPUTS_DIR / "_ideas.json"  # 旧文件存储路径（迁 PG 后仅迁移/兼容引用）
 IDEA_STATUSES = {"pending", "doing", "done"}
-
-

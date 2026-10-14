@@ -1,4 +1,5 @@
 """选题 ideas（content，PG 存储见 core.pg）。"""
+
 from __future__ import annotations
 
 import time
@@ -11,6 +12,7 @@ from ..core import pg
 from .schedule import IDEA_STATUSES
 
 router = APIRouter()
+
 
 def _read_ideas() -> list[dict]:
     """选题列表（PG，pg-data-layer 变更；字段与文件版 JSON 一致，最新在前）。"""
@@ -56,12 +58,16 @@ async def api_ideas_update(iid: str, req: IdeaItem):
     items = _read_ideas()
     for it in items:
         if it.get("id") == iid:
-            it.update({
-                "title": req.title.strip() or it.get("title", "未命名选题"),
-                "note": req.note,
-                "source": req.source,
-                "status": req.status if req.status in IDEA_STATUSES else it.get("status", "pending"),
-            })
+            it.update(
+                {
+                    "title": req.title.strip() or it.get("title", "未命名选题"),
+                    "note": req.note,
+                    "source": req.source,
+                    "status": req.status
+                    if req.status in IDEA_STATUSES
+                    else it.get("status", "pending"),
+                }
+            )
             _write_ideas(items)
             return it
     raise HTTPException(404, "选题不存在")
