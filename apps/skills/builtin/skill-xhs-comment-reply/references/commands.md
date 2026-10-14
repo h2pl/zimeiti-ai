@@ -112,7 +112,7 @@ python skills/shared/scripts/xhs_comment.py delete \
 # 抓评论 → 喂给评论量化分析（情感/高频词/诉求）
 python skills/shared/scripts/xhs_comment.py fetch --note-id NOTE_ID --xsec-token 'XSEC_TOKEN' \
   --no-proxy --out outputs/主题名/assets/comments.json
-python skills/openclaw/skill-comment-insights/scripts/comment_insights.py \
+python skills/builtin/skill-comment-insights/scripts/comment_insights.py \
   analyze --input outputs/主题名/assets/comments.json
 ```
 
@@ -123,7 +123,7 @@ python skills/openclaw/skill-comment-insights/scripts/comment_insights.py \
 ```bash
 python skills/shared/scripts/persona_gate.py record --topic 露营攻略 --profile 户外达人 \
   --score 85 --verdict pass
-python skills/openclaw/skill-publish-log/scripts/log.py record --platform 小红书 \
+python skills/builtin/skill-publish-log/scripts/log.py record --platform 小红书 \
   --title "评论回复×10" --profile 户外达人 --persona-score 85 --persona-verdict pass \
   --skill-source skill-xhs-comment-reply
 ```

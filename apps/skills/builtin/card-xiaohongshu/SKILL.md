@@ -63,7 +63,7 @@ python skills/shared/scripts/render_card.py \
   --width 1080 --height 1440
 
 # ⭐ 渲染后必做：死空白/密度硬门禁，全 PASS 才交付
-python skills/openclaw/card-design/scripts/card_audit.py audit -f "outputs/主题名/card_*.png"
+python skills/builtin/card-design/scripts/card_audit.py audit -f "outputs/主题名/card_*.png"
 ```
 
 - 竖版 1080×1440；HTML 里每张卡片外层用统一 class（如 `.card`）便于 `--all` 批量导出。

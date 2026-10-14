@@ -62,9 +62,9 @@ IMG_API_KEY=your-api-key
 调用形状：
 
 ```bash
-python3 skills/openclaw/ecom-details-image/scripts/generate_image.py --prompt "..." --size 1:1 --resolution 2k
-python3 skills/openclaw/ecom-details-image/scripts/generate_image.py --prompt-file prompt.txt --output-dir outputs
-python3 skills/openclaw/ecom-details-image/scripts/generate_image.py --env-file .env --image product.jpg --prompt-file prompt.txt
+python3 skills/builtin/ecom-details-image/scripts/generate_image.py --prompt "..." --size 1:1 --resolution 2k
+python3 skills/builtin/ecom-details-image/scripts/generate_image.py --prompt-file prompt.txt --output-dir outputs
+python3 skills/builtin/ecom-details-image/scripts/generate_image.py --env-file .env --image product.jpg --prompt-file prompt.txt
 ```
 
 参数：`--prompt` / `--prompt-file`；`--output-dir`（仅用户指定时用，否则 `generated-images/`）；`--size`（比例格式，14 种，如 `1:1`/`16:9`/`2:3`/`4:5`，默认 `1:1`）；`--resolution`（`1k`/`2k`/`4k`，默认 `2k`，4K 仅限 6 个宽幅比例）；`--image`（参考产品图路径，对保证产品外观准确非常有效）；`--poll-interval`（默认 `5`）；`--timeout`（默认 `180`）；`--format`（默认 `png`）。

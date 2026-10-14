@@ -105,7 +105,7 @@ layer: general
 
 2. 统一入口（默认 `--root outputs`）：
    ```bash
-   S=skills/openclaw/asset-manager/scripts/assets.py
+   S=skills/builtin/asset-manager/scripts/assets.py
    python3 $S scan                                    # 生成/更新 INDEX.json
    python3 $S search "关键词" --platform xiaohongshu --type card --date this-week
    python3 $S search --tag 护肤,种草                   # 标签需全部命中

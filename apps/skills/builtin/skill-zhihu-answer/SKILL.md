@@ -152,7 +152,7 @@ if (pub) { pub.scrollIntoView({block:'center'}); pub.dispatchEvent(new MouseEven
 cd <项目根> && python skills/shared/scripts/persona_gate.py record \
     --topic <主题> --profile <画像> --score <评分> --verdict <pass|warn>
 
-cd <项目根> && python skills/openclaw/skill-publish-log/scripts/log.py record \
+cd <项目根> && python skills/builtin/skill-publish-log/scripts/log.py record \
     --platform 知乎 --title <问题标题> --profile <画像> \
     --persona-score <评分> --persona-verdict <结论> --skill-source zhihu-answer
 ```

@@ -121,7 +121,7 @@ layer: general
 
 4. 统一入口（默认 `--root templates`）：
    ```bash
-   S=skills/openclaw/template-library/scripts/templates.py
+   S=skills/builtin/template-library/scripts/templates.py
    python3 $S save 种草对比 --category xiaohongshu --description "双产品对比" \
            --text "标题：{{title}} A={{product_a}} vs B={{product_b}} CTA={{cta}}"
    python3 $S list --category xiaohongshu                  # 按分类列出，按使用次数降序

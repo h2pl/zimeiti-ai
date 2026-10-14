@@ -107,14 +107,14 @@ layer: attribute
 2. **调用脚本算指标** —
    - Mode A（单活动）：
      ```bash
-     python3 skills/openclaw/roi-calculator/scripts/calc.py single --name "活动名" \
+     python3 skills/builtin/roi-calculator/scripts/calc.py single --name "活动名" \
        --ad-spend 5000 --impressions 100000 --clicks 3000 \
        --engagements 8000 --conversions 150 --avg-order-value 200 \
        --production-cost 1000
      ```
    - Mode B（多活动，按 ROI 降序）：把各活动整理成 JSON 数组文件后
      ```bash
-     python3 skills/openclaw/roi-calculator/scripts/calc.py multi --file campaigns.json
+     python3 skills/builtin/roi-calculator/scripts/calc.py multi --file campaigns.json
      ```
    脚本自动：11 指标逐项计算（分母为 0/缺失返回 `null` 并视为"数据不足"）、
    营收→ROAS/利润/ROI 派生、`ad_spend` 为 0/缺失时切有机模式（跳过成本类指标）、

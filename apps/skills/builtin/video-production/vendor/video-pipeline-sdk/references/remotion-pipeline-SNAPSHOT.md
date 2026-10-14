@@ -19,7 +19,7 @@ metadata:
 | 场景 | 管线 | 说明 |
 |------|------|------|
 | 已有原片做大片（口播/独白叠加概念动画+PiP+字幕） | **本技能主流程**（下方 1-5 节） | Remotion 双层架构 |
-| 从零做片（品牌片/宣传片/trailer/无原片） | **OpenMontage cinematic**（`references/openmontage-cinematic-execution.md`） | 44.5k⭐ 项目，13 管线，8 阶段链 research→proposal→script→scene_plan→assets→edit→compose→publish，proposal 批准门 |
+| 从零做片（品牌片/宣传片/trailer/无原片） | **OpenMontage cinematic**（`references/openmontage-cinematic-execution.md`（上游仓库路径，未随本包收录）） | 44.5k⭐ 项目，13 管线，8 阶段链 research→proposal→script→scene_plan→assets→edit→compose→publish，proposal 批准门 |
 | 产品宣传片（有产品/网页截图） | video-shotcraft | 104 镜头配方卡 + Ink Press 模板 + 149 音效 |
 | 长视频切短视频 | shorts（claude-shorts） | 转录→选段→Remotion 动画字幕 |
 

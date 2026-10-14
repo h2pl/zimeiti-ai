@@ -55,7 +55,7 @@ layer: produce
 如果用户提供了素材，先用脚本生成清单：
 
 ```bash
-python3 skills/openclaw/xhs-note-creator/scripts/analyze_material.py <path>... \
+python3 skills/builtin/xhs-note-creator/scripts/analyze_material.py <path>... \
   --out <work-dir>/reference/materials.json \
   --frames-dir <work-dir>/reference/frames
 ```
@@ -123,20 +123,20 @@ outputs/主题名/{YYYY-MM-DD}/{短标题}_{时间戳}/
 └── reference/           # materials.json / 搜索结果
 ```
 
-目录名走脚本标准化：`python3 skills/openclaw/xhs-note-creator/scripts/normalize_slug.py "标题" --with-ts`
+目录名走脚本标准化：`python3 skills/builtin/xhs-note-creator/scripts/normalize_slug.py "标题" --with-ts`
 
 ### Step 8 — 校验（强制，两道门）
 
 **① 文本/结构门**（标题/caption/hashtag/卡片字数与结构）：
 
 ```bash
-python3 skills/openclaw/xhs-note-creator/scripts/validate_meta.py outputs/主题名/meta.json
+python3 skills/builtin/xhs-note-creator/scripts/validate_meta.py outputs/主题名/meta.json
 ```
 
 **② 视觉门**（仅 `html_card` 路径，渲染后跑；死空白/密度硬门禁）：
 
 ```bash
-python skills/openclaw/card-design/scripts/card_audit.py audit -f "outputs/主题名/card_*.png"
+python skills/builtin/card-design/scripts/card_audit.py audit -f "outputs/主题名/card_*.png"
 ```
 
 任一非 0 退出 → 修改后重跑，直到通过。不交付未校验的产物。

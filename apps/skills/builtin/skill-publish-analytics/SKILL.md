@@ -31,7 +31,7 @@ layer: attribute
 - **模式 C — 内容类型对比**：按内容类型对比各项指标
 - **模式 D — 增长归因**：关联发布事件与粉丝增长
 
-未指定模式时默认执行 A + B + C。模式 D 前先运行 `python3 skills/openclaw/skill-data-tracker/scripts/track.py export-followers`。
+未指定模式时默认执行 A + B + C。模式 D 前先运行 `python3 skills/builtin/skill-data-tracker/scripts/track.py export-followers`。
 
 ## 数据源
 
@@ -78,11 +78,11 @@ LLM 只负责选模式、按 Profile 过滤、解读 JSON、写关键发现/方�
 2. 调用脚本（`--profile` 须放在子命令前；publish-log.json 不存在时脚本友好报错）：
 
 ```bash
-python3 skills/openclaw/skill-publish-analytics/scripts/analyze.py all
-python3 skills/openclaw/skill-publish-analytics/scripts/analyze.py --profile 画像名 time
-python3 skills/openclaw/skill-publish-analytics/scripts/analyze.py --profile 画像名 tags
-python3 skills/openclaw/skill-publish-analytics/scripts/analyze.py --profile 画像名 types
-python3 skills/openclaw/skill-publish-analytics/scripts/analyze.py --profile 画像名 growth
+python3 skills/builtin/skill-publish-analytics/scripts/analyze.py all
+python3 skills/builtin/skill-publish-analytics/scripts/analyze.py --profile 画像名 time
+python3 skills/builtin/skill-publish-analytics/scripts/analyze.py --profile 画像名 tags
+python3 skills/builtin/skill-publish-analytics/scripts/analyze.py --profile 画像名 types
+python3 skills/builtin/skill-publish-analytics/scripts/analyze.py --profile 画像名 growth
 ```
 
 3. 脚本输出结构化 JSON：`summary`（总数/日期范围/平台/各指标覆盖率/全量样本警告）+

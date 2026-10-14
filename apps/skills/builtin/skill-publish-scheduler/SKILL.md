@@ -25,7 +25,7 @@ publish_at,platform,content,title
 
 ## 执行
 
-脚本路径（相对项目根）：`skills/openclaw/skill-publish-scheduler/scripts/publish_queue.py`（各子命令 `-h`）。
+脚本路径（相对项目根）：`skills/builtin/skill-publish-scheduler/scripts/publish_queue.py`（各子命令 `-h`）。
 
 ```bash
 Q=outputs/publish-queue/q.json

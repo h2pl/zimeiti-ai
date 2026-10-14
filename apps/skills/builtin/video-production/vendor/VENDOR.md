@@ -11,7 +11,7 @@
 | 作者 | mengyuyuan |
 | 许可证 | MIT（原文随包保留在 `video-pipeline-sdk/LICENSE`） |
 | 内置版本 | **v0.3.5**（上游 commit `e81c6121`，2026-09-17） |
-| 内置路径 | `skills/openclaw/video-production/vendor/video-pipeline-sdk/` |
+| 内置路径 | `skills/builtin/video-production/vendor/video-pipeline-sdk/` |
 | 体积 | 约 6.1 MB（字体 5.7 MB 是大头） |
 
 上游自身的第三方依赖致谢见 `video-pipeline-sdk/ATTRIBUTIONS.md`，版本历史见其 `CHANGELOG.md`。
@@ -50,7 +50,7 @@
 2. 把源码与资产拷进 `vendor/video-pipeline-sdk/`，**排除** `.git`、`node_modules`、已下模型、`__pycache__`。
 3. 按上表逐项重新套用本地改动（`run.py` 那处是手工 patch，其余 4 个是新增文件，直接保留即可）。
 4. 更新本文的「内置版本」行与上游 commit。
-5. 跑 `python3 skills/openclaw/video-production/scripts/video_pipeline.py doctor`，确认找到的是**内置**路径、三级转录状态正确。
+5. 跑 `python3 skills/builtin/video-production/scripts/video_pipeline.py doctor`，确认找到的是**内置**路径、三级转录状态正确。
 
 同步前先 `diff -rq --exclude=.git --exclude=node_modules <上游> vendor/video-pipeline-sdk`
 看清楚当前实际漂移了什么 —— 上表是对已知改动的记录，不是自动校验。

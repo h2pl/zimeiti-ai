@@ -23,7 +23,7 @@ layer: publish
 
 ## 执行
 
-脚本路径（相对项目根）：`skills/openclaw/skill-short-link/scripts/shortlink.py`（各子命令 `-h`）。
+脚本路径（相对项目根）：`skills/builtin/skill-short-link/scripts/shortlink.py`（各子命令 `-h`）。
 
 ```bash
 # 一步到位：拼 UTM + 缩短（最常用）

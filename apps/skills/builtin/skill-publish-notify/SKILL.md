@@ -33,7 +33,7 @@ layer: publish
 
 ## 执行
 
-脚本路径（相对项目根）：`skills/openclaw/skill-publish-notify/scripts/notify.py`（`send -h`）。
+脚本路径（相对项目根）：`skills/builtin/skill-publish-notify/scripts/notify.py`（`send -h`）。
 
 ```bash
 # 飞书群

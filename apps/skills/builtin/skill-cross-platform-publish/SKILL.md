@@ -40,11 +40,11 @@ layer: publish
 
 ## 执行流程
 
-脚本路径：`skills/openclaw/skill-cross-platform-publish/scripts/publish_dispatch.py`。
+脚本路径：`skills/builtin/skill-cross-platform-publish/scripts/publish_dispatch.py`。
 
 ```bash
 # 1) 生成派发计划（校验各平台越限 + 路由到 publisher）
-python skills/openclaw/skill-cross-platform-publish/scripts/publish_dispatch.py plan --manifest content.json
+python skills/builtin/skill-cross-platform-publish/scripts/publish_dispatch.py plan --manifest content.json
 ```
 2. **按计划为每个平台适配内容**（你来做）：
    - 依 `constraints_note` 与 `warnings` 精简标题/正文、删减标签、调整话题格式。

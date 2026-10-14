@@ -7,7 +7,7 @@
 ### 1. 跑脚本生成 `materials.json`
 
 ```bash
-python3 skills/openclaw/xhs-note-creator/scripts/analyze_material.py input.jpg \
+python3 skills/builtin/xhs-note-creator/scripts/analyze_material.py input.jpg \
   --out <work-dir>/reference/materials.json \
   --frames-dir <work-dir>/reference/frames \
   --frames-per-video 6
@@ -57,7 +57,7 @@ python3 skills/openclaw/xhs-note-creator/scripts/analyze_material.py input.jpg \
 **做法**：
 
 ```bash
-python3 skills/openclaw/xhs-note-creator/scripts/text_on_image.py input.jpg output.jpg \
+python3 skills/builtin/xhs-note-creator/scripts/text_on_image.py input.jpg output.jpg \
   --text "一句钩子" \
   --position top \
   --fit 3x4 \
@@ -80,7 +80,7 @@ python3 skills/openclaw/xhs-note-creator/scripts/text_on_image.py input.jpg outp
 **做法**：
 
 ```bash
-python3 skills/openclaw/xhs-note-creator/scripts/collage_3x4.py output.jpg \
+python3 skills/builtin/xhs-note-creator/scripts/collage_3x4.py output.jpg \
   --layout 2v --inputs a.jpg b.jpg \
   --gap 12 --bg "#FFFFFF" --size 900x1200
 ```

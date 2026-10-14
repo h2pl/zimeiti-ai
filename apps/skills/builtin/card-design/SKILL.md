@@ -24,7 +24,7 @@ layer: produce
 4. **套骨架**：从 `card-recipes.md` 选卡型骨架(封面/账本/管线/对比/矩阵/数据/金句)，按其**最小密度线**填内容。
 5. **渲染后自检**（硬门禁）：
    ```bash
-   python skills/openclaw/card-design/scripts/card_audit.py audit -f outputs/主题名/card_*.png
+   python skills/builtin/card-design/scripts/card_audit.py audit -f outputs/主题名/card_*.png
    ```
    任何 FAIL(死空白/跨度不足/头重脚轻)→ 按 `layout-laws.md`「欠填修正阶梯」补内容或换骨架**重渲**，全 PASS 再交付。
 

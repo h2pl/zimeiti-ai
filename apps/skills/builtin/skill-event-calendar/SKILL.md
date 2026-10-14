@@ -77,9 +77,9 @@ layer: discover
    - 按时间范围筛选出落在范围内的所有节点
    - 补充当年特殊事件（如奥运会、世界杯等非固定事件）
    - **农历节日的公历日期一律用 `scripts/lunar.py` 换算，不靠估算**：
-     - 查节日：`python3 skills/openclaw/skill-event-calendar/scripts/lunar.py festival 中秋 2026`
-     - 通用换算：`python3 skills/openclaw/skill-event-calendar/scripts/lunar.py l2s 2026 8 15`
-     - 支持节日见 `python3 skills/openclaw/skill-event-calendar/scripts/lunar.py festival --list`（春节/元宵/端午/七夕/中秋/重阳/腊八/小年/除夕等）
+     - 查节日：`python3 skills/builtin/skill-event-calendar/scripts/lunar.py festival 中秋 2026`
+     - 通用换算：`python3 skills/builtin/skill-event-calendar/scripts/lunar.py l2s 2026 8 15`
+     - 支持节日见 `python3 skills/builtin/skill-event-calendar/scripts/lunar.py festival --list`（春节/元宵/端午/七夕/中秋/重阳/腊八/小年/除夕等）
 
 3. **赛道关联匹配**
    - 如有赛道信息（用户指定或 Profile 提取），对每个节点评估关联度

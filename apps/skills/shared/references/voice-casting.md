@@ -166,6 +166,6 @@ python .../multivoice.py dub --cast cast.json --lines lines.json -o voice.mp3   
 ```
 **短剧入口**（--series/--episode 便利层，路径自动推导）：
 ```bash
-python skills/openclaw/short-drama/scripts/dubbing.py cast init --series "<剧名>"
+python skills/builtin/short-drama/scripts/dubbing.py cast init --series "<剧名>"
 python .../dubbing.py align --series "<剧名>" --episode 1   # 逐镜对齐（lines 每行需标 shot），推荐
 ```

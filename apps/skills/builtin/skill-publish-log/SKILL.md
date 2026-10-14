@@ -138,17 +138,17 @@ LLM 只负责解析用户意图 → 组织参数 → 解读脚本返回的 JSON 
 
 ```bash
 # 记录（id 自增，原子写回 outputs/_analytics/publish-log.json）
-python3 skills/openclaw/skill-publish-log/scripts/log.py record --platform 小红书 --title "标题" \
+python3 skills/builtin/skill-publish-log/scripts/log.py record --platform 小红书 --title "标题" \
   --type 图文 --url "https://..." --views 1000 --likes 120 \
   --comments 30 --shares 10 --tags "AI,工具推荐" [--published-at ISO时间] \
   [--skill-source skill-xxx] [--profile 画像名] [--notes 备注]
 
 # 查询（按平台/时间/关键词/画像过滤，--latest 取最近一条）
-python3 skills/openclaw/skill-publish-log/scripts/log.py query --platform 小红书 --since 2026-07-01 \
+python3 skills/builtin/skill-publish-log/scripts/log.py query --platform 小红书 --since 2026-07-01 \
   [--until 2026-07-31] [--keyword AI] [--profile 画像名] [--latest] [--limit N]
 
 # 统计（按 platform/type/month 聚合数量 + 互动总量 + 平均综合分）
-python3 skills/openclaw/skill-publish-log/scripts/log.py stat --by platform --since 2026-07-01
+python3 skills/builtin/skill-publish-log/scripts/log.py stat --by platform --since 2026-07-01
 ```
 
 4. **解读结果**：把 JSON 转成 SKILL.md「输出」节的表格/摘要格式呈现给用户；

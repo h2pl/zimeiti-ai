@@ -159,8 +159,8 @@ layer: attribute
 1. **数据摄入**：接收多条内容数据，标准化为统一 JSON 数组（每条含标题、平台、数值指标 likes/collects/comments/shares/views，及维度字段 hook_type/topic/structure/length_bucket/time_bucket/tags 等），写入临时文件。
 2. **调用脚本聚合**：
    ```bash
-   python3 skills/openclaw/skill-content-postmortem/scripts/aggregate.py --input contents.json
-   python3 skills/openclaw/skill-content-postmortem/scripts/aggregate.py --input contents.json \
+   python3 skills/builtin/skill-content-postmortem/scripts/aggregate.py --input contents.json
+   python3 skills/builtin/skill-content-postmortem/scripts/aggregate.py --input contents.json \
      --metric collects --threshold 500 --cross "hook_type,topic"  # 指定排名字段/绝对阈值/两维交叉
    ```
    脚本自动完成：阈值划分（`--threshold` 优先，否则 `--top-pct` 百分位）、爆款组/普通组分组对比（每维度 count/top_count/top_rate_pct/avg_score/lift_vs_global）、两维交叉、标签共现、样本量警告。

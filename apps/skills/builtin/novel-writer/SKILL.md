@@ -35,14 +35,14 @@ state/    summary.md character-state.md plot-arcs.md progress.json/md  ← 连�
 chapters/ 001.md 002.md ...                            ← 章节正文
 ```
 
-脚本路径（相对项目根）：`skills/openclaw/novel-writer/scripts/novel_ops.py`。
+脚本路径（相对项目根）：`skills/builtin/novel-writer/scripts/novel_ops.py`。
 字数校验复用：`skills/shared/scripts/wordcount.py`。
 
 ## 执行步骤（按对话选对应子流程，不必每次全跑）
 
 ### A. 立项（首次）
 
-1. **搭骨架**：`python skills/openclaw/novel-writer/scripts/novel_ops.py scaffold --book "<书名>"`
+1. **搭骨架**：`python skills/builtin/novel-writer/scripts/novel_ops.py scaffold --book "<书名>"`
    （生成 bible/outline/state/chapters 模板，已存在的文件不覆盖）。
 2. **定世界观 + 人设 + 文风**：读 `references/web-novel-methodology.md` 与 `references/platform-specs.md`，
    据题材写满 `bible/world.md`（力量体系/规则/硬约束）、`bible/characters.md`（主角+关键配角：身份/外貌/性格/目标/关系）、
@@ -68,7 +68,7 @@ chapters/ 001.md 002.md ...                            ← 章节正文
 8. **字数门禁**：把正文喂
    `python3 skills/shared/scripts/wordcount.py check --target <平台目标字数> --tolerance 0.15 -f chapters/<NNN>.md`
    （知乎盐选/番茄单章常 2000–4000，见 platform-specs），不达标按提示增删。
-9. **去 AI 味**：先跑 `python skills/openclaw/novel-writer/scripts/novel_ops.py slopcheck -f chapters/<NNN>.md`
+9. **去 AI 味**：先跑 `python skills/builtin/novel-writer/scripts/novel_ops.py slopcheck -f chapters/<NNN>.md`
    机械扫（AI 味词/过度连接词/重复句首），命中处改写；再整章过一遍 **text-polisher**（去 AI 感模式）。
 
 ### E. sync（定稿后维护状态，防跨章崩坏）

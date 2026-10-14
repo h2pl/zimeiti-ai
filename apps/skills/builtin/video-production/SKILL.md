@@ -16,7 +16,7 @@ layer: produce
 > → 验证 → 预览 → 渲染 → 交付。质量不靠自觉，靠可执行的门。
 >
 > 产线 SDK 已**内置**在本技能 `vendor/video-pipeline-sdk/`（随 Easel 进仓、可复现、可在其基础上改）。
-> 首次使用先跑一次依赖还原：`bash <ROOT>/skills/openclaw/video-production/vendor/video-pipeline-sdk/deps/bootstrap.sh`
+> 首次使用先跑一次依赖还原：`bash <ROOT>/skills/builtin/video-production/vendor/video-pipeline-sdk/deps/bootstrap.sh`
 > （装 Remotion 渲染引擎，`--ignore-scripts`；node_modules 不入库）。
 
 ## 什么时候用
@@ -58,8 +58,8 @@ layer: produce
 ## 快速开始
 
 ```bash
-python <ROOT>/skills/openclaw/video-production/scripts/video_pipeline.py doctor
-python <ROOT>/skills/openclaw/video-production/scripts/video_pipeline.py start --source "C:/path/raw.mp4" --brief "主题一句话"
+python <ROOT>/skills/builtin/video-production/scripts/video_pipeline.py doctor
+python <ROOT>/skills/builtin/video-production/scripts/video_pipeline.py start --source "C:/path/raw.mp4" --brief "主题一句话"
 ```
 
 `start` 依次做：建运行态 → 机械段（摸底 / 转录 / 分场）→ **停在需要人参与的地方**。
@@ -88,8 +88,8 @@ python <ROOT>/skills/openclaw/video-production/scripts/video_pipeline.py start -
 - 写回答并续跑：
 
 ```bash
-python <ROOT>/skills/openclaw/video-production/scripts/video_pipeline.py answer --id checkpoint-1 --values approve --notes "可选备注"
-python <ROOT>/skills/openclaw/video-production/scripts/video_pipeline.py resume
+python <ROOT>/skills/builtin/video-production/scripts/video_pipeline.py answer --id checkpoint-1 --values approve --notes "可选备注"
+python <ROOT>/skills/builtin/video-production/scripts/video_pipeline.py resume
 ```
 
 ### 自由输入题（如 need-design-table）

@@ -33,7 +33,7 @@ layer: publish
 
 ## 执行
 
-脚本路径（相对项目根）：`skills/openclaw/skill-bilibili-upload/scripts/bili_upload.py`（各子命令 `-h`）。
+脚本路径（相对项目根）：`skills/builtin/skill-bilibili-upload/scripts/bili_upload.py`（各子命令 `-h`）。
 
 ```bash
 # 0) 检查环境

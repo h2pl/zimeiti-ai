@@ -120,7 +120,7 @@ SKILL 适配三种数据质量等级，缺数据不中断分析：
 `previous`/`plan`/`benchmark` 缺失时对应分析降级，不中断。运行：
 
 ```bash
-python3 skills/openclaw/skill-social-performance-review/scripts/review.py score --input outputs/复盘主题/assets/2026-06.json
+python3 skills/builtin/skill-social-performance-review/scripts/review.py score --input outputs/复盘主题/assets/2026-06.json
 ```
 
 脚本返回：逐帖互动率与综合分、Top3/Bottom3（小红书按收藏排、其他按互动率排）、

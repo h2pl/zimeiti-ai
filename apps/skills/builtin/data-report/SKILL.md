@@ -35,7 +35,7 @@ HTML 可视化报告（KPI 卡片 + 图表 + 数据洞察 + 数据表）。
 ### 1. 读数据概览（供你写洞察）
 
 ```bash
-python skills/openclaw/data-report/scripts/report.py analyze <数据文件>
+python skills/builtin/data-report/scripts/report.py analyze <数据文件>
 ```
 
 返回 JSON：行列数、每列类型与缺失、数值列的 min/max/mean/median/sum/std、
@@ -44,7 +44,7 @@ python skills/openclaw/data-report/scripts/report.py analyze <数据文件>
 ### 2. 生成报告 HTML
 
 ```bash
-python skills/openclaw/data-report/scripts/report.py report <数据文件> \
+python skills/builtin/data-report/scripts/report.py report <数据文件> \
   -o outputs/主题名/report.html \
   --title "报告标题" \
   --kpi 列名1 列名2         # 可选，不给则自动挑数值列

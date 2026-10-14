@@ -126,7 +126,7 @@ layer: attribute
 2. 调用脚本（一天一快照，同日覆盖；自动计算与上次快照的 delta）：
 
 ```bash
-python3 skills/openclaw/skill-data-tracker/scripts/track.py snapshot --profile "科技数码达人" --platform xiaohongshu \
+python3 skills/builtin/skill-data-tracker/scripts/track.py snapshot --profile "科技数码达人" --platform xiaohongshu \
   --followers 5200 --total-likes 42000 --total-posts 89 [--date 2026-07-22] \
   [--posts 帖子逐条数据.json]   # --posts 为数组，含 post_id/title/published_at/likes/collects/comments/shares
 ```
@@ -136,7 +136,7 @@ python3 skills/openclaw/skill-data-tracker/scripts/track.py snapshot --profile "
 ### Mode B — 增长趋势
 
 ```bash
-python3 skills/openclaw/skill-data-tracker/scripts/track.py trend --profile "科技数码达人" --metric followers \
+python3 skills/builtin/skill-data-tracker/scripts/track.py trend --profile "科技数码达人" --metric followers \
   [--platform xiaohongshu] [--since 2026-07-01] [--until 2026-07-31]
 ```
 
@@ -147,7 +147,7 @@ LLM 据此写趋势洞察与受众相关建议（有 Profile 时读 `audience.md
 ### Mode C — 内容生命周期
 
 ```bash
-python3 skills/openclaw/skill-data-tracker/scripts/track.py lifecycle --profile "科技数码达人" \
+python3 skills/builtin/skill-data-tracker/scripts/track.py lifecycle --profile "科技数码达人" \
   --platform xiaohongshu --post-title "露营装备" --metric likes
 ```
 
@@ -159,7 +159,7 @@ python3 skills/openclaw/skill-data-tracker/scripts/track.py lifecycle --profile 
 记录快照后生成 `skill-publish-analytics` 模式 D 所需的派生视图；不要手工维护另一份粉丝台账：
 
 ```bash
-python3 skills/openclaw/skill-data-tracker/scripts/track.py export-followers
+python3 skills/builtin/skill-data-tracker/scripts/track.py export-followers
 ```
 
 默认汇总全部画像和平台到 `outputs/_analytics/follower-log.json`；可用 `--profile` 或 `--platform` 过滤。

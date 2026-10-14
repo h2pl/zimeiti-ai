@@ -1,7 +1,7 @@
 # 动画 GIF 图表参考（模式 B）
 
 > 模式 B 的运行时是 `scripts/gif_chart.py`（matplotlib + Pillow，纯 Python，无浏览器）。
-> 本文件说明 4 个子命令的适用场景与数据格式。自检：`python skills/openclaw/infographic/scripts/gif_chart.py --selftest`。
+> 本文件说明 4 个子命令的适用场景与数据格式。自检：`python skills/builtin/infographic/scripts/gif_chart.py --selftest`。
 
 ## 子命令选择
 
@@ -67,13 +67,13 @@
 
 ```bash
 # 条形竞赛，前 8 名，6 秒
-python skills/openclaw/infographic/scripts/gif_chart.py bar-race --data data.json --title "平台粉丝榜" --top-n 8 --duration 6 -o outputs/主题名/chart.gif
+python skills/builtin/infographic/scripts/gif_chart.py bar-race --data data.json --title "平台粉丝榜" --top-n 8 --duration 6 -o outputs/主题名/chart.gif
 
 # KPI 数字滚动（stdin 传数据）
-echo '{"items":[{"label":"累计GMV","value":8600000,"prefix":"¥"}]}' | python skills/openclaw/infographic/scripts/gif_chart.py count-up --data -
+echo '{"items":[{"label":"累计GMV","value":8600000,"prefix":"¥"}]}' | python skills/builtin/infographic/scripts/gif_chart.py count-up --data -
 
 # 环形进度
-python skills/openclaw/infographic/scripts/gif_chart.py progress --data prog.json --style ring
+python skills/builtin/infographic/scripts/gif_chart.py progress --data prog.json --style ring
 ```
 
 ## 规则

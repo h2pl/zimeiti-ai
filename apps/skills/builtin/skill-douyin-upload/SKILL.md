@@ -140,7 +140,7 @@ touch outputs/_login/douyin.code.resend
 
 ```
 python skills/shared/scripts/persona_gate.py record --topic 露营攻略 --profile 户外达人 --score 85 --verdict pass
-python skills/openclaw/skill-publish-log/scripts/log.py record --platform 抖音 --title "周末露营攻略" --profile 户外达人 --persona-score 85 --persona-verdict pass --skill-source skill-douyin-upload
+python skills/builtin/skill-publish-log/scripts/log.py record --platform 抖音 --title "周末露营攻略" --profile 户外达人 --persona-score 85 --persona-verdict pass --skill-source skill-douyin-upload
 ```
 
 ## 必做约束

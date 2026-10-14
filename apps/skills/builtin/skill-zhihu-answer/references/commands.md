@@ -71,7 +71,7 @@ def check(url):
 python skills/shared/scripts/persona_gate.py record \
     --topic <主题> --profile <画像> --score <评分> --verdict pass
 
-python skills/openclaw/skill-publish-log/scripts/log.py record \
+python skills/builtin/skill-publish-log/scripts/log.py record \
     --platform 知乎 --title <问题标题> --profile <画像> \
     --persona-score <评分> --persona-verdict pass --skill-source zhihu-answer
 ```

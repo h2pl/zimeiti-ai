@@ -75,7 +75,7 @@ check（环境就绪？）
 ```
 python skills/shared/scripts/persona_gate.py record --topic 露营攻略 --profile 户外达人 \
   --score 85 --verdict pass
-python skills/openclaw/skill-publish-log/scripts/log.py record --platform 小红书 \
+python skills/builtin/skill-publish-log/scripts/log.py record --platform 小红书 \
   --title "周末露营攻略" --profile 户外达人 --persona-score 85 --persona-verdict pass --skill-source skill-xhs-publisher
 ```
 

@@ -21,7 +21,7 @@
 `outputs/_analytics/follower-log.json`
 
 ```bash
-python3 skills/openclaw/skill-data-tracker/scripts/track.py export-followers
+python3 skills/builtin/skill-data-tracker/scripts/track.py export-followers
 ```
 
 ## 结构

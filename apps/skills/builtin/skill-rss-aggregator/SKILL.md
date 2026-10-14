@@ -26,7 +26,7 @@ layer: discover
 
 ## 执行
 
-脚本路径（相对项目根）：`skills/openclaw/skill-rss-aggregator/scripts/rss_digest.py`。
+脚本路径（相对项目根）：`skills/builtin/skill-rss-aggregator/scripts/rss_digest.py`。
 
 ```bash
 # 聚合多源，过滤 AI/大模型，最近 7 天，输出 Markdown 摘要

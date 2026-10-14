@@ -39,7 +39,7 @@ layer: produce
 
 6. **合成成片**：把上面的素材写成 storyboard JSON，调合成器：
    ```bash
-   python skills/openclaw/auto-short-video/scripts/assemble.py assemble \
+   python skills/builtin/auto-short-video/scripts/assemble.py assemble \
      --storyboard outputs/主题名/assets/storyboard.json \
      -o outputs/主题名/final.mp4
    ```

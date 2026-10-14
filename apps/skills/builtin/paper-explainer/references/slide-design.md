@@ -184,14 +184,14 @@ process 的每一步要说清动作或因果，metrics/comparison 要能脱离�
 ## 7. 生成与硬审计
 
 ```bash
-python skills/openclaw/paper-explainer/scripts/render_slides.py validate \
+python skills/builtin/paper-explainer/scripts/render_slides.py validate \
   --plan outputs/<项目>/assets/slide-plan.json
 
-python skills/openclaw/paper-explainer/scripts/render_slides.py render \
+python skills/builtin/paper-explainer/scripts/render_slides.py render \
   --plan outputs/<项目>/assets/slide-plan.json \
   --out-dir outputs/<项目>/assets/slides
 
-python skills/openclaw/paper-explainer/scripts/render_slides.py audit \
+python skills/builtin/paper-explainer/scripts/render_slides.py audit \
   --plan outputs/<项目>/assets/slide-plan.json \
   --slides-dir outputs/<项目>/assets/slides \
   --contact-sheet outputs/<项目>/assets/slides-contact-sheet.jpg

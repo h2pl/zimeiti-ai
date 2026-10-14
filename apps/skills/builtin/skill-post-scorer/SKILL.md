@@ -77,8 +77,8 @@ Execute /skill-post-scorer
 有历史/用户数据时，把帖子整理成 JSON 数组（每条含点赞与评论字段），调用：
 
 ```bash
-python3 skills/openclaw/skill-post-scorer/scripts/score.py top --input history.json
-python3 skills/openclaw/skill-post-scorer/scripts/score.py top --input history.json --top-pct 5
+python3 skills/builtin/skill-post-scorer/scripts/score.py top --input history.json
+python3 skills/builtin/skill-post-scorer/scripts/score.py top --input history.json --top-pct 5
 ```
 
 脚本自动：按 `互动分 = 点赞 + 评论×3` 逐条计算（字段兼容 likes/reactions/点赞、

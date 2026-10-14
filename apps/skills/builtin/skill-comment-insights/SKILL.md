@@ -34,7 +34,7 @@ layer: attribute
 
 ## 执行
 
-脚本路径（相对项目根）：`skills/openclaw/skill-comment-insights/scripts/comment_insights.py`。
+脚本路径（相对项目根）：`skills/builtin/skill-comment-insights/scripts/comment_insights.py`。
 
 ```bash
 python <skill>/scripts/comment_insights.py analyze -i comments.txt --top 20 \
