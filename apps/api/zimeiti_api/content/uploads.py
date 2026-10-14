@@ -3,15 +3,13 @@
 from __future__ import annotations
 
 import hashlib
-import shutil
 import time
 import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
-from ..core.paths import IMAGE_EXTS, OUTPUTS_DIR, VIDEO_EXTS, _safe_output_target
-from .outputs import PROTECTED_OUTPUTS
+from ..core.paths import IMAGE_EXTS, OUTPUTS_DIR, VIDEO_EXTS
 
 router = APIRouter()
 
@@ -65,40 +63,6 @@ def _unique_upload_path(dest: Path, filename: str) -> Path:
         if not target.exists():
             return target
         index += 1
-
-
-def _is_protected(full: Path) -> bool:
-    """路径的顶层段是否属于受保护的系统项。"""
-    try:
-        rel = full.relative_to(OUTPUTS_DIR.resolve())
-    except ValueError:
-        return True
-    if not rel.parts:
-        return True
-    first = rel.parts[0]
-    return (
-        first.startswith("_")
-        or first.startswith(".")
-        or first in PROTECTED_OUTPUTS
-        or first.lower() in {"analytics", "wechat"}
-    )
-
-
-@router.delete("/api/output/{path:path}")
-async def api_output_delete(path: str):
-    """删除内容库里的单个文件或整个项目目录。系统数据（_login/_analytics/日历/发布记录）受保护。"""
-    full = _safe_output_target(path)
-    if _is_protected(full):
-        raise HTTPException(403, "系统数据受保护，不可从内容库删除")
-    is_dir = full.is_dir()
-    try:
-        if is_dir:
-            shutil.rmtree(full)
-        else:
-            full.unlink()
-    except OSError as e:
-        raise HTTPException(500, f"删除失败：{e}") from e
-    return {"ok": True, "deleted": path, "kind": "dir" if is_dir else "file"}
 
 
 @router.post("/api/upload")
