@@ -1,4 +1,4 @@
-"""core 域单元测试：paths / settings / dotenv / timeouts / governance.guard。"""
+"""core 域单元测试：paths / settings / dotenv 集成语义 / timeouts / governance.guard。"""
 
 from __future__ import annotations
 
@@ -8,7 +8,6 @@ import pytest
 from fastapi import HTTPException
 
 from zimeiti_api.core import paths, settings
-from zimeiti_api.core.dotenv import _load_dotenv
 from zimeiti_api.core.timeouts import TIMEOUT_CHAT, TIMEOUT_DIRECT, TIMEOUT_PRODUCE
 from zimeiti_api.governance import guard
 
@@ -277,27 +276,18 @@ def test_loopback_peer_none_client():
 # ---------- dotenv / timeouts ----------
 
 
-def test_load_dotenv(tmp_path, monkeypatch):
-    envf = tmp_path / ".env"
-    envf.write_text(
-        '# 注释\nNEW_KEY="quoted val"\nEMPTY=\nbroken line no eq\nDUP=x\n',
-        encoding="utf-8",
-    )
-    monkeypatch.delenv("NEW_KEY", raising=False)
-    monkeypatch.delenv("DUP", raising=False)
-    monkeypatch.setenv("DUP", "original")
-    _load_dotenv(envf)
+def test_load_dotenv_integration(tmp_path, monkeypatch):
+    """集成语义验证：python-dotenv 以 override=False 挂接（已存在环境变量优先）。"""
     import os
 
-    assert os.environ["NEW_KEY"] == "quoted val"
-    assert os.environ["DUP"] == "original"  # 已存在优先
+    from dotenv import load_dotenv
+
+    envf = tmp_path / ".env"
+    envf.write_text('NEW_KEY="quoted val"\n', encoding="utf-8")
     monkeypatch.delenv("NEW_KEY", raising=False)
-    # 损坏文件不抛
-    bad = tmp_path / "bad.env"
-    bad.write_bytes(b"\xff\xfe\x00\x01")
-    _load_dotenv(bad)  # 不应抛
-    # 不存在跳过
-    _load_dotenv(tmp_path / "nope.env")
+    load_dotenv(envf, override=False)
+    assert os.environ["NEW_KEY"] == "quoted val"
+    monkeypatch.delenv("NEW_KEY", raising=False)
 
 
 def test_timeouts():

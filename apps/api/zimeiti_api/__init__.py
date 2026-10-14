@@ -16,4 +16,8 @@ for _p in (
     if _p not in _sys.path:
         _sys.path.insert(0, _p)
 
-from .core import dotenv as _dotenv  # noqa: E402,F401  包 import 即加载 .env
+from dotenv import load_dotenv  # noqa: E402
+
+from .core.paths import ENV_FILE  # noqa: E402
+
+load_dotenv(ENV_FILE, override=False)  # 包 import 即加载 .env（已存在环境变量优先）

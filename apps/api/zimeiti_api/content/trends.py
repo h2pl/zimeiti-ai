@@ -5,8 +5,8 @@ from __future__ import annotations
 import asyncio
 import json
 import time
-import urllib.request
 
+import httpx
 from fastapi import APIRouter
 
 from ..core.paths import OUTPUTS_DIR
@@ -33,9 +33,11 @@ _TREND_CACHE: dict[str, tuple[float, list]] = {}
 
 
 def _http_get_json(url: str, timeout: int = 8):
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 Easel"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:  # nosec B310 —— URL 全部来自模块级 TREND_SOURCES 常量表（固定 https）
-        return json.loads(r.read().decode("utf-8", "replace"))
+    # URL 全部来自模块级 TREND_SOURCES 常量表（固定 https）；raise_for_status
+    # 保持与原 urllib 一致：4xx/5xx 抛异常 → 调用方走备用源。
+    r = httpx.get(url, headers={"User-Agent": "Mozilla/5.0 Easel"}, timeout=timeout)
+    r.raise_for_status()
+    return json.loads(r.content.decode("utf-8", "replace"))
 
 
 def _parse_hot(obj: dict) -> list[dict]:

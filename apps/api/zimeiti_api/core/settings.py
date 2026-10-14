@@ -9,7 +9,7 @@ import ipaddress
 import os
 import re
 import socket
-import urllib.request
+import urllib.parse
 
 from fastapi import HTTPException
 from model_registry import model_group

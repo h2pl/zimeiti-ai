@@ -5,8 +5,8 @@ from __future__ import annotations
 import asyncio
 import json
 import time
-import urllib.request
 
+import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
@@ -457,16 +457,9 @@ async def api_models_available(req: ModelsFetchRequest):
         url = base + "/models"
         headers = {"Authorization": f"Bearer {key}"}
 
-    class _NoRedirect(urllib.request.HTTPRedirectHandler):
-        def redirect_request(self, *_a, **_kw):
-            return None
-
-    _opener = urllib.request.build_opener(_NoRedirect)
-
     def _fetch() -> list[str]:
-        rq = urllib.request.Request(url, headers=headers)
-        with _opener.open(rq, timeout=15) as resp:
-            payload = json.loads(resp.read().decode("utf-8", "replace"))
+        resp = httpx.get(url, headers=headers, timeout=15, follow_redirects=False)
+        payload = json.loads(resp.content.decode("utf-8", "replace"))
         # OpenAI / Anthropic 形状都是 {"data":[{"id":...}]}；有的网关直接给 ["id",...]。
         if isinstance(payload, dict):
             items = payload.get("data") or payload.get("models") or []
@@ -521,12 +514,6 @@ async def api_models_selftest(req: SelftestRequest):
 
     # 这里会把真实 API Key 当 Bearer 发出去，所以目标地址必须先过闸：
     # 合法 http(s)、且不指向本机/内网/云元数据；跳转也不跟（跟了等于绕过前面的判断）。
-    class _NoRedirect(urllib.request.HTTPRedirectHandler):
-        def redirect_request(self, *_a, **_kw):
-            return None
-
-    _opener = urllib.request.build_opener(_NoRedirect)
-
     def _probe(base: str, key: str, *, anthropic: bool = False) -> dict:
         t0 = time.time()
         if not _valid_base_url(base):
@@ -550,24 +537,20 @@ async def api_models_selftest(req: SelftestRequest):
                 # 让用户误以为 Key 无效。同时带上两种头：兼容把 /v1/models 反代成
                 # OpenAI 风格的中转站（它们只认 Bearer）。
                 url = base + "/v1/models"
-                rq = urllib.request.Request(
-                    url,
-                    headers={
-                        "x-api-key": key,
-                        "anthropic-version": "2023-06-01",
-                        "Authorization": f"Bearer {key}",
-                    },
-                )
-            else:
-                rq = urllib.request.Request(
-                    base + "/models", headers={"Authorization": f"Bearer {key}"}
-                )
-            with _opener.open(rq, timeout=15) as resp:
-                return {
-                    "baseUrl": base,
-                    "ok": resp.status == 200,
-                    "ms": int((time.time() - t0) * 1000),
+                headers = {
+                    "x-api-key": key,
+                    "anthropic-version": "2023-06-01",
+                    "Authorization": f"Bearer {key}",
                 }
+            else:
+                url = base + "/models"
+                headers = {"Authorization": f"Bearer {key}"}
+            resp = httpx.get(url, headers=headers, timeout=15, follow_redirects=False)
+            return {
+                "baseUrl": base,
+                "ok": resp.status_code == 200,
+                "ms": int((time.time() - t0) * 1000),
+            }
         except Exception as e:  # noqa: BLE001
             return {
                 "baseUrl": base,

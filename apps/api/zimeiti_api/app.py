@@ -29,6 +29,7 @@ if os.name == "nt":
 
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -41,7 +42,6 @@ from zimeiti_api.content import skills as _skills_router
 from zimeiti_api.content import trends as _trends_router
 from zimeiti_api.content import uploads as _uploads_router
 from zimeiti_api.core import pg as _pg
-from zimeiti_api.core.dotenv import _load_dotenv
 from zimeiti_api.core.paths import ENV_FILE, REACT_DIR, STATIC_DIR
 from zimeiti_api.governance import guard as _guard
 from zimeiti_api.operations import env as _env_router
@@ -60,7 +60,7 @@ from zimeiti_api.runtime import status as _status_router
 # 由本组装层把 runtime.agent_runtime.ask_sync 注入 personas（backend-restructure）。
 _personas_router.set_enhance_runtime(_agent_runtime.ask_sync)
 
-_load_dotenv(ENV_FILE)  # 单一真相源：apps/api/.env（曾用 __file__ 相对定位，入口迁包后失配）
+load_dotenv(ENV_FILE, override=False)  # 已存在环境变量优先（同原 _load_dotenv 语义）
 
 
 @asynccontextmanager

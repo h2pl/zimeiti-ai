@@ -1,4 +1,4 @@
-"""operations 域测试：env（环境面板）+ models（模型通道）（subprocess/urllib 全 mock）。"""
+"""operations 域测试：env（环境面板）+ models（模型通道）（subprocess/httpx 全 mock）。"""
 
 from __future__ import annotations
 
@@ -331,25 +331,14 @@ def test_models_save_media_channel(isolated_env_files, monkeypatch, client):
     assert r4.status_code == 400
 
 
-def _fake_opener(payload, status=200):
+def _fake_httpx(payload, status=200):
+    """httpx.get 替身：返回带 content/status_code 的响应对象。"""
+
     class Resp:
-        def __init__(self):
-            self.status = status
+        status_code = status
+        content = json.dumps(payload).encode()
 
-        def read(self):
-            return json.dumps(payload).encode()
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *a):
-            return False
-
-    class Opener:
-        def open(self, rq, timeout=None):
-            return Resp()
-
-    return Opener()
+    return lambda *a, **k: Resp()
 
 
 def test_models_available(monkeypatch, client, isolated_env_files):
@@ -369,11 +358,9 @@ def test_models_available(monkeypatch, client, isolated_env_files):
     # 正常拉取（openai 形状）
     monkeypatch.setattr(models_mod, "_ssrf_safe", lambda u: True)
     monkeypatch.setattr(
-        models_mod.urllib.request,
-        "build_opener",
-        lambda handler=None: _fake_opener(
-            {"data": [{"id": "m2"}, {"id": "m1"}, "junk", {"id": "m1"}]}
-        ),
+        models_mod.httpx,
+        "get",
+        _fake_httpx({"data": [{"id": "m2"}, {"id": "m1"}, "junk", {"id": "m1"}]}),
     )
     r2 = client.post(
         "/api/settings/models/available", json={"baseUrl": "https://pub.example/v1", "key": "k"}
@@ -382,9 +369,7 @@ def test_models_available(monkeypatch, client, isolated_env_files):
         "/v1"
     )  # 裸字符串项按 id 收录
     # anthropic 协议 + list 形状
-    monkeypatch.setattr(
-        models_mod.urllib.request, "build_opener", lambda handler=None: _fake_opener(["a1", "a2"])
-    )
+    monkeypatch.setattr(models_mod.httpx, "get", _fake_httpx(["a1", "a2"]))
     r3 = client.post(
         "/api/settings/models/available",
         json={"baseUrl": "https://pub.example", "key": "k", "protocol": "anthropic"},
@@ -394,24 +379,15 @@ def test_models_available(monkeypatch, client, isolated_env_files):
     isolated_env_files.write_text(
         "OPENAI_API_KEY=stored-key\nOPENAI_BASE_URL=https://stored.x.com\n", encoding="utf-8"
     )
-    monkeypatch.setattr(
-        models_mod.urllib.request, "build_opener", lambda handler=None: _fake_opener({"data": []})
-    )
+    monkeypatch.setattr(models_mod.httpx, "get", _fake_httpx({"data": []}))
     r4 = client.post(
         "/api/settings/models/available", json={"slot": "openai", "baseUrl": ""}
     ).json()
     assert r4["baseUrl"] == "https://stored.x.com"
 
     # 拉取异常 → 502
-    def boom(url, timeout=None):
-        raise OSError("net down")
-
-    class BoomOpener:
-        def open(self, rq, timeout=None):
-            raise OSError("net down")
-
     monkeypatch.setattr(
-        models_mod.urllib.request, "build_opener", lambda handler=None: BoomOpener()
+        models_mod.httpx, "get", lambda *a, **k: (_ for _ in ()).throw(OSError("net down"))
     )
     assert (
         client.post(
@@ -432,9 +408,7 @@ def test_models_selftest(monkeypatch, client, isolated_env_files):
     assert all(res["ok"] is False and "内网" in res["detail"] for res in r["results"])
     # 正常探测 200
     monkeypatch.setattr(models_mod, "_ssrf_safe", lambda u: True)
-    monkeypatch.setattr(
-        models_mod.urllib.request, "build_opener", lambda handler=None: _fake_opener({}, status=200)
-    )
+    monkeypatch.setattr(models_mod.httpx, "get", _fake_httpx({}, status=200))
     r2 = client.post("/api/settings/models/selftest", json={"channel": "all"}).json()
     assert r2["channel"] == "all"
     assert any(res["ok"] for res in r2["results"])  # openai + siliconflow 均 200
@@ -444,12 +418,8 @@ def test_models_selftest(monkeypatch, client, isolated_env_files):
     assert len(r3["results"]) == 1 and "siliconflow" in r3["results"][0]["baseUrl"]
 
     # 请求异常 → ok False + detail
-    class BoomOpener:
-        def open(self, rq, timeout=None):
-            raise OSError("refused")
-
     monkeypatch.setattr(
-        models_mod.urllib.request, "build_opener", lambda handler=None: BoomOpener()
+        models_mod.httpx, "get", lambda *a, **k: (_ for _ in ()).throw(OSError("net down"))
     )
     r4 = client.post("/api/settings/models/selftest", json={"channel": "transcribe"}).json()
     assert r4["results"][0]["ok"] is False and "OSError" in r4["results"][0]["detail"]
