@@ -30,6 +30,8 @@ sys.path.insert(0, str(APPS / "skills" / "shared" / "scripts"))
 
 
 def api(method: str, path: str, payload: dict | None = None, timeout: int = 60):
+    from urllib.parse import quote
+    path = quote(path, safe="/?=&")  # 画像名等含中文的路径段统一编码
     data = json.dumps(payload).encode() if payload is not None else None
     req = urllib.request.Request(
         f"{BASE}{path}", data=data, method=method,
