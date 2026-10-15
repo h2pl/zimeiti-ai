@@ -11,6 +11,26 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+        // make dev 下 Vite 比 API 先就绪（API 启动要过 PG 校验等 lifespan 流程），
+        // 旧标签页的 SSE 自动重连会撞上未监听窗口，喷 ECONNREFUSED 全栈报错。
+        // 这里改成：一行友好提示（限频）+ 直接断开该次代理，让前端的重连逻辑自己重试。
+        configure: (proxy) => {
+          let lastNotice = 0
+          proxy.on('error', (err, req, res) => {
+            const now = Date.now()
+            if (now - lastNotice > 5000) {
+              lastNotice = now
+              console.log('[vite] API 未就绪或中断，浏览器会自动重连（5 秒内合并提示）')
+            }
+            if (res && !res.headersSent) {
+              res.writeHead(502, { 'Content-Type': 'text/plain' })
+              res.end('API not ready')
+            } else if ('destroy' in (res as object)) {
+              ;(res as { destroy?: () => void }).destroy?.()
+            }
+            void err
+          })
+        },
       },
     },
   },

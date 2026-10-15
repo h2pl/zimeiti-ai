@@ -78,7 +78,7 @@ def _parse_skill_md(path: Path) -> tuple[str, str, str]:
 
 
 _SKILLS_CACHE: tuple[float, list[dict]] | None = None  # (ts, result)
-_SKILLS_TTL = 60  # 秒：技能清单变化极少，TTL 缓存避免 /api/status 冷启动扫全树（实测 1.8s）
+_SKILLS_TTL = 300  # 秒：技能清单变化极少，TTL 缓存避免 /api/status 冷启动扫全树（实测 1.8s）
 
 
 def get_skills(force: bool = False) -> list[dict]:
