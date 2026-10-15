@@ -160,6 +160,7 @@ async def _build_agent():
         return "已提交问题，等待人工回答。"
 
     checkpointer = await pg.setup_checkpointer()
+    _patch_deepagents_subprocess_encoding()
     backend, permissions = _fs_backend()
     _AGENT = create_deep_agent(
         model=_build_model(),
@@ -171,6 +172,33 @@ async def _build_agent():
         checkpointer=checkpointer,
     )
     return _AGENT
+
+
+def _patch_deepagents_subprocess_encoding() -> None:
+    """deepagents 的 ripgrep 子进程用 text=True 未指定 encoding——Windows 默认
+    GBK 解码 UTF-8 输出必炸（技能库/画像路径含中文）。在其模块命名空间注入
+    默认 UTF-8 的 Popen 薄壳（只影响该模块，不动全局 subprocess）。
+    服务进程若以 PYTHONUTF8=1 启动（Makefile）本就不受影响，此补丁兜底裸启动。"""
+    import subprocess as _sp
+
+    import deepagents.backends.filesystem as fs
+
+    if getattr(fs, "_zimeiti_encoding_patched", False):
+        return
+
+    class _SubprocessShim:
+        def __getattr__(self, name):
+            return getattr(_sp, name)
+
+        @staticmethod
+        def Popen(*args, **kwargs):
+            if kwargs.get("text") and "encoding" not in kwargs:
+                kwargs["encoding"] = "utf-8"
+                kwargs.setdefault("errors", "replace")
+            return _sp.Popen(*args, **kwargs)
+
+    fs.subprocess = _SubprocessShim()  # type: ignore[assignment]
+    fs._zimeiti_encoding_patched = True  # type: ignore[attr-defined]
 
 
 def _fs_backend():
