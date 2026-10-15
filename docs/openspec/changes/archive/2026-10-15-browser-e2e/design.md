@@ -2,6 +2,8 @@
 comet_change: browser-e2e
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-15-browser-e2e
+status: final
 ---
 
 # Design: browser-e2e
