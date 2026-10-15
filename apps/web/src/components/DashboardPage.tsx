@@ -38,12 +38,23 @@ interface DashboardProps {
 
 const STATUS_LABEL: Record<string, string> = { idea: '选题', draft: '草稿', scheduled: '待发', published: '已发' };
 
+// 工作台数据缓存：再次进入先渲染上次数据（零空窗），请求回来后静默刷新——
+// 推广 anaData 既有模式（easel_analytics）到五个核心数据源
+const DASH_CACHE_KEY = 'easel_dash_cache_v1';
+const readDashCache = (): Record<string, unknown[]> => {
+  try { return JSON.parse(localStorage.getItem(DASH_CACHE_KEY) || '{}'); } catch { return {}; }
+};
+
 export default function DashboardPage({ persona, gatewayStatus, onNavigate, onUseTopic }: DashboardProps) {
-  const [trends, setTrends] = useState<TrendGroup[]>([]);
-  const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
-  const [outputs, setOutputs] = useState<OutputNode[]>([]);
-  const [accounts, setAccounts] = useState<AccountItem[]>([]);
-  const [ideas, setIdeas] = useState<Idea[]>([]);
+  const dash0 = readDashCache();
+  const [trends, setTrends] = useState<TrendGroup[]>(dash0.trends || []);
+  const [schedule, setSchedule] = useState<ScheduleItem[]>(dash0.schedule || []);
+  const [outputs, setOutputs] = useState<OutputNode[]>(dash0.outputs || []);
+  const [accounts, setAccounts] = useState<AccountItem[]>(dash0.accounts || []);
+  const [ideas, setIdeas] = useState<Idea[]>(dash0.ideas || []);
+  const persistDash = (patch: Record<string, unknown[]>) => {
+    try { localStorage.setItem(DASH_CACHE_KEY, JSON.stringify({ ...readDashCache(), ...patch })); } catch { /* quota */ }
+  };
   // 归因层：账号创作数据
   const [anaPlats, setAnaPlats] = useState<AnalyticsPlatform[]>([]);
   const [anaSel, setAnaSel] = useState('');
@@ -55,27 +66,30 @@ export default function DashboardPage({ persona, gatewayStatus, onNavigate, onUs
   const [whoamiMap, setWhoamiMap] = useState<Record<string, AccountWhoami>>(() => getWhoamiCache());
 
   useEffect(() => {
-    fetchTrends('weibo,douyin', 6).then((d) => setTrends(d.trends)).catch(() => {});
-    fetchSchedule().then(setSchedule).catch(() => {});
-    fetchOutputs().then(setOutputs).catch(() => {});
-    fetchAccounts().then(setAccounts).catch(() => {});
-    fetchIdeas().then(setIdeas).catch(() => {});
-    fetchAnalyticsPlatforms().then((ps) => {
-      setAnaPlats(ps);
-      const cache = getWhoamiCache();
-      const isLog = (p: AnalyticsPlatform) => p.loggedIn || !!cache[p.platform]?.loggedIn;
-      const first = ps.find(isLog);
-      if (first) setAnaSel((s) => s || first.platform);
-      // 开页后台自愈：对非 API 式的归因平台真校验（whoami），刷新登录态；
-      // B 站走 cookie、公众号走凭证/官方 API 判定，都不起浏览器。
-      const API_BASED = new Set(['bilibili', 'wechat-oa']);
-      verifyStale(ps.filter((p) => !API_BASED.has(p.platform)).map((p) => p.platform), {
-        onUpdate: (platform, r) => {
-          setWhoamiMap((m) => ({ ...m, [platform]: r }));
-          if (r.loggedIn) setAnaSel((s) => s || platform);
-        },
-      });
-    }).catch(() => {});
+    const settled = () => { setLoading(false); setRefreshing(false); };
+    Promise.allSettled([
+      fetchTrends('weibo,douyin', 6).then((d) => { setTrends(d.trends); persistDash({ trends: d.trends }); }),
+      fetchSchedule().then((d) => { setSchedule(d); persistDash({ schedule: d }); }),
+      fetchOutputs().then((d) => { setOutputs(d); persistDash({ outputs: d }); }),
+      fetchAccounts().then((d) => { setAccounts(d); persistDash({ accounts: d }); }),
+      fetchIdeas().then((d) => { setIdeas(d); persistDash({ ideas: d }); }),
+      fetchAnalyticsPlatforms().then((ps) => {
+        setAnaPlats(ps);
+        const cache = getWhoamiCache();
+        const isLog = (p: AnalyticsPlatform) => p.loggedIn || !!cache[p.platform]?.loggedIn;
+        const first = ps.find(isLog);
+        if (first) setAnaSel((s) => s || first.platform);
+        // 开页后台自愈：对非 API 式的归因平台真校验（whoami），刷新登录态；
+        // B 站走 cookie、公众号走凭证/官方 API 判定，都不起浏览器。
+        const API_BASED = new Set(['bilibili', 'wechat-oa']);
+        verifyStale(ps.filter((p) => !API_BASED.has(p.platform)).map((p) => p.platform), {
+          onUpdate: (platform, r) => {
+            setWhoamiMap((m) => ({ ...m, [platform]: r }));
+            if (r.loggedIn) setAnaSel((s) => s || platform);
+          },
+        });
+      }),
+    ]).finally(settled);
   }, []);
 
   const runAna = (platform: string) => {
@@ -109,6 +123,11 @@ export default function DashboardPage({ persona, gatewayStatus, onNavigate, onUs
     { label: '去发布', page: 'publish', Icon: IconPublish },
   ];
 
+  // 加载态显式告知（Easel 规范：.loading + .spinner + 预期时长文案）：
+  //   loading    首访无缓存——统计区整块用 spinner 替代，不渲染假 0
+  //   refreshing 有缓存——先渲染上次数据，但必须显式告知「正在刷新」而不是偷偷换数
+  const [loading, setLoading] = useState(!(dash0.ideas?.length || dash0.schedule?.length));
+  const [refreshing, setRefreshing] = useState(!loading);
   const stats: { label: string; value: string; page: Page; Icon: typeof IconChat }[] = [
     { label: '待做选题', value: String(pendingIdeas.length), page: 'ideas', Icon: IconIdea },
     { label: '待发排期', value: String(upcoming.length), page: 'calendar', Icon: IconCalendar },
@@ -134,16 +153,29 @@ export default function DashboardPage({ persona, gatewayStatus, onNavigate, onUs
         </div>
       </div>
 
-      {/* 概览数字 */}
-      <div className="dash-stats">
-        {stats.map((s) => (
-          <button key={s.label} className="card card-hover dash-stat" onClick={() => onNavigate(s.page)}>
-            <span className="dash-stat-ic"><s.Icon size={18} /></span>
-            <span className="dash-stat-val">{s.value}</span>
-            <span className="dash-stat-label">{s.label}</span>
-          </button>
-        ))}
-      </div>
+      {/* 概览数字：首访无缓存整块 spinner；有缓存渲染上次数据但显式告知刷新中 */}
+      {loading ? (
+        <div className="loading" style={{ padding: 28 }}>
+          <div className="spinner" />正在加载工作台数据…
+        </div>
+      ) : (
+        <>
+          {refreshing && (
+            <div className="dash-empty" style={{ marginTop: -6, marginBottom: 8 }}>
+              正在刷新最新数据…
+            </div>
+          )}
+          <div className="dash-stats">
+            {stats.map((s) => (
+              <button key={s.label} className="card card-hover dash-stat" onClick={() => onNavigate(s.page)}>
+                <span className="dash-stat-ic"><s.Icon size={18} /></span>
+                <span className="dash-stat-val">{s.value}</span>
+                <span className="dash-stat-label">{s.label}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="dash-grid">
         {/* 今日热点 */}

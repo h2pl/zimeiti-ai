@@ -104,19 +104,28 @@ async def api_trends(platforms: str = "weibo,douyin,zhihu", limit: int = 12):
     return {"trends": result, "updated": int(now)}
 
 
+async def _warm_once() -> None:
+    """并行抓取全部平台（串行时最慢源 15s+ 会拖长首热窗口）。"""
+    loop = asyncio.get_running_loop()
+    pfs = list(TREND_SOURCES)
+    results = await asyncio.gather(
+        *(loop.run_in_executor(None, _fetch_platform, pf) for pf in pfs),
+        return_exceptions=True,
+    )
+    now = time.time()
+    for pf, r in zip(pfs, results, strict=False):
+        if isinstance(r, list) and r:
+            _TREND_CACHE[pf] = (now, r)
+
+
 async def _trends_warmup_loop():
     """后台保热循环：缓存 TTL 300s，冷了再抓时首个访问者要吃 12s+ 外部抓取
-    空窗（实测）。启动后预抓一轮，此后每 280s 主动刷新，用户永远命中热缓存。"""
-    await asyncio.sleep(15)  # 等 lifespan 完成、服务就绪
-    loop = asyncio.get_event_loop()
+    空窗（实测）。启动立即预抓一轮（并行），此后每 280s 主动刷新。"""
     while True:
-        for pf in TREND_SOURCES:
-            try:
-                items = await loop.run_in_executor(None, _fetch_platform, pf)
-                if items:
-                    _TREND_CACHE[pf] = (time.time(), items)
-            except Exception:  # noqa: BLE001  外部源抖动不影响服务
-                pass
+        try:
+            await _warm_once()
+        except Exception:  # noqa: BLE001  外部源抖动不影响服务
+            pass
         await asyncio.sleep(280)
 
 
