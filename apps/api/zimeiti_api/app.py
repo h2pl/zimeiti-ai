@@ -80,6 +80,7 @@ async def _lifespan(_app: FastAPI):
     await asyncio.to_thread(_pg.setup)  # 业务表（幂等）
     await _pg.setup_checkpointer()  # checkpoint 表 + 连接池
     _agent_runtime.set_main_loop(asyncio.get_running_loop())  # 线程侧 ask_sync 投回主循环
+    _trends_router.start_trends_warmup()  # 热点缓存后台保热（冷抓 12s+ 的空窗不该让用户等）
     yield
     _stop_mp_login_on_shutdown()
     await _pg.close_checkpointer()

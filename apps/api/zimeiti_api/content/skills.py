@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -76,7 +77,14 @@ def _parse_skill_md(path: Path) -> tuple[str, str, str]:
     return desc, layer, body
 
 
-def get_skills() -> list[dict]:
+_SKILLS_CACHE: tuple[float, list[dict]] | None = None  # (ts, result)
+_SKILLS_TTL = 60  # 秒：技能清单变化极少，TTL 缓存避免 /api/status 冷启动扫全树（实测 1.8s）
+
+
+def get_skills(force: bool = False) -> list[dict]:
+    global _SKILLS_CACHE
+    if not force and _SKILLS_CACHE and time.time() - _SKILLS_CACHE[0] < _SKILLS_TTL:
+        return _SKILLS_CACHE[1]
     env = _read_env()
     result = []
     sd = SKILLS_DIR / "builtin"
@@ -94,6 +102,7 @@ def get_skills() -> list[dict]:
                         "apiConfigured": _skill_api_configured(d.name, env) if needs_api else True,
                     }
                 )
+    _SKILLS_CACHE = (time.time(), result)
     return result
 
 

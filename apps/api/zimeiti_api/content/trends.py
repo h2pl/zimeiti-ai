@@ -84,13 +84,15 @@ async def api_trends(platforms: str = "weibo,douyin,zhihu", limit: int = 12):
     result = []
     for pf in pfs:
         c = _TREND_CACHE.get(pf)
-        if c and now - c[0] < 300:
+        # 有数据 TTL 300s；空结果（源抖动/失效）TTL 60s——死源不该让每次请求都吃重试耗时
+        ttl = 300 if (c and c[1]) else 60
+        if c and now - c[0] < ttl:
             items = c[1]
         else:
             items = await loop.run_in_executor(None, _fetch_platform, pf)
-            if items:
+            if items or c is None:
                 _TREND_CACHE[pf] = (now, items)
-            elif c:
+            elif not items:
                 items = c[1]
         result.append(
             {
@@ -100,6 +102,32 @@ async def api_trends(platforms: str = "weibo,douyin,zhihu", limit: int = 12):
             }
         )
     return {"trends": result, "updated": int(now)}
+
+
+async def _trends_warmup_loop():
+    """后台保热循环：缓存 TTL 300s，冷了再抓时首个访问者要吃 12s+ 外部抓取
+    空窗（实测）。启动后预抓一轮，此后每 280s 主动刷新，用户永远命中热缓存。"""
+    await asyncio.sleep(15)  # 等 lifespan 完成、服务就绪
+    loop = asyncio.get_event_loop()
+    while True:
+        for pf in TREND_SOURCES:
+            try:
+                items = await loop.run_in_executor(None, _fetch_platform, pf)
+                if items:
+                    _TREND_CACHE[pf] = (time.time(), items)
+            except Exception:  # noqa: BLE001  外部源抖动不影响服务
+                pass
+        await asyncio.sleep(280)
+
+
+_warmup_task: asyncio.Task | None = None
+
+
+def start_trends_warmup() -> None:
+    """lifespan 调用：启动保热后台任务（持强引用防 GC）。"""
+    global _warmup_task
+    if _warmup_task is None or _warmup_task.done():
+        _warmup_task = asyncio.get_running_loop().create_task(_trends_warmup_loop())
 
 
 SCHEDULE_FILE = OUTPUTS_DIR / "_schedule.json"  # 旧文件存储路径（迁 PG 后仅迁移/兼容引用）
