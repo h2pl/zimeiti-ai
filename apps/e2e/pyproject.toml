@@ -1,0 +1,11 @@
+# apps/e2e 工具配置：浏览器级双端对齐 E2E（独立于 apps/api 的测试设施）
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+# E402：场景模块在文档串后做模块级 helpers 导入，属刻意布局（run.py 已把本目录加进 sys.path）
+# BLE001/S110/S112：浏览器自动化对弹层时机/点击竞态做防御性容错，静默降级是场景语义
+# SIM115：runner 的子进程 stderr 句柄需跨等待期存活，非泄漏
+# PLW1510：taskkill 清理进程树无需检查返回值
+ignore = ["E402", "BLE001", "S110", "S112", "SIM115", "PLW1510"]

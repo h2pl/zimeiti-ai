@@ -38,3 +38,4 @@ _api.log
 
 # 浏览器 E2E 截图
 apps/scripts/_*.png
+apps/e2e/_*.png

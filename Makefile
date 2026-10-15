@@ -32,8 +32,8 @@ verify: ## 验收：openclaw 归零脚本 + 技能校验 + skill 测试套件
 	cd apps && PYTHONUTF8=1 $(PYTHON) scripts/validate_skill_commands.py
 	cd apps/skills/builtin/skill-wechat-publisher/tests && PYTHONUTF8=1 $(PYTHON) -m pytest -q
 
-e2e-browser: ## 浏览器级双端对齐 E2E（真实 Chromium：zimeiti vs Easel 行为一致性）
-	cd apps/api && PYTHONUTF8=1 env -u UV_PYTHON uv run python ../scripts/browser_e2e.py
+e2e-browser: ## 浏览器级双端对齐 E2E（apps/e2e/ 套件，每用户路径一场景；--scenarios/--target 可选）
+	cd apps/api && PYTHONUTF8=1 env -u UV_PYTHON uv run python ../e2e/run.py
 
 test: verify ## 别名
 

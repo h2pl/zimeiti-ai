@@ -1,0 +1,15 @@
+{
+  "change": "browser-e2e",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "c14ca6bbc02d411ad714cd828031b038e2a66439da817d33a371b3a10143eb3a",
+  "files": [
+    { "path": "docs/openspec/changes/browser-e2e/proposal.md", "sha256": "6d1f794944eaf40997cd3133e718b9c24a3b66e7b20b89c482eb396ed5361ad4" },
+    { "path": "docs/openspec/changes/browser-e2e/design.md", "sha256": "cebd15d79f90c088ff2fde961231530e7dbb45b2f5968e002135edc5b695279b" },
+    { "path": "docs/openspec/changes/browser-e2e/tasks.md", "sha256": "9a8fad38e1537a1ffe4cb4fcafa487f663911b707cff390d67a1b076f4c05516" },
+    { "path": "docs/openspec/changes/browser-e2e/specs/browser-e2e-suite/spec.md", "sha256": "845fb96553da0897a2cbc74f1f0fcf15fec5576365f40655de38f3cc13b8feaa" }
+  ]
+}
