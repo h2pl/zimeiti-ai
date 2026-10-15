@@ -41,7 +41,11 @@ const STATUS_LABEL: Record<string, string> = { idea: '选题', draft: '草稿', 
 // 工作台数据缓存：再次进入先渲染上次数据（零空窗），请求回来后静默刷新——
 // 推广 anaData 既有模式（easel_analytics）到五个核心数据源
 const DASH_CACHE_KEY = 'easel_dash_cache_v1';
-const readDashCache = (): Record<string, unknown[]> => {
+type DashCache = {
+  trends?: TrendGroup[]; schedule?: ScheduleItem[]; outputs?: OutputNode[];
+  accounts?: AccountItem[]; ideas?: Idea[];
+};
+const readDashCache = (): DashCache => {
   try { return JSON.parse(localStorage.getItem(DASH_CACHE_KEY) || '{}'); } catch { return {}; }
 };
 
@@ -52,7 +56,7 @@ export default function DashboardPage({ persona, gatewayStatus, onNavigate, onUs
   const [outputs, setOutputs] = useState<OutputNode[]>(dash0.outputs || []);
   const [accounts, setAccounts] = useState<AccountItem[]>(dash0.accounts || []);
   const [ideas, setIdeas] = useState<Idea[]>(dash0.ideas || []);
-  const persistDash = (patch: Record<string, unknown[]>) => {
+  const persistDash = (patch: DashCache) => {
     try { localStorage.setItem(DASH_CACHE_KEY, JSON.stringify({ ...readDashCache(), ...patch })); } catch { /* quota */ }
   };
   // 归因层：账号创作数据

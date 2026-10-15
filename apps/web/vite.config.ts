@@ -16,17 +16,16 @@ export default defineConfig({
         // 这里改成：一行友好提示（限频）+ 直接断开该次代理，让前端的重连逻辑自己重试。
         configure: (proxy) => {
           let lastNotice = 0
-          proxy.on('error', (err, req, res) => {
+          proxy.on('error', (err, _req, res) => {
             const now = Date.now()
             if (now - lastNotice > 5000) {
               lastNotice = now
               console.log('[vite] API 未就绪或中断，浏览器会自动重连（5 秒内合并提示）')
             }
-            if (res && !res.headersSent) {
-              res.writeHead(502, { 'Content-Type': 'text/plain' })
-              res.end('API not ready')
-            } else if ('destroy' in (res as object)) {
-              ;(res as { destroy?: () => void }).destroy?.()
+            const r = res as import('node:http').ServerResponse | import('node:net').Socket
+            if ('writeHead' in r && !r.headersSent) {
+              r.writeHead(502, { 'Content-Type': 'text/plain' })
+              r.end('API not ready')
             }
             void err
           })
