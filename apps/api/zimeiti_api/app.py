@@ -79,6 +79,7 @@ async def _lifespan(_app: FastAPI):
         raise RuntimeError(f"PostgreSQL 不可用: {err}")
     await asyncio.to_thread(_pg.setup)  # 业务表（幂等）
     await _pg.setup_checkpointer()  # checkpoint 表 + 连接池
+    _agent_runtime.set_main_loop(asyncio.get_running_loop())  # 线程侧 ask_sync 投回主循环
     yield
     _stop_mp_login_on_shutdown()
     await _pg.close_checkpointer()

@@ -37,6 +37,7 @@ from typing import Any
 from langchain_core.messages import AIMessageChunk
 
 from ..core import pg
+from ..core.paths import PROJECT_ROOT
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 TTL_SECONDS = 30 * 60
@@ -44,6 +45,13 @@ TTL_SECONDS = 30 * 60
 SYSTEM_PROMPT = (
     "你是 Zimeiti AI 自媒体运营 agent。"
     "与用户协作完成选题、创作与发布；需要用户决策时用 ask_human 提问（可给选项）。"
+    "\n\n"
+    "【文件系统】你有真实文件系统访问（ls/glob/grep/read_file/write_file 均有效），"
+    "根目录即数据根：\n"
+    "- skills/：技能库（各技能含 SKILL.md，做任务前先读其流程与数据源说明）\n"
+    "- profiles/<画像名>/：画像六维文件（identity/audience/style/preferences 等）\n"
+    "- outputs/：内容库，**唯一可写目录**——生成的文章/脚本一律 write_file 到这里\n"
+    "账号登录状态与数据统计存在数据库，不在文件系统；查不到就明说，不要反复枚举目录。"
     "\n\n"
     "【语言硬约束】无论用户使用什么语言提问，你的全部回复必须使用简体中文；"
     "仅以下内容保留原文：专有名词、平台名、工具/命令/代码、文件路径、以及用户"
@@ -152,14 +160,35 @@ async def _build_agent():
         return "已提交问题，等待人工回答。"
 
     checkpointer = await pg.setup_checkpointer()
+    backend, permissions = _fs_backend()
     _AGENT = create_deep_agent(
         model=_build_model(),
         tools=[ask_human],
         system_prompt=SYSTEM_PROMPT,
+        backend=backend,
+        permissions=permissions,
         interrupt_on={"ask_human": True},
         checkpointer=checkpointer,
     )
     return _AGENT
+
+
+def _fs_backend():
+    """真实文件系统 backend（修复：默认 StateBackend 是图内虚拟 FS，agent 的
+    ls/glob/grep/write 全部碰不到真实文件——读不了技能库/画像，产物也落不了盘）。
+
+    根目录锚在数据根 apps/：skills/（技能库，读）、profiles/（画像，读）、
+    outputs/（内容库，唯一可写区）。写权限用 FilesystemPermission 收口到 outputs/。
+    """
+    from deepagents.backends import FilesystemBackend
+    from deepagents.middleware.filesystem import FilesystemPermission
+
+    backend = FilesystemBackend(root_dir=str(PROJECT_ROOT), virtual_mode=True)
+    permissions = [
+        FilesystemPermission(operations=["write"], paths=["/outputs", "/outputs/**"], mode="allow"),
+        FilesystemPermission(operations=["write"], paths=["/**"], mode="deny"),
+    ]
+    return backend, permissions
 
 
 # ---------- 中断等待中的会话（带 TTL 惰性清理）----------
@@ -486,6 +515,26 @@ async def ask(session_key: str, message: str) -> str:
         return text
 
 
+# 主事件循环（lifespan 时登记）：线程里的 ask_sync 必须把协程投回主循环执行——
+# 修复「Lock is bound to a different event loop」：此前线程内 asyncio.run 自建
+# 循环，把全局 _AGENT/checkpointer/_LOCKS 的 asyncio 原语绑到线程循环，之后
+# 主循环的 chat 全部报错（画像后台增强一跑，chat 就挂）。
+_MAIN_LOOP: asyncio.AbstractEventLoop | None = None
+
+
+def set_main_loop(loop: asyncio.AbstractEventLoop) -> None:
+    """组装层 lifespan 启动时登记 uvicorn 主循环。"""
+    global _MAIN_LOOP
+    _MAIN_LOOP = loop
+
+
 def ask_sync(session_key: str, message: str) -> str:
-    """同步包装 ask（供线程池 / 同步上下文调用）。"""
+    """同步包装 ask（供线程池 / 同步上下文调用）。
+
+    主循环已登记时投回主循环执行（跨线程安全）；否则退回本地自建循环
+    （独立进程/脚本场景，无共享 loop 冲突）。
+    """
+    if _MAIN_LOOP is not None and _MAIN_LOOP.is_running():
+        fut = asyncio.run_coroutine_threadsafe(ask(session_key, message), _MAIN_LOOP)
+        return fut.result(timeout=900)
     return asyncio.run(ask(session_key, message))
