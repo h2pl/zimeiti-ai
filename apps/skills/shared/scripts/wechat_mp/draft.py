@@ -155,6 +155,26 @@ def run_draft(
                    ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+    # 归因数据源（agent-ops-workflow D2）：草稿创建成功即落发布事实，
+    # ops-review 层读 outputs/_analytics/ 做复盘。失败不堵草稿链路。
+    try:
+        import sys as _sys
+        from pathlib import Path as _Path
+
+        _api_dir = _Path(__file__).resolve().parents[3] / "apps" / "api"
+        if str(_api_dir) not in _sys.path:
+            _sys.path.insert(0, str(_api_dir))
+        from zimeiti_api.content.ops_analytics import record_publish
+
+        record_publish(
+            platform="wechat-oa",
+            content_path=str(md_path.resolve().relative_to(_Path(__file__).resolve().parents[4])),
+            media_id=media_id,
+            title=title,
+        )
+        print("  [OK] 归因记录已写入 outputs/_analytics/wechat-oa/")
+    except Exception as e:
+        print(f"  [!] 归因记录写入失败（无碍）: {e}")
     return {"media_id": media_id, "title": title, "cover": str(cover_path), "digest": digest,
             "html": str(html_path)}
 
