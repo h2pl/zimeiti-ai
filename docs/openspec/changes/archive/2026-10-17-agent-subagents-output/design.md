@@ -2,6 +2,7 @@
 comet_change: agent-subagents-output
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-17-agent-subagents-output
 status: final
 ---
 
