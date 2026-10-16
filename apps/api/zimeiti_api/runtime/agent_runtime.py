@@ -32,7 +32,10 @@ import time
 import uuid
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:  # 仅供类型检查（deepagents 的 SubAgent 规格类型）
+    from deepagents.middleware.subagents import SubAgent
 
 from langchain_core.messages import AIMessageChunk
 
@@ -219,6 +222,81 @@ def pending_status(question_ids: list[str]) -> dict[str, dict]:
 # ---------- 模型与 agent ----------
 
 
+def _build_base_tools() -> list:
+    """非会话绑定的工具集（exec_script + 记忆工具）。
+
+    ask_human 绑定会话上下文（内嵌在 _build_agent 中），故不在此列；
+    结构化 graph 是不打断用户的一次性调用，正好只需要这些。
+    """
+    from ..memory.tools import make_memory_tools
+    from .exec_tool import make_exec_tool
+
+    tools = make_exec_tool()
+    return [*([tools] if not isinstance(tools, (list, tuple)) else tools), *make_memory_tools()]
+
+
+def _build_subagents() -> list:
+    """专属子代理（agent-subagents-output，design D1/D2）。
+
+    - research：只读探索（无写工具），可用便宜模型（ZIMEITI_SUBAGENT_MODEL）
+    - draft：写作（有写工具），但两者都不含 ask_human / exec_script
+      ——子代理不打断用户、不跑脚本（越权面在装配处收死）
+    - ZIMEITI_SUBAGENT_ENABLED=false → 退回 deepagents 默认通用子代理
+    """
+    if os.environ.get("ZIMEITI_SUBAGENT_ENABLED", "").strip().lower() == "false":
+        return []
+
+    from deepagents.middleware.filesystem import FilesystemPermission
+
+    # 工具面：不传 tools → 继承主 agent 的默认工具（文件六件套，由 FilesystemMiddleware
+    # 提供），拿不到 ask_human / exec_script / memory_*（那些是主 agent 的私有工具）。
+    # 越权面用 permissions 收死：写操作按角色放行或全拒。
+    deny_all_write = [FilesystemPermission(operations=["write"], paths=["/**"], mode="deny")]
+    allow_outputs = [
+        FilesystemPermission(operations=["write"], paths=["/outputs", "/outputs/**"], mode="allow"),
+        FilesystemPermission(operations=["write"], paths=["/**"], mode="deny"),
+    ]
+
+    # spec 必须含 model（deepagents 校验），缺省用主模型
+    cheap = os.environ.get("ZIMEITI_SUBAGENT_MODEL", "").strip()
+    model = cheap or _build_model()
+    if model is None:
+        return []  # 无模型可用时不派子代理，退回默认通用子代理
+
+    research: dict = {
+        "name": "research",
+        "description": (
+            "只读探索子代理：大范围检索技能库/内容库/历史产物。只查不写，"
+            "回报事实与路径，不做判断与创作。"
+        ),
+        "system_prompt": (
+            "你是只读探索子代理。职责：用只读工具查清事实并回报——技能库有哪些技能、"
+            "内容库有哪些历史产物、画像文件写了什么。回报格式：结论 + 证据路径列表。"
+            "禁止写文件、禁止向用户提问、禁止执行脚本、禁止替主 agent 做创作决策。"
+        ),
+        "permissions": deny_all_write,  # 只读：任何写操作都被拒
+        "model": model,
+    }
+
+    draft: dict = {
+        "name": "draft",
+        "description": (
+            "写作子代理：把已定的主题与规格写成稿，落到 outputs/。写完回报路径与字数，"
+            "不做发布动作。"
+        ),
+        "system_prompt": (
+            "你是写作子代理。职责：按主 agent 给的主题/规格/风格/红线写成稿，"
+            "写入 outputs/（唯一可写目录）。回报格式：文件路径 + 字数 + 自检结论。"
+            "禁止向用户提问、禁止执行脚本、禁止任何发布动作。"
+        ),
+        "permissions": allow_outputs,  # 只能写内容库，其余全拒
+        "model": model,
+    }
+    from typing import cast
+
+    return [cast("SubAgent", research), cast("SubAgent", draft)]
+
+
 def _build_model():
     from langchain_openai import ChatOpenAI
 
@@ -287,10 +365,7 @@ async def _build_agent():
         return "已提交问题，等待人工回答。"
 
     def _build_tools() -> list:
-        from ..memory.tools import make_memory_tools
-        from .exec_tool import make_exec_tool
-
-        return [ask_human, make_exec_tool(), *make_memory_tools()]
+        return [ask_human, *_build_base_tools()]
 
     checkpointer = await pg.setup_checkpointer()
     _patch_deepagents_subprocess_encoding()
@@ -299,12 +374,61 @@ async def _build_agent():
         model=_build_model(),
         tools=_build_tools(),
         system_prompt=build_system_prompt(),
+        subagents=_build_subagents() or None,  # 空表→退回默认通用子代理
         backend=backend,
         permissions=permissions,
         interrupt_on={"ask_human": True},
         checkpointer=checkpointer,
+        # response_format 故意不设：图级配置会约束所有输出，普通对话不应被强制结构化
     )
     return _AGENT
+
+
+_STRUCTURED_AGENTS: dict[str, object] = {}
+
+
+async def _build_structured_agent(schema_name: str, schema: type):
+    """按 schema 建一个独立 graph（进程内缓存，按 schema 名）。
+
+    response_format 是**图级**配置，设在主 agent 上会约束所有输出（普通对话也被
+    强制结构化），故结构化场景单独建图——共用 backend/permissions/工具，不共用
+    会话历史（checkpointer=None，一次性调用）。
+    """
+    if schema_name in _STRUCTURED_AGENTS:
+        return _STRUCTURED_AGENTS[schema_name]
+    from deepagents import create_deep_agent
+
+    _patch_deepagents_subprocess_encoding()
+    backend, permissions = _fs_backend()
+    agent = create_deep_agent(
+        model=_build_model(),
+        tools=_build_base_tools(),
+        system_prompt=build_system_prompt(),
+        subagents=_build_subagents() or None,
+        backend=backend,
+        permissions=permissions,
+        response_format=schema,
+    )
+    _STRUCTURED_AGENTS[schema_name] = agent
+    return agent
+
+
+async def chat_structured(schema_name: str, message: str, session_key: str = "") -> dict:
+    """结构化对话：返回 schema 实例（dict 形式）。首个场景 topic_evaluation。"""
+    from .schemas import TopicEvaluation
+
+    schemas = {"topic_evaluation": TopicEvaluation}
+    if schema_name not in schemas:
+        raise ValueError(f"未注册的 schema：{schema_name}")
+    agent = await _build_structured_agent(schema_name, schemas[schema_name])
+    config = {"configurable": {"thread_id": session_key or f"structured-{schema_name}"}}
+    result = await agent.ainvoke(
+        {"messages": [{"role": "user", "content": message}]}, config=config
+    )
+    structured = result.get("structured_response") if isinstance(result, dict) else None
+    if structured is None:
+        raise RuntimeError("未拿到结构化响应（模型可能未按 schema 产出）")
+    return structured.model_dump() if hasattr(structured, "model_dump") else dict(structured)
 
 
 def _patch_deepagents_subprocess_encoding() -> None:

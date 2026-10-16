@@ -115,6 +115,24 @@ def test_fallback_policy_matrix():
     assert mfb._is_infra_failure(Status(400)) is False
 
 
+def test_subagents_boundaries():
+    """子代理角色边界（agent-subagents-output）：越权面在装配处收死。"""
+    subs = ar._build_subagents()
+    assert {s["name"] for s in subs} == {"research", "draft"}
+    for s in subs:
+        names = {getattr(t, "name", "") for t in (s.get("tools") or [])}
+        for bad in ("ask_human", "exec_script", "memory_record", "memory_search"):
+            assert bad not in names, f"{s['name']} 不应含 {bad}"
+        assert s.get("model") is not None  # deepagents 校验要求
+    research = next(s for s in subs if s["name"] == "research")
+    perms = research.get("permissions") or []
+    assert any(p.mode == "deny" and "/**" in p.paths for p in perms), "research 必须拒写"
+    assert not any(p.mode == "allow" for p in perms)
+    draft = next(s for s in subs if s["name"] == "draft")
+    allow = [p for p in (draft.get("permissions") or []) if p.mode == "allow"]
+    assert allow and all(any("outputs" in path for path in p.paths) for p in allow)
+
+
 def test_prompt_size_guard():
     """提示词不应无限膨胀（技能目录是主要变量）。"""
     assert len(_prompt()) < 40000, "提示词超过 40K——技能目录注入需重新设计"
