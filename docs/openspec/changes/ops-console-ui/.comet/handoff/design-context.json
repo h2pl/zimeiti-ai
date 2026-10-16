@@ -1,0 +1,16 @@
+{
+  "change": "ops-console-ui",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "63e469ca6e29e494024ffed48975cf730f0066705b42ed3a53a4cb01d6ab9bc1",
+  "files": [
+    { "path": "docs/openspec/changes/ops-console-ui/proposal.md", "sha256": "cc4dde757a4bf14e766e29ae3d9eae2aa9a2e7968d354b194cc1b02cac297925" },
+    { "path": "docs/openspec/changes/ops-console-ui/design.md", "sha256": "89226fbcae181b90f22eeb517b5f7165ba511a0312c9067f143cd0f73f6f273d" },
+    { "path": "docs/openspec/changes/ops-console-ui/tasks.md", "sha256": "57b119b5b08d199d0c3d8e46a810420f260cd928b07b0867e4960c4079a417bf" },
+    { "path": "docs/openspec/changes/ops-console-ui/.openspec.yaml", "sha256": "4c39792c289debca8ac94a151082057ea2a2931a0cf9910b40c425e493bd3ab9" },
+    { "path": "docs/openspec/changes/ops-console-ui/specs/ops-console-ui/spec.md", "sha256": "3a5000b02909c335de47b34a715f8e17f3694c526762ab730bf56380a3723249" }
+  ]
+}
