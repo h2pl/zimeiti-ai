@@ -42,7 +42,10 @@ check: ## 质量门禁五连：format → lint → types → security → tests+
 	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync ruff check zimeiti_api tests
 	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync mypy zimeiti_api
 	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync bandit -q -c pyproject.toml -r zimeiti_api
-	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync pytest tests/ -q --cov=zimeiti_api --cov-report=term --cov-fail-under=80
+	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync pytest tests/ -q -m "not behavior" --cov=zimeiti_api --cov-report=term --cov-fail-under=80
+
+evals: ## agent 行为回归（真实 LLM 探针，需 OPENAI_API_KEY；无密钥自动跳过）
+	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync pytest tests/evals -q -m behavior -s
 	@echo "== 全部门禁通过 =="
 
 clean: ## 清理构建产物与缓存

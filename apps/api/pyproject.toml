@@ -106,3 +106,6 @@ default = true
 
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib"
+markers = [
+    "behavior: 真实 LLM 行为探针（仅 make evals 跑；make check 用 -m \"not behavior\" 排除）",
+]
