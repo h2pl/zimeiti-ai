@@ -28,9 +28,10 @@
     {
       "name": "model-cost-rotation",
       "order": 4,
-      "status": "archived",
+      "status": "pending",
       "goal": "接单价表把 token 换算金额；多 key/auth-profile 轮换先于模型 fallback",
-      "nonGoals": "订阅配额窗口、provider usage 直拉、阶梯定价"
+      "nonGoals": "订阅配额窗口、provider usage 直拉、阶梯定价",
+      "note": "未实施——本批交付前三项（evals/子代理/控制台）；此项待用户确认后再开"
     }
   ]
 }
