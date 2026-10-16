@@ -2,6 +2,7 @@
 comet_change: model-resilience-cron
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-17-model-resilience-cron
 status: final
 ---
 
