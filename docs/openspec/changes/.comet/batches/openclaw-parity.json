@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "goal": "对照 OpenClaw 源码（npm openclaw@2026.10.2 + Easel AGENTS.md/SOUL.md）补足 agent harness 差距",
+  "createdAt": "2026-10-16",
+  "source": "code-explorer 对 openclaw dist/ 238MB 源码的系统调研 + AGENTS.md/SOUL.md 全文",
+  "changes": [
+    {
+      "name": "agent-operating-contract",
+      "order": 1,
+      "goal": "操作契约层对齐：技能目录注入与路由链、Execution Bias、Promised Work、ask-first 分级、发布安全门（persona_gate+留痕）、编排 glue 接线（manifest/calendar/output_paths）、SOUL 人格",
+      "scope": "SYSTEM_PROMPT 重构（含技能目录动态注入）、ops-* 改路由层、persona_gate/content_guard 接入流程",
+      "nonGoals": "记忆系统（batch ②）、模型 fallback/cron（batch ③）、exec 审批哈希绑定、Lobster 工作流",
+      "acceptance": ["探针：agent 按任务正确路由到 skill-topic-evaluator 等详细技能", "付费操作前经 ask_human 给出确认", "发布前 content_guard+persona_gate 门生效", "make check + E2E 全绿"],
+      "status": "pending"
+    },
+    {
+      "name": "agent-memory-system",
+      "order": 2,
+      "goal": "五层记忆架构：curated core（画像 memory.md 之外加 agent 侧 MEMORY.md）+ episodic 日记 + 溯源分级（owner/agent/untrusted）+ recall-loop 预防 + compaction 前 flush + dreaming 固化",
+      "scope": "apps/api 记忆模块（PG 表+检索）+ 工具（memory_search/memory_get）+ SYSTEM_PROMPT 接线",
+      "nonGoals": "跨用户共享记忆、standing intents/cron（③）、DREAMS.md review 层",
+      "acceptance": ["跨会话可检索历史经验", "注入内容带溯源标记且不重复抽取", "画像 memory.md 不被全局污染"],
+      "status": "pending"
+    },
+    {
+      "name": "model-resilience-cron",
+      "order": 3,
+      "goal": "模型韧性+定时：auth/模型 fallback 链（用户显式选择不 fallback）+ automations 定时任务（每日运营 case 化）+ 会话成本滚动统计",
+      "scope": "_build_model fallback 链、automations 工具或端点、usage 统计",
+      "nonGoals": "阶梯定价引擎、订阅配额窗口、provider usage 直拉",
+      "acceptance": ["主模型失败自动切 fallback 且对话不中断", "可配置每日定时跑运营 case", "usage 按会话可查"],
+      "status": "pending"
+    }
+  ]
+}
