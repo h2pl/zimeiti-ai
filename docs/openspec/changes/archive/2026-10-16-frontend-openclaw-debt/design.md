@@ -2,6 +2,7 @@
 comet_change: frontend-openclaw-debt
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-16-frontend-openclaw-debt
 status: final
 ---
 
