@@ -2,6 +2,7 @@
 comet_change: agent-behavior-evals
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-17-agent-behavior-evals
 status: final
 ---
 

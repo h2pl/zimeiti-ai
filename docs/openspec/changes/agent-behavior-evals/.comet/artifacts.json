@@ -1,9 +1,0 @@
-{
-  "openspec_proposal": "docs/openspec/changes/agent-behavior-evals/proposal.md",
-  "openspec_design": "docs/openspec/changes/agent-behavior-evals/design.md",
-  "openspec_tasks": "docs/openspec/changes/agent-behavior-evals/tasks.md",
-  "openspec_delta_spec": "docs/openspec/changes/agent-behavior-evals/specs/agent-behavior-evals/spec.md",
-  "design_document": "docs/openspec/changes/agent-behavior-evals/design.md",
-  "handoff_context": "docs/openspec/changes/agent-behavior-evals/.comet/handoff/design-context.json",
-  "handoff_markdown": "docs/openspec/changes/agent-behavior-evals/.comet/handoff/design-context.md"
-}
