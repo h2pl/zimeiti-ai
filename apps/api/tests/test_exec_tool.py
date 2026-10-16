@@ -3,8 +3,6 @@
 TDD RED：exec_tool 模块尚不存在；实现后 GREEN。
 """
 
-import json
-
 import pytest
 
 MOD = "zimeiti_api.runtime.exec_tool"
@@ -32,10 +30,20 @@ def reg(monkeypatch):
 
 def test_runs_registered_script(reg, tmp_path, monkeypatch):
     probe = tmp_path / "probe.py"
-    probe.write_text("import sys; print('OUT:' + ' '.join(sys.argv[1:])); sys.stderr.write('E1')", encoding="utf-8")
+    probe.write_text(
+        "import sys; print('OUT:' + ' '.join(sys.argv[1:])); sys.stderr.write('E1')",
+        encoding="utf-8",
+    )
     monkeypatch.setattr(
-        reg, "SCRIPT_REGISTRY",
-        {"probe-ok": {"path": str(probe), "params": {"--n": "int", "--text": "str"}, "desc": "probe"}},
+        reg,
+        "SCRIPT_REGISTRY",
+        {
+            "probe-ok": {
+                "path": str(probe),
+                "params": {"--n": "int", "--text": "str"},
+                "desc": "probe",
+            }
+        },
         raising=False,
     )
     r = reg.exec_script("probe-ok", {"--n": "3", "--text": "hello"})
@@ -58,7 +66,8 @@ def test_rejects_path_injection(reg, tmp_path, monkeypatch, bad):
     probe = tmp_path / "probe.py"
     probe.write_text("import sys; print(sys.argv[1])", encoding="utf-8")
     monkeypatch.setattr(
-        reg, "SCRIPT_REGISTRY",
+        reg,
+        "SCRIPT_REGISTRY",
         {"probe-ok": {"path": str(probe), "params": {"--p": "str"}, "desc": "probe"}},
         raising=False,
     )
@@ -71,7 +80,8 @@ def test_rejects_unknown_param(reg, tmp_path, monkeypatch):
     probe = tmp_path / "probe.py"
     probe.write_text("print('x')", encoding="utf-8")
     monkeypatch.setattr(
-        reg, "SCRIPT_REGISTRY",
+        reg,
+        "SCRIPT_REGISTRY",
         {"probe-ok": {"path": str(probe), "params": {"--p": "str"}, "desc": "probe"}},
         raising=False,
     )
@@ -84,7 +94,8 @@ def test_timeout_terminates(reg, tmp_path, monkeypatch):
     probe = tmp_path / "slow.py"
     probe.write_text("import time; time.sleep(30)", encoding="utf-8")
     monkeypatch.setattr(
-        reg, "SCRIPT_REGISTRY",
+        reg,
+        "SCRIPT_REGISTRY",
         {"probe-slow": {"path": str(probe), "params": {}, "desc": "slow"}},
         raising=False,
     )
@@ -100,7 +111,8 @@ def test_output_truncated(reg, tmp_path, monkeypatch):
     probe = tmp_path / "big.py"
     probe.write_text("print('x' * 50000)", encoding="utf-8")
     monkeypatch.setattr(
-        reg, "SCRIPT_REGISTRY",
+        reg,
+        "SCRIPT_REGISTRY",
         {"probe-big": {"path": str(probe), "params": {}, "desc": "big"}},
         raising=False,
     )

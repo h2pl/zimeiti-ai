@@ -28,7 +28,7 @@ SCRIPT_REGISTRY: dict[str, dict] = {
     "content_guard": {
         "path": "skills/shared/scripts/content_guard.py",
         "params": {"sub": "pos", "--text": "str", "--file": "str", "--out": "str"},
-        "desc": "出站内容安全闸门（子命令 scan/redact）：扫描文本中的敏感信息泄露（BLOCK 级命中退出码 7）",
+        "desc": "出站内容安全闸门（子命令 scan/redact）：敏感信息扫描（BLOCK 级命中退出码 7）",
     },
     "ai_score": {
         "path": "skills/builtin/skill-wechat-publisher/scripts/ai_score.py",
@@ -38,9 +38,15 @@ SCRIPT_REGISTRY: dict[str, dict] = {
     "render_card": {
         "path": "skills/shared/scripts/render_card.py",
         "params": {
-            "--html": "str", "--out": "str", "--selector": "str",
-            "--all": "str", "--out-dir": "str", "--prefix": "str",
-            "--full-page": "flag", "--width": "int", "--height": "int",
+            "--html": "str",
+            "--out": "str",
+            "--selector": "str",
+            "--all": "str",
+            "--out-dir": "str",
+            "--prefix": "str",
+            "--full-page": "flag",
+            "--width": "int",
+            "--height": "int",
         },
         "desc": "HTML → 图片渲染（playwright + chromium，卡片/海报截图）",
     },
@@ -94,7 +100,7 @@ def exec_script(name: str, args: dict | None = None) -> dict:
             "exit_code": 2,
             "stdout": "",
             "stderr": f"未注册或不可用的脚本: {name!r}。白名单机制：仅可执行注册脚本。"
-                      f"可用：{', '.join(sorted(SCRIPT_REGISTRY))}",
+            f"可用：{', '.join(sorted(SCRIPT_REGISTRY))}",
             "truncated": False,
         }
 
@@ -134,7 +140,12 @@ def exec_script(name: str, args: dict | None = None) -> dict:
             env=env,
         )
     except subprocess.TimeoutExpired:
-        return {"exit_code": 124, "stdout": "", "stderr": f"执行超时（>{DEFAULT_TIMEOUT}s），进程已终止", "truncated": False}
+        return {
+            "exit_code": 124,
+            "stdout": "",
+            "stderr": f"执行超时（>{DEFAULT_TIMEOUT}s），进程已终止",
+            "truncated": False,
+        }
 
     out, err = proc.stdout or "", proc.stderr or ""
     truncated = False

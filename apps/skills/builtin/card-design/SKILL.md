@@ -26,6 +26,8 @@ layer: produce
    ```bash
    python skills/builtin/card-design/scripts/card_audit.py audit -f outputs/主题名/card_*.png
    ```
+   > agent 侧可用 `exec_script` 的 `render_card`（`--html/--out/--selector` 或
+   > `--full-page --width --height`）完成「HTML → 截图」渲染，参数以本文件为准。
    任何 FAIL(死空白/跨度不足/头重脚轻)→ 按 `layout-laws.md`「欠填修正阶梯」补内容或换骨架**重渲**，全 PASS 再交付。
 
 ## 铁律速查（详见 references）

@@ -134,12 +134,6 @@ def pending_status(question_ids: list[str]) -> dict[str, dict]:
 # ---------- 模型与 agent ----------
 
 
-def _build_tools():
-    from .exec_tool import make_exec_tool
-
-    return [ask_human, make_exec_tool()]
-
-
 def _build_model():
     from langchain_openai import ChatOpenAI
 
@@ -177,6 +171,11 @@ async def _build_agent():
     def ask_human(question: str, options: str = "") -> str:
         """向用户提问并等待回答。question 为问题文本；options 用「|」分隔候选答案（可留空）。"""
         return "已提交问题，等待人工回答。"
+
+    def _build_tools() -> list:
+        from .exec_tool import make_exec_tool
+
+        return [ask_human, make_exec_tool()]
 
     checkpointer = await pg.setup_checkpointer()
     _patch_deepagents_subprocess_encoding()
