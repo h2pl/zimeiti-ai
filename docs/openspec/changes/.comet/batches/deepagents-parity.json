@@ -13,8 +13,12 @@
       "goal": "把 OpenClaw 时代的五层运营流程（发现/策划/制作/发布/归因）建模为五个 skills，agent 按需读取执行；归因层接通数据源；SYSTEM_PROMPT 收敛为索引与触发规则",
       "scope": "apps/skills/builtin/ 五层 SKILL.md、agent_runtime SYSTEM_PROMPT 索引化、归因层数据源接线",
       "nonGoals": "命令执行能力（batch ②）、前端兼容债（batch ③）、多画像流程差异化",
-      "acceptance": ["agent 被要求『按流程做一期内容』时按层执行并引用对应 skill", "归因层能读到已发布内容表现数据或如实报告无数据", "make check 与浏览器 E2E 全绿"],
-      "status": "open"
+      "acceptance": [
+        "agent 被要求『按流程做一期内容』时按层执行并引用对应 skill",
+        "归因层能读到已发布内容表现数据或如实报告无数据",
+        "make check 与浏览器 E2E 全绿"
+      ],
+      "status": "archived"
     },
     {
       "name": "agent-shell-exec",
@@ -22,8 +26,12 @@
       "goal": "白名单命令执行器 ExecTool：agent 可运行 skills/shared/scripts/ 注册脚本（ai_score.py 质检、render_card.py 渲染等）",
       "scope": "ExecTool 工具（脚本注册表+参数校验+超时+输出截断）、接入 _build_agent、SKILL 中标注可用脚本",
       "nonGoals": "任意 shell 命令、Docker 沙箱、远程执行",
-      "acceptance": ["agent 能跑注册脚本并消费输出", "白名单外命令被拒绝且有明确报错", "make check 全绿"],
-      "status": "pending"
+      "acceptance": [
+        "agent 能跑注册脚本并消费输出",
+        "白名单外命令被拒绝且有明确报错",
+        "make check 全绿"
+      ],
+      "status": "archived"
     },
     {
       "name": "frontend-openclaw-debt",
@@ -31,8 +39,11 @@
       "goal": "清理前端 OpenClaw 语义残留：打字机攒批假设、append-only 重试限制、QuestionCards RPC 桥适配 deepagents 原生语义",
       "scope": "App.tsx 打字机队列、ChatPage 重试逻辑、QuestionCards 组件",
       "nonGoals": "视觉/交互重设计、后端改动",
-      "acceptance": ["前端无 OpenClaw 语义依赖注释与对应逻辑", "浏览器 E2E S5 全绿"],
-      "status": "pending"
+      "acceptance": [
+        "前端无 OpenClaw 语义依赖注释与对应逻辑",
+        "浏览器 E2E S5 全绿"
+      ],
+      "status": "archived"
     }
   ]
 }
