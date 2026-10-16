@@ -2,6 +2,7 @@
 change: agent-subagents-output
 design-doc: docs/openspec/changes/agent-subagents-output/design.md
 base-ref: 1f3c2f9
+archived-with: 2026-10-17-agent-subagents-output
 ---
 
 # Plan：专属子代理与结构化输出
