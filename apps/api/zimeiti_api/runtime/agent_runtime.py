@@ -225,15 +225,44 @@ def _build_model():
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         return None
-    kwargs: dict[str, Any] = {
-        "model": os.environ.get("OPENAI_MODEL") or os.environ.get("ZIMEITI_MODEL", "gpt-4o-mini"),
+    base: dict[str, Any] = {
         "api_key": api_key,
         "streaming": True,
     }
     base_url = os.environ.get("OPENAI_BASE_URL")
     if base_url:
-        kwargs["base_url"] = base_url
-    return ChatOpenAI(**kwargs)
+        base["base_url"] = base_url
+
+    def _mk(model_name: str) -> ChatOpenAI:
+        # 支持 "模型名@base_url"：跨厂商 fallback（缺省 base_url 则与主模型同凭据）
+        kw = dict(base)
+        if "@" in model_name:
+            name, _, url = model_name.partition("@")
+            kw["base_url"] = url
+            return ChatOpenAI(model=name, **kw)
+        return ChatOpenAI(model=model_name, **kw)
+
+    primary = os.environ.get("OPENAI_MODEL") or os.environ.get("ZIMEITI_MODEL", "gpt-4o-mini")
+    main = _mk(primary)
+
+    # fallback 链（model-resilience-cron）：ZIMEITI_FALLBACK_MODELS 逗号分隔；
+    # 用户在设置里显式选择的模型（ZIMEITI_EXPLICIT_MODEL）严格不 fallback。
+    if os.environ.get("ZIMEITI_EXPLICIT_MODEL"):
+        return main
+    _fb_env = os.environ.get("ZIMEITI_FALLBACK_MODELS", "")
+    chain_names = [m.strip() for m in _fb_env.split(",") if m.strip()]
+    if not chain_names:
+        return main
+
+    from .model_fallback import FallbackChatModel
+
+    def _on_switch(idx: int, exc: Exception) -> None:
+        print(
+            f"[model-fallback] 主模型 {primary} 失败（{type(exc).__name__}），"
+            f"切换第 {idx + 1} 个备用模型"
+        )
+
+    return FallbackChatModel(models=[main, *[_mk(n) for n in chain_names]], on_switch=_on_switch)
 
 
 _AGENT = None
@@ -429,6 +458,7 @@ async def run_turn(
         lc_messages.append(HumanMessage(content=message))
 
         full_text: list[str] = []
+        usage_acc: dict = {"prompt": 0, "completion": 0, "model": ""}
         tool_names: set[str] = set()
         interrupted: dict | None = None
         try:
@@ -446,8 +476,35 @@ async def run_turn(
                     if name and name not in tool_names:
                         tool_names.add(name)
                         emit("activity", f"🔧 {name}…")
+                # 用量累计（model-resilience-cron）：末 chunk 带 usage_metadata
+                um = getattr(chunk, "usage_metadata", None)
+                if isinstance(um, dict):
+                    usage_acc["prompt"] = max(usage_acc["prompt"], int(um.get("input_tokens") or 0))
+                    usage_acc["completion"] = max(
+                        usage_acc["completion"], int(um.get("output_tokens") or 0)
+                    )
+                    rm = getattr(chunk, "response_metadata", None) or {}
+                    if isinstance(rm, dict) and rm.get("model"):
+                        usage_acc["model"] = rm["model"]
             snapshot = await agent.aget_state(config)
             interrupted = _extract_interrupt(snapshot)
+            # 用量落账（model-resilience-cron）：中断轮次也记（token 已花）
+            try:
+                from ..usage import record as _usage_record
+
+                # 部分端点不回 model 名 → 退回主模型名（环境变量）
+                _model_name = usage_acc["model"] or (
+                    os.environ.get("OPENAI_MODEL") or os.environ.get("ZIMEITI_MODEL", "")
+                )
+                _usage_record(
+                    session_key,
+                    turn_id,
+                    _model_name,
+                    usage_acc["prompt"],
+                    usage_acc["completion"],
+                )
+            except Exception:  # noqa: BLE001   用量表不可用不阻断对话
+                pass
         except Exception as e:  # noqa: BLE001
             if save_turn:
                 save_turn(pk, "error", "", {"turn_id": turn_id})

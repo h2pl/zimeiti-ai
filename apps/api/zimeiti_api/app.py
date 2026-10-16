@@ -34,6 +34,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
+from zimeiti_api import usage_router as _usage_router
+from zimeiti_api.automations import router as _automations_router
 from zimeiti_api.content import ideas as _ideas_router
 from zimeiti_api.content import outputs as _outputs_router
 from zimeiti_api.content import personas as _personas_router
@@ -87,6 +89,17 @@ async def _lifespan(_app: FastAPI):
         await asyncio.to_thread(_mem.setup)  # 记忆表（幂等）
     except Exception as e:  # noqa: BLE001  记忆表不可用不阻断启动（对话降级无记忆）
         print(f"[memory] 表初始化失败（无碍，对话继续）：{e}")
+    try:
+        from . import usage as _usage
+
+        await asyncio.to_thread(_usage.setup)  # 用量表（幂等）
+        from .automations import scheduler as _auto_sched
+        from .automations import store as _auto_store
+
+        await asyncio.to_thread(_auto_store.setup)  # 自动化表（幂等）
+        _auto_sched.start()  # 定时任务调度循环（任务持久化在 PG，重启不丢）
+    except Exception as e:  # noqa: BLE001  自动化不可用不阻断启动
+        print(f"[automations] 初始化失败（无碍）：{e}")
     yield
     _stop_mp_login_on_shutdown()
     await _pg.close_checkpointer()
@@ -171,5 +184,7 @@ for _r in (
     _ideas_router.router,  # /api/ideas...
     _schedule_router.router,  # /api/schedule...
     _trends_router.router,  # /api/trends
+    _automations_router.router,  # /api/automations...（定时任务）
+    _usage_router.router,  # /api/usage（会话用量统计）
 ):
     app.include_router(_r)
