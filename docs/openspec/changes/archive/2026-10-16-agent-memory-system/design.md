@@ -2,6 +2,7 @@
 comet_change: agent-memory-system
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-16-agent-memory-system
 status: final
 ---
 
