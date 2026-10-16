@@ -41,3 +41,4 @@ apps/scripts/_*.png
 apps/e2e/_*.png
 apps/skills/shared/.wechat_token_cache.json
 apps/profiles/
+apps/conversation_history/
