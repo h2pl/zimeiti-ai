@@ -1,6 +1,6 @@
 workflow: full
 language: zh-CN
-phase: design
+phase: build
 context_compression: off
 build_mode: null
 build_pause: null
@@ -11,7 +11,7 @@ isolation: branch
 verify_mode: null
 auto_transition: true
 base_ref: faa00ac224f6699a03f0a3c6426723bc9e8c8881
-design_doc: null
+design_doc: docs/openspec/changes/agent-ops-workflow/design.md
 plan: null
 verify_result: pending
 verify_failures: 0
@@ -23,9 +23,9 @@ archive_confirmation: null
 archived: false
 bound_branch: comet/agent-ops-workflow
 direct_override: null
-handoff_context: null
-handoff_hash: null
+handoff_context: docs/openspec/changes/agent-ops-workflow/.comet/handoff/design-context.json
+handoff_hash: 1dcafb8b0e09141ba78ab7504af90532315151491ae56846266b8ee902f9c01d
 classic_profile: full
 classic_migration: 1
 run_id: 96301f4c-492e-4602-b510-c8e4ef838b48
-check_epoch: 1
+check_epoch: 2

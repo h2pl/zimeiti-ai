@@ -1,0 +1,16 @@
+{
+  "change": "agent-ops-workflow",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "1dcafb8b0e09141ba78ab7504af90532315151491ae56846266b8ee902f9c01d",
+  "files": [
+    { "path": "docs/openspec/changes/agent-ops-workflow/proposal.md", "sha256": "24940535235684155bc2aa01cfa8d953a20130791ef253411ba2c86acf55d338" },
+    { "path": "docs/openspec/changes/agent-ops-workflow/design.md", "sha256": "9477c8ce68563ed94db76d0b0508a8d3397eb099ab64e70750c8b6e4964aa4bd" },
+    { "path": "docs/openspec/changes/agent-ops-workflow/tasks.md", "sha256": "dd3074943d7d6bd505c8784291ce56ea5a7eebe714f9dd2a7ae521a154674aa9" },
+    { "path": "docs/openspec/changes/agent-ops-workflow/.openspec.yaml", "sha256": "9cfa2ab963a8c9b58eecdb9fd5b55544e988fee8de8b887226ffc32d27744459" },
+    { "path": "docs/openspec/changes/agent-ops-workflow/specs/agent-ops-workflow/spec.md", "sha256": "1c2f8698e54307170044c44d86914e16bdd45574797166bb2784a603ddbfed09" }
+  ]
+}
