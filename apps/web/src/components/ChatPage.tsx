@@ -217,7 +217,9 @@ export default function ChatPage({ session, stream, onSend, onStop, onResend, on
             let actions;
             if (isFinal) {
               const copy = () => navigator.clipboard?.writeText(msg.content);
-              // 只允许对「最后一轮」重试，契合 OpenClaw append-only 模型（不改写历史）；已移除编辑
+              // 重试限制为「最后一轮」——现行理由（实测，非历史包袱）：后端对话历史
+              // 从 PG checkpoint 重放、chat/stream 不带历史也不支持截断参数，历史轮
+              // 重发会让 agent 看到全量旧上下文。待后端支持服务端截断后再放开。
               const isLastFinal = i === session.messages.length - 1;
               if (msg.role === 'user') {
                 actions = {

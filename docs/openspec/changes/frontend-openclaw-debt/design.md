@@ -1,5 +1,8 @@
 ---
 comet_change: frontend-openclaw-debt
+role: technical-design
+canonical_spec: openspec
+status: final
 ---
 
 # 设计：前端 OpenClaw 语义残留清理

@@ -77,7 +77,7 @@ export default function App() {
   // 挂载时决定进哪个会话。规则：
   //  - 同一标签刷新（sessionStorage 记着本标签的会话）→ 直接续上（同标签不算冲突）。
   //  - 新开标签/窗口 → 若「上次活跃会话」正被另一个存活标签占用（跨标签 BroadcastChannel 探测），
-  //    则开一个新会话，避免两个窗口撞同一会话 → openclaw 并发 takeover 崩溃（后端还有 flock 兜底）。
+  //    则开一个新会话——双窗口写同一会话会互相覆盖流式状态（机制保留，与旧运行时无关）。
   //  - 否则续上上次会话（保留「关页重开续接」的体验）。
   const TAB_SESSION_KEY = 'easel_tab_session';
   useEffect(() => {
@@ -264,7 +264,8 @@ export default function App() {
     });
     streamAcc.current[sessionId] = { content: '', thinking: '', steps: [], questions: [] };
     setStreams((prev) => ({ ...prev, [sessionId]: { content: '', thinking: '', activity: '', questions: [] } }));
-    // 打字机队列：流式事件按批到达（OpenClaw 攒批），前端按字符节奏显示，体验逐字浮现。
+    // 打字机队列：渲染节流手段（不假设上游攒批节奏）——token 帧先入缓冲，
+    // pump 按稳定节奏吐给界面，体验逐字浮现。缓冲归属 sessionId，切会话不中断。
     typingBuf.current[sessionId] = '';
     startTypingPump(sessionId);
     streamCtl.current[sessionId] = streamChat(
@@ -276,8 +277,8 @@ export default function App() {
         ensureTypingPump(sessionId);
       },
       (sessionKey) => {
-        // done 不能立即 flush——token 和 done 几乎同时到达（OpenClaw 攒批），
-        // 立即 flush 会把整包瞬间冲出，打字机白做。等队列吐完再落盘。
+        // done 不能立即 flush——token 与 done 可能同帧到达，立即 flush 会把
+        // 缓冲区整包瞬间冲出，打字机白做。等队列吐完再落盘。
         const waitAndFinalize = () => {
           if (typingBuf.current[sessionId]) {
             setTimeout(waitAndFinalize, 60);
@@ -615,8 +616,8 @@ export default function App() {
     try { sessionStorage.removeItem(`easel_pending_turn:${id}`); } catch { /* ignore */ }
 
     if (target?.sessionKey) {
-      // Do not delete OpenClaw's session record while its agent is still
-      // writing to it; the stop endpoint waits for backend cleanup first.
+      // 会话仍有 agent 在写（pendingTurnId）时不要删服务端会话记录；
+      // stop 端点会等后端清理完成再删。
       void stopped.then(() => deleteRemoteSession(target.sessionKey as string)).catch(() => {});
     }
 
