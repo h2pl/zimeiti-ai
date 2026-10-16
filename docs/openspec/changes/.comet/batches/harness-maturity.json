@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "goal": "harness 成熟度补齐：行为回归、子代理与结构化输出、运维控制台 UI、成本与凭据韧性",
+  "createdAt": "2026-10-17",
+  "source": "agent harness 与 OpenClaw 源码对照盘点（2026-10-16）+ 当前装配实证",
+  "changes": [
+    {"name": "agent-behavior-evals", "order": 1, "status": "pending",
+     "goal": "把手工探针脚本化为可重复断言的行为回归套件（路由命中/付费确认/跨会话记忆/fallback 切换/真实产物落盘），独立 make 目标，不进 make check",
+     "nonGoals": "单测（已有）、UI E2E（已有）、离线桩模型的全量行为仿真"},
+    {"name": "agent-subagents-output", "order": 2, "status": "pending",
+     "goal": "专属子代理（便宜模型分层、上下文 fork、嵌套深度）+ 结构化输出 response_format",
+     "nonGoals": "自定义中间件、并行 swarm"},
+    {"name": "ops-console-ui", "order": 3, "status": "pending",
+     "goal": "定时任务管理页 + 用量统计页 + 设置面（fallback 链/记忆开关），后端端点已就位",
+     "nonGoals": "整体视觉重设计、移动端适配"},
+    {"name": "model-cost-rotation", "order": 4, "status": "pending",
+     "goal": "接单价表把 token 换算金额；多 key/auth-profile 轮换先于模型 fallback",
+     "nonGoals": "订阅配额窗口、provider usage 直拉、阶梯定价"}
+  ]
+}
