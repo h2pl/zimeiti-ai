@@ -2,6 +2,7 @@
 comet_change: agent-ops-workflow
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-16-agent-ops-workflow
 status: final
 ---
 

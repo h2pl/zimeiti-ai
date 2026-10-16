@@ -1,8 +1,0 @@
-{
-  "openspec_proposal": "docs/openspec/changes/agent-ops-workflow/proposal.md",
-  "openspec_design": "docs/openspec/changes/agent-ops-workflow/design.md",
-  "openspec_tasks": "docs/openspec/changes/agent-ops-workflow/tasks.md",
-  "openspec_delta_spec": "docs/openspec/changes/agent-ops-workflow/specs/agent-ops-workflow/spec.md",
-  "handoff_context": "docs/openspec/changes/agent-ops-workflow/.comet/handoff/design-context.json",
-  "handoff_markdown": "docs/openspec/changes/agent-ops-workflow/.comet/handoff/design-context.md"
-}
