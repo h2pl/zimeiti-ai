@@ -53,6 +53,10 @@ SYSTEM_PROMPT = (
     "- outputs/：内容库，**唯一可写目录**——生成的文章/脚本一律 write_file 到这里\n"
     "账号登录状态与数据统计存在数据库，不在文件系统；查不到就明说，不要反复枚举目录。"
     "\n\n"
+    "【白名单脚本】已注册的质检/渲染脚本经 exec_script 工具调用（如 ai_score 文章质检、"
+    "content_guard 出站安全扫描、render_card 卡片渲染）；只能调用注册表内的脚本，"
+    "调用前先读对应 SKILL.md 了解参数。"
+    "\n\n"
     "【语言硬约束】无论用户使用什么语言提问，你的全部回复必须使用简体中文；"
     "仅以下内容保留原文：专有名词、平台名、工具/命令/代码、文件路径、以及用户"
     "明确要求保留原文的内容。不要用英文回答中文问题。"
@@ -121,6 +125,12 @@ def pending_status(question_ids: list[str]) -> dict[str, dict]:
 # ---------- 模型与 agent ----------
 
 
+def _build_tools():
+    from .exec_tool import make_exec_tool
+
+    return [ask_human, make_exec_tool()]
+
+
 def _build_model():
     from langchain_openai import ChatOpenAI
 
@@ -164,7 +174,7 @@ async def _build_agent():
     backend, permissions = _fs_backend()
     _AGENT = create_deep_agent(
         model=_build_model(),
-        tools=[ask_human],
+        tools=_build_tools(),
         system_prompt=SYSTEM_PROMPT,
         backend=backend,
         permissions=permissions,
