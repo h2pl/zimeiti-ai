@@ -1,3 +1,4 @@
+import UsageCard from './UsageCard';
 import { useState, useEffect } from 'react';
 import {
   fetchTrends, fetchSchedule, fetchOutputs, fetchAccounts, fetchIdeas,
@@ -178,6 +179,7 @@ export default function DashboardPage({ persona, gatewayStatus, onNavigate, onUs
               </button>
             ))}
           </div>
+          <UsageCard variant="compact" />
         </>
       )}
 

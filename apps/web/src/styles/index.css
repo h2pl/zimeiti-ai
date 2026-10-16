@@ -1379,3 +1379,55 @@ textarea.field { resize: vertical; min-height: 90px; }
 
 /* 自定义供应商行的协议选择：与行内 mock 输入同风格，宽度收敛 */
 .prow select.proto-sel { min-width: 0; width: 100%; padding: 4px 6px; font-size: 12px; }
+
+/* ---- 自动化页（ops-console-ui：定时任务 + 执行记录） ---- */
+.auto-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.auto-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface);
+}
+.auto-card.is-off { opacity: .62; }
+.auto-title { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.auto-title .tag, .auto-card .tag-off {
+  font-size: 11px; padding: 1px 7px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent-end);
+}
+.auto-card .tag-off { background: var(--text-tertiary); color: var(--surface); }
+.auto-meta { margin-top: 4px; font-size: 12px; color: var(--text-secondary); }
+.auto-actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.auto-actions .btn-ghost { font-size: 12px; padding: 4px 10px; }
+
+.run-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.run-item {
+  display: flex; align-items: center; gap: 10px; font-size: 12px;
+  padding: 5px 8px; border-radius: var(--radius-sm); background: var(--bg-subtle, transparent);
+}
+.run-item .dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
+.run-item .dot-done { background: #16a34a; }
+.run-item .dot-failed { background: #dc2626; }
+.run-item .dot-running { background: #f59e0b; }
+.run-item .run-status { color: var(--text-secondary); flex: 0 0 auto; }
+.run-item .run-dur { color: var(--text-tertiary); flex: 0 0 auto; }
+.run-item .run-summary {
+  color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ---- 用量卡片（ops-console-ui） ---- */
+.usage-card {
+  margin-top: 12px; padding: 12px 14px; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface);
+}
+.usage-head { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+.usage-head select { font-size: 12px; padding: 3px 6px; }
+.usage-total { display: flex; align-items: baseline; gap: 14px; margin-top: 8px; font-size: 13px; }
+.usage-unit { font-size: 11px; color: var(--text-tertiary); }
+.usage-empty { margin-top: 8px; font-size: 12px; color: var(--text-secondary); }
+.usage-rows { margin-top: 10px; display: flex; flex-direction: column; gap: 4px; }
+.usage-row {
+  display: grid; grid-template-columns: 1.4fr 1fr 1fr auto; gap: 8px;
+  font-size: 12px; color: var(--text-secondary); padding: 3px 0;
+  border-top: 1px solid var(--border);
+}
+.usage-session { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.usage-turns { color: var(--text-tertiary); }

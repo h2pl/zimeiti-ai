@@ -213,6 +213,72 @@ export function deleteSchedule(id: string): Promise<{ ok: boolean }> {
   return request(`/api/schedule/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
+// ---------- 定时自动化（ops-console-ui） ----------
+
+export interface Automation {
+  id: string;
+  name: string;
+  kind: 'case' | 'prompt';
+  schedule: string;
+  payload: string;
+  enabled: boolean;
+  next_run: number;
+  last_run: number;
+  lease: number;
+}
+
+export interface AutomationRun {
+  id: string;
+  auto_id: string;
+  status: 'running' | 'done' | 'failed';
+  started: number;
+  finished: number;
+  summary: string;
+}
+
+export interface UsageSummary {
+  rows: { session_key: string; model: string; prompt_tokens: number; completion_tokens: number; turns: number }[];
+  total_prompt: number;
+  total_completion: number;
+}
+
+export function fetchAutomations(): Promise<{ automations: Automation[] }> {
+  return request('/api/automations');
+}
+
+export function createAutomation(item: {
+  name: string; kind: string; schedule: string; payload: string;
+}): Promise<{ id: string; next_run: number }> {
+  return request('/api/automations', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(item),
+  });
+}
+
+export function updateAutomation(id: string, patch: Record<string, unknown>): Promise<{ ok: boolean }> {
+  return request(`/api/automations/${encodeURIComponent(id)}`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch),
+  });
+}
+
+export function deleteAutomation(id: string): Promise<{ ok: boolean }> {
+  return request(`/api/automations/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+export function runAutomationNow(id: string): Promise<{ ok: boolean; started?: boolean }> {
+  return request(`/api/automations/${encodeURIComponent(id)}/run-now`, { method: 'POST' });
+}
+
+export function fetchAutomationRuns(autoId?: string): Promise<{ runs: AutomationRun[] }> {
+  const q = autoId ? `?auto_id=${encodeURIComponent(autoId)}` : '';
+  return request(`/api/automations/runs${q}`);
+}
+
+export function fetchUsage(sessionKey?: string, days = 30): Promise<UsageSummary> {
+  const p = new URLSearchParams({ days: String(days) });
+  if (sessionKey) p.set('session_key', sessionKey);
+  return request(`/api/usage?${p.toString()}`);
+}
+
 // ---- 选题库 ----
 export interface Idea {
   id: string; title: string; note: string; source: string; status: string; created: number;
