@@ -1,0 +1,16 @@
+{
+  "change": "model-resilience-cron",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "daeb6f32c60f030637dacd886a4bea4f835e038566f60c3e7b11df5029c53e55",
+  "files": [
+    { "path": "docs/openspec/changes/model-resilience-cron/proposal.md", "sha256": "3e47dc722c5f9e079e53f84dd64ac772a3b155ebbfdc32e81168f476bda06551" },
+    { "path": "docs/openspec/changes/model-resilience-cron/design.md", "sha256": "181c280f0d98e6a5b9165e8fec761976a1dda24913627baf1f799fef3391e6f7" },
+    { "path": "docs/openspec/changes/model-resilience-cron/tasks.md", "sha256": "58168efc56e05391e8d76ad97e3301306a4e125d4332870f1a0c513609be1e7b" },
+    { "path": "docs/openspec/changes/model-resilience-cron/.openspec.yaml", "sha256": "9cfa2ab963a8c9b58eecdb9fd5b55544e988fee8de8b887226ffc32d27744459" },
+    { "path": "docs/openspec/changes/model-resilience-cron/specs/model-fallback/spec.md", "sha256": "2fe1b0edddd264452c6a9bf7cc71a8b090a97574e493c344bd8c1a422a8ece85" }
+  ]
+}
