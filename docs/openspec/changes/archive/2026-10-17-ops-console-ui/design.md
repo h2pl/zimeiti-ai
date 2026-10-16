@@ -2,6 +2,7 @@
 comet_change: ops-console-ui
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-17-ops-console-ui
 status: final
 ---
 
