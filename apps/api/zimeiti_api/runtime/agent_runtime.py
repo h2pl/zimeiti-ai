@@ -97,6 +97,12 @@ _CONTRACT_HEAD = (
     "content_guard 出站安全扫描、render_card 卡片渲染）；只能调用注册表内的脚本，"
     "调用前先读对应 SKILL.md 了解参数。"
     "\n\n"
+    "【记忆】跨会话经验用 memory_record/memory_search：一轮结束出现真正可复用的偏好、"
+    "红线、制作技巧或效果归因时，凝练 1-3 条先向用户提出，确认后记录（一次性规格/临时"
+    "参数/流水账不记）。检索结果按 [记忆:origin] 标注使用，检索不到就如实说。"
+    "边界：画像 memory.md 是画像域长期记忆，记忆库是运营经验域，两者互不写入；"
+    "画像更新只经用户确认的画像管理流程。"
+    "\n\n"
     "【语言硬约束】无论用户使用什么语言提问，你的全部回复必须使用简体中文；"
     "仅以下内容保留原文：专有名词、平台名、工具/命令/代码、文件路径、以及用户"
     "明确要求保留原文的内容。不要用英文回答中文问题。"
@@ -181,6 +187,12 @@ async def delete_session(session_key: str, user_id: str = pg.DEFAULT_USER) -> bo
         pass
     _LIVE_INTERRUPTS.pop(session_key, None)
     _LOCKS.pop(session_key, None)
+    try:
+        from ..memory import store as _mem
+
+        _mem.delete_session_injections(session_key)  # 记忆注入日志随会话级联清
+    except Exception:  # noqa: BLE001   记忆表未就绪不阻断会话删除
+        pass
     return deleted
 
 
@@ -246,9 +258,10 @@ async def _build_agent():
         return "已提交问题，等待人工回答。"
 
     def _build_tools() -> list:
+        from ..memory.tools import make_memory_tools
         from .exec_tool import make_exec_tool
 
-        return [ask_human, make_exec_tool()]
+        return [ask_human, make_exec_tool(), *make_memory_tools()]
 
     checkpointer = await pg.setup_checkpointer()
     _patch_deepagents_subprocess_encoding()
@@ -590,6 +603,16 @@ async def ask(session_key: str, message: str) -> str:
             agent = await _build_agent()
         except Exception as e:  # noqa: BLE001
             return f"❌ 运行时初始化失败：{str(e)[:180]}"
+
+        # compaction 前 episodic flush（design D3 替代挂点）：消息超阈值先落保险记忆
+        try:
+            from ..memory.flush import flush_if_long
+
+            history = pg.messages_load(session_key)
+            if flush_if_long(session_key, history):
+                print(f"[memory] 会话 {session_key} 历史 {len(history)} 条，已 flush episodic")
+        except Exception:  # noqa: BLE001   记忆模块不可用不阻断对话
+            pass
 
         config = {"configurable": {"thread_id": pg.thread_id(session_key)}}
         from langchain_core.messages import AIMessage, HumanMessage

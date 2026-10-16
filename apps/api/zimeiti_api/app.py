@@ -81,6 +81,12 @@ async def _lifespan(_app: FastAPI):
     await _pg.setup_checkpointer()  # checkpoint 表 + 连接池
     _agent_runtime.set_main_loop(asyncio.get_running_loop())  # 线程侧 ask_sync 投回主循环
     _trends_router.start_trends_warmup()  # 热点缓存后台保热（冷抓 12s+ 的空窗不该让用户等）
+    try:
+        from .memory import store as _mem
+
+        await asyncio.to_thread(_mem.setup)  # 记忆表（幂等）
+    except Exception as e:  # noqa: BLE001  记忆表不可用不阻断启动（对话降级无记忆）
+        print(f"[memory] 表初始化失败（无碍，对话继续）：{e}")
     yield
     _stop_mp_login_on_shutdown()
     await _pg.close_checkpointer()
