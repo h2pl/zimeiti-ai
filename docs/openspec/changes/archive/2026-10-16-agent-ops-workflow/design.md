@@ -1,5 +1,9 @@
 ---
 comet_change: agent-ops-workflow
+role: technical-design
+canonical_spec: openspec
+archived-with: 2026-10-16-agent-ops-workflow
+status: final
 ---
 
 # 设计：五层运营流程技能化

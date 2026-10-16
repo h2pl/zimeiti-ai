@@ -1,3 +1,0 @@
-{"sequence":1,"timestamp":"2026-10-16T04:13:46.736Z","type":"run_started","runId":"96301f4c-492e-4602-b510-c8e4ef838b48","data":{"skill":"comet-classic","skillVersion":"1","skillHash":"226b80286e81437eae2986177a26071a9663b1095cfc14cab773f05fbe01493f"}}
-{"sequence":2,"timestamp":"2026-10-16T04:13:46.736Z","type":"state_migrated","runId":"96301f4c-492e-4602-b510-c8e4ef838b48","data":{"kind":"classic","migrationVersion":1,"profile":"full","source":"pre-migration"}}
-{"sequence":3,"timestamp":"2026-10-16T04:13:49.211Z","type":"state_transitioned","runId":"96301f4c-492e-4602-b510-c8e4ef838b48","data":{"kind":"classic","fromStep":"full.open","toStep":"full.design.handoff","event":"open-complete","phase":"open","source":"comet-guard"}}

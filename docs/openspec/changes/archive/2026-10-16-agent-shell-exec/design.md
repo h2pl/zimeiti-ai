@@ -1,5 +1,9 @@
 ---
 comet_change: agent-shell-exec
+role: technical-design
+canonical_spec: openspec
+archived-with: 2026-10-16-agent-shell-exec
+status: final
 ---
 
 # 设计：白名单命令执行器

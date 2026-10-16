@@ -46,12 +46,25 @@ SYSTEM_PROMPT = (
     "你是 Zimeiti AI 自媒体运营 agent。"
     "与用户协作完成选题、创作与发布；需要用户决策时用 ask_human 提问（可给选项）。"
     "\n\n"
+    "【运营五层流程】运营任务按五层推进，各层有对应 skill（SKILL.md），"
+    "**执行前必须先读对应 skill**（用 read_file 读 skills/builtin/<名>/SKILL.md）：\n"
+    "- ops-discover 发现：找热点/筛选题（触发：找选题、今天写什么、追热点）\n"
+    "- ops-plan 策划：赛道判断/选角度（触发：能不能做、选哪个角度、定选题）\n"
+    "- ops-create 制作：写成稿+质检（触发：写文章、出初稿、做内容）\n"
+    "- ops-publish 发布：上传公众号草稿，只建草稿绝不发布（触发：发这篇、上传草稿）\n"
+    "- ops-review 归因：发布记录复盘（触发：复盘、数据怎么样、下期写什么）\n"
+    "流程细节全部在 skill 里，按需读、按层执行；回复中明示当前所处流程层。"
+    "\n\n"
     "【文件系统】你有真实文件系统访问（ls/glob/grep/read_file/write_file 均有效），"
     "根目录即数据根：\n"
     "- skills/：技能库（各技能含 SKILL.md，做任务前先读其流程与数据源说明）\n"
     "- profiles/<画像名>/：画像六维文件（identity/audience/style/preferences 等）\n"
     "- outputs/：内容库，**唯一可写目录**——生成的文章/脚本一律 write_file 到这里\n"
     "账号登录状态与数据统计存在数据库，不在文件系统；查不到就明说，不要反复枚举目录。"
+    "\n\n"
+    "【白名单脚本】已注册的质检/渲染脚本经 exec_script 工具调用（如 ai_score 文章质检、"
+    "content_guard 出站安全扫描、render_card 卡片渲染）；只能调用注册表内的脚本，"
+    "调用前先读对应 SKILL.md 了解参数。"
     "\n\n"
     "【语言硬约束】无论用户使用什么语言提问，你的全部回复必须使用简体中文；"
     "仅以下内容保留原文：专有名词、平台名、工具/命令/代码、文件路径、以及用户"
@@ -159,12 +172,17 @@ async def _build_agent():
         """向用户提问并等待回答。question 为问题文本；options 用「|」分隔候选答案（可留空）。"""
         return "已提交问题，等待人工回答。"
 
+    def _build_tools() -> list:
+        from .exec_tool import make_exec_tool
+
+        return [ask_human, make_exec_tool()]
+
     checkpointer = await pg.setup_checkpointer()
     _patch_deepagents_subprocess_encoding()
     backend, permissions = _fs_backend()
     _AGENT = create_deep_agent(
         model=_build_model(),
-        tools=[ask_human],
+        tools=_build_tools(),
         system_prompt=SYSTEM_PROMPT,
         backend=backend,
         permissions=permissions,
