@@ -1,0 +1,16 @@
+{
+  "change": "autonomous-observability",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "2a136416fb16c91226bf7d8498c7007dd957611fe58469348402dd2a0140b4a7",
+  "files": [
+    { "path": "docs/openspec/changes/autonomous-observability/proposal.md", "sha256": "6958930b4b00929dece73346d48e8b97616e42fa04e16b61493e06ca4256668d" },
+    { "path": "docs/openspec/changes/autonomous-observability/design.md", "sha256": "2bc151b233ce3eda3220aa435b3897b54d87607ccace84b8c75ab1d3a771e1c6" },
+    { "path": "docs/openspec/changes/autonomous-observability/tasks.md", "sha256": "a489d5a31d8ae408d0888b2c0efd5c1701dfa9be28777b374dafdce3f3c55062" },
+    { "path": "docs/openspec/changes/autonomous-observability/.openspec.yaml", "sha256": "dc08c29816def5c12ac71497ed005c1c0d6d779aa76f03fa6cd1d3ed38d91ec9" },
+    { "path": "docs/openspec/changes/autonomous-observability/specs/autonomous-observability/spec.md", "sha256": "abca191f20624aed504fb555b79b21cb5d9cad0cbd5f7dbd328231bd0b56d432" }
+  ]
+}
