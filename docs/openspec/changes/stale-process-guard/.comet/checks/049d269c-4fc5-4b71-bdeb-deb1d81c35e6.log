@@ -1,0 +1,110 @@
+cd apps/api && uv run --no-sync python ../scripts/verify_openclaw_removal.py
+warning: Using incompatible environment (`.venv`) due to `--no-sync` (The project environment's Python version does not satisfy the request: `path `E:/Dev/Python314/python.exe``)
+OK: openclaw residues zero (AST); import app 57 api routes; runtime API complete (run_turn, ask, ask_sync, delete_session, answer, pending_status, model_configured)
+cd apps && PYTHONUTF8=1 python scripts/validate_skills.py
+OK: 119 skills and publisher execution contracts conform
+cd apps && PYTHONUTF8=1 python scripts/validate_skill_commands.py
+OK: 273 documented Python commands match their argparse schemas
+cd apps/skills/builtin/skill-wechat-publisher/tests && PYTHONUTF8=1 python -m pytest -q
+...................ss.sss..................                              [100%]
+38 passed, 5 skipped in 0.60s
+cd apps/api && PYTHONUTF8=1 uv run --no-sync ruff format zimeiti_api zimeiti_harness tests
+warning: Using incompatible environment (`.venv`) due to `--no-sync` (The project environment's Python version does not satisfy the request: `path `E:/Dev/Python314/python.exe``)
+74 files left unchanged
+cd apps/api && PYTHONUTF8=1 uv run --no-sync ruff check zimeiti_api zimeiti_harness tests
+warning: Using incompatible environment (`.venv`) due to `--no-sync` (The project environment's Python version does not satisfy the request: `path `E:/Dev/Python314/python.exe``)
+All checks passed!
+cd apps/api && PYTHONUTF8=1 uv run --no-sync mypy zimeiti_api zimeiti_harness
+warning: Using incompatible environment (`.venv`) due to `--no-sync` (The project environment's Python version does not satisfy the request: `path `E:/Dev/Python314/python.exe``)
+Success: no issues found in 51 source files
+cd apps/api && PYTHONUTF8=1 uv run --no-sync bandit -q -c pyproject.toml -r zimeiti_api zimeiti_harness
+warning: Using incompatible environment (`.venv`) due to `--no-sync` (The project environment's Python version does not satisfy the request: `path `E:/Dev/Python314/python.exe``)
+[tester]	WARNING	nosec encountered (B608), but no failed test on file zimeiti_api\automations\store.py:113
+[manager]	WARNING	Test in comment: WHERE is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: int is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: TTL is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: s is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: WHERE is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: int is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: TTL is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: s is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: WHERE is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: ANY is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: s is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: WHERE is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: int is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: TTL is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: s is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: k is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: s is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: k is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: s is not a test name or id, ignoring
+[tester]	WARNING	nosec encountered (B608), but no failed test on file zimeiti_api\core\pg.py:416
+[tester]	WARNING	nosec encountered (B608), but no failed test on file zimeiti_api\core\pg.py:511
+[tester]	WARNING	nosec encountered (B608), but no failed test on file zimeiti_harness\usage.py:81
+cd apps/api && PYTHONUTF8=1 uv run --no-sync pytest tests/ -q -m "not behavior" --cov=zimeiti_api --cov=zimeiti_harness --cov-report=term --cov-fail-under=80
+warning: Using incompatible environment (`.venv`) due to `--no-sync` (The project environment's Python version does not satisfy the request: `path `E:/Dev/Python314/python.exe``)
+........................................................................ [ 30%]
+........................................................................ [ 60%]
+........................................................................ [ 90%]
+......................                                                   [100%]
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.12.13-final-0 _______________
+
+Name                                        Stmts   Miss  Cover   Missing
+-------------------------------------------------------------------------
+zimeiti_api\__init__.py                        10      0   100%
+zimeiti_api\__main__.py                        16     16     0%   9-35
+zimeiti_api\app.py                            107     30    72%   79-86, 98-99, 109-110, 135-142, 147, 152-158, 163-174
+zimeiti_api\automations\__init__.py             0      0   100%
+zimeiti_api\automations\router.py              49     27    45%   22, 27-37, 42-49, 54-55, 60, 66-74
+zimeiti_api\automations\scheduler.py           87     43    51%   36, 47-48, 54-68, 73-92, 108-114, 122-128, 140-142
+zimeiti_api\automations\store.py               76      8    89%   106-116
+zimeiti_api\chat_router.py                    285     31    89%   68, 70, 87, 163-164, 216-219, 261-262, 273-274, 303, 315-316, 319-322, 336-350, 362, 374, 435-436, 483-484
+zimeiti_api\content\__init__.py                 0      0   100%
+zimeiti_api\content\ideas.py                   45      0   100%
+zimeiti_api\content\ops_analytics.py           49      6    88%   26, 48, 57-58, 86-87
+zimeiti_api\content\outputs.py                123     11    91%   103, 122, 125, 134-136, 214-215, 217, 239-240
+zimeiti_api\content\persona_core.py            37      3    92%   26-28
+zimeiti_api\content\personas.py               178      9    95%   38, 80, 91, 214-217, 228-229
+zimeiti_api\content\schedule.py                78      4    95%   150-151, 155-156
+zimeiti_api\content\skills.py                  93      3    97%   62-64
+zimeiti_api\content\trends.py                  81      6    93%   115-118, 128-129
+zimeiti_api\content\uploads.py                 77      4    95%   86, 92, 118, 129
+zimeiti_api\core\__init__.py                    0      0   100%
+zimeiti_api\core\paths.py                      42      1    98%   33
+zimeiti_api\core\pg.py                        190     10    95%   143-144, 165, 205-213, 352, 412, 422, 507
+zimeiti_api\core\settings.py                  150      6    96%   228-229, 244-245, 256, 278
+zimeiti_api\core\timeouts.py                    3      0   100%
+zimeiti_api\governance\__init__.py              0      0   100%
+zimeiti_api\governance\guard.py                89     21    76%   46, 52-53, 66-67, 87-88, 99-100, 124-134, 151, 193-202
+zimeiti_api\operations\__init__.py              0      0   100%
+zimeiti_api\operations\env.py                 108      7    94%   126-130, 156, 170-175
+zimeiti_api\operations\models.py              291     17    94%   193-194, 288, 316, 320, 328, 369, 376, 381-385, 469, 520, 539-540
+zimeiti_api\platforms\__init__.py               0      0   100%
+zimeiti_api\platforms\accounts.py              63      6    90%   46, 61, 98-99, 115-116
+zimeiti_api\platforms\analytics.py             42      2    95%   107-108
+zimeiti_api\platforms\common.py                 9      0   100%
+zimeiti_api\platforms\login.py                194     27    86%   45-49, 107-108, 167-202, 234-235, 289-290, 304-305, 309-310, 331-332
+zimeiti_api\platforms\publish.py              194     21    89%   66-67, 76-77, 107, 124-125, 154-155, 261, 285, 294, 311, 331-347, 374-375, 393-394
+zimeiti_api\platforms\wechat.py               200     12    94%   102-103, 236-237, 240, 249-250, 264-266, 318, 326
+zimeiti_api\status_router.py                    9      0   100%
+zimeiti_api\usage_router.py                     7      1    86%   14
+zimeiti_harness\__init__.py                     0      0   100%
+zimeiti_harness\contract.py                    11      0   100%
+zimeiti_harness\memory\__init__.py              0      0   100%
+zimeiti_harness\memory\flush.py                13      0   100%
+zimeiti_harness\memory\store.py                59      1    98%   80
+zimeiti_harness\memory\tools.py                19     10    47%   29-38, 47-51
+zimeiti_harness\runtime\__init__.py             0      0   100%
+zimeiti_harness\runtime\agent_runtime.py      432     98    77%   56-59, 161-162, 186, 206-207, 214-215, 231, 235-236, 248-252, 281, 335-337, 370-377, 408-433, 446-462, 473-481, 489-508, 518-526, 644, 657-663, 681-682, 685, 736, 754-755, 797, 837-838, 846-848, 856-857, 870, 876-877, 914-915
+zimeiti_harness\runtime\exec_tool.py           78     13    83%   68, 83, 125, 155, 167-176
+zimeiti_harness\runtime\fingerprint.py         46      3    93%   40, 59-60
+zimeiti_harness\runtime\model_fallback.py      99     63    36%   25, 45-48, 64, 68-80, 84, 95-105, 110-126, 131-150, 154
+zimeiti_harness\runtime\pricing.py             10      0   100%
+zimeiti_harness\runtime\schemas.py              7      0   100%
+zimeiti_harness\usage.py                       42      2    95%   93-94
+-------------------------------------------------------------------------
+TOTAL                                        3798    522    86%
+Required test coverage of 80% reached. Total coverage: 86.26%
+238 passed, 5 deselected in 776.01s (0:12:56)
