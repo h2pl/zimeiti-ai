@@ -6,6 +6,7 @@ import SkillPage from './components/SkillPage';
 import OutputsPage from './components/OutputsPage';
 import AccountsPage from './components/AccountsPage';
 import AutomationsPage from './components/AutomationsPage';
+import AutonomousPage from './components/AutonomousPage';
 import ProfilePage from './components/ProfilePage';
 import DashboardPage from './components/DashboardPage';
 import TrendsPage from './components/TrendsPage';
@@ -739,6 +740,8 @@ export default function App() {
         return <AccountsPage />;
       case 'automations':
         return <AutomationsPage />;
+      case 'autonomous':
+        return <AutonomousPage />;
       case 'profile':
         return <ProfilePage persona={selectedPersona} onNewProfile={() => setShowWizard(true)} onDeleted={handleProfileDeleted} />;
       default:

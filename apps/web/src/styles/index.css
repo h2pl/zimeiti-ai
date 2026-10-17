@@ -1428,3 +1428,10 @@ textarea.field { resize: vertical; min-height: 90px; }
 .usage-session { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .usage-model { color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .usage-turns { color: var(--text-tertiary); }
+
+.auto-steps { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 12px; }
+.auto-step {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--text-secondary); cursor: pointer;
+}
+.auto-step input { accent-color: var(--accent-end); }

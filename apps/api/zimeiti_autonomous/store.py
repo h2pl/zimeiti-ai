@@ -151,6 +151,59 @@ def delete_flow(flow_id: str) -> None:
         conn.commit()
 
 
+def list_runs(flow_id: str | None = None, limit: int = 20) -> list[dict]:
+    """执行记录（含逐步明细），按开始时间倒序；limit 限制条数。"""
+    lim = max(1, min(int(limit), 100))
+    with _conn() as conn:
+        with conn.cursor() as cur:
+            if flow_id:
+                cur.execute(
+                    "SELECT id, flow_id, status, failed_step, duration_ms, started, finished"
+                    " FROM flow_runs WHERE user_id=%s AND flow_id=%s"
+                    " ORDER BY started DESC LIMIT %s",
+                    (_USER, flow_id, lim),
+                )
+            else:
+                cur.execute(
+                    "SELECT id, flow_id, status, failed_step, duration_ms, started, finished"
+                    " FROM flow_runs WHERE user_id=%s ORDER BY started DESC LIMIT %s",
+                    (_USER, lim),
+                )
+            runs = cur.fetchall()
+            out: list[dict] = []
+            for r in runs:
+                cur.execute(
+                    "SELECT step, idx, status, output_path, summary, error, duration_ms"
+                    " FROM flow_steps WHERE user_id=%s AND run_id=%s ORDER BY idx",
+                    (_USER, r[0]),
+                )
+                steps = [
+                    {
+                        "step": s[0],
+                        "index": s[1],
+                        "status": s[2],
+                        "output_path": s[3],
+                        "summary": s[4],
+                        "error": s[5],
+                        "duration_ms": s[6],
+                    }
+                    for s in cur.fetchall()
+                ]
+                out.append(
+                    {
+                        "id": r[0],
+                        "flow_id": r[1],
+                        "status": r[2],
+                        "failed_step": r[3],
+                        "duration_ms": r[4],
+                        "started": r[5],
+                        "finished": r[6],
+                        "steps": steps,
+                    }
+                )
+    return out
+
+
 def save_run(flow_id: str, res: dict) -> str:
     """落一次执行结果（flow_runs + flow_steps）。"""
     rid = uuid.uuid4().hex[:12]

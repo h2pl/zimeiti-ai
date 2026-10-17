@@ -334,12 +334,49 @@ def demo_automations_usage(page) -> None:
     page.wait_for_timeout(1000)
 
 
+# ── Demo 6：自主运营（S13）────────────────────────────────────────────────
+def demo_autonomous(page) -> None:
+    human_click(page, page.get_by_role("button", name="自主运营").first, 0.5)
+    page.wait_for_timeout(1200)
+    banner(page, "① 自主运营：把整条链路托管给 agent", 2.8)
+
+    # 清场
+    try:
+        for f in api("GET", "/api/flows").get("flows", []):
+            api("DELETE", f"/api/flows/{f['id']}")
+        page.reload(wait_until="load")
+        page.wait_for_timeout(1200)
+        human_click(page, page.get_by_role("button", name="自主运营").first, 0.5)
+        page.wait_for_timeout(900)
+    except Exception:
+        pass
+
+    banner(page, "② 新建流程：每天 8 点自动「发现→选题→创作」", 2.8)
+    human_click(page, page.get_by_role("button", name="+ 新建流程").first, 0.6)
+    page.wait_for_timeout(500)
+    page.locator("#flow-name").fill("每日选题")
+    page.get_by_text("创作（成稿/素材）", exact=False).click()
+    page.wait_for_timeout(400)
+    human_click(page, page.get_by_role("button", name="保存").first, 0.6)
+    if _wait_text(page, "每日选题"):
+        page.wait_for_timeout(1000)
+
+    banner(page, "③ 运行状态一目了然：预算 / 待确认 / 熔断护栏", 2.8)
+    page.mouse.wheel(0, -200)
+    page.wait_for_timeout(900)
+
+    back_to_dash(page)
+    page.wait_for_timeout(800)
+    banner(page, "④ agent 自己跑，你只看结果——这就是自主运营", 2.8)
+
+
 DEMOS = [
     ("01-profile-wizard", "首次使用：创建你的第一个画像", demo_profile_wizard),
     ("02-chat-sessions", "对话创作与会话管理", demo_chat_sessions),
     ("03-ideas-crud", "选题库：新建 / 编辑 / 删除", demo_ideas_crud),
     ("04-outputs-browse", "内容库：浏览与预览", demo_outputs_browse),
     ("05-automations-usage", "定时自动化与用量统计", demo_automations_usage),
+    ("06-autonomous", "自主运营：流程托管与护栏", demo_autonomous),
 ]
 
 

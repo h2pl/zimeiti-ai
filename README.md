@@ -94,6 +94,23 @@ make dev          # 或分开跑 make api / make web
 | `ZIMEITI_SUBAGENT_MODEL` / `ZIMEITI_SUBAGENT_ENABLED` | 子代理模型降档 / 总开关 |
 | `DATABASE_URL` | PostgreSQL 连接串（会话持久化/记忆/自动化/用量） |
 
+## 自主运营（autonomous）
+
+zimeiti 的运营链路可以**托管给 agent 自己跑**——到点自动执行、已发布事实回流校准
+下一轮选题、护栏兜底、状态页面可见。四个能力环环相扣：
+
+| 能力 | 说明 | 代码 |
+|---|---|---|
+| **流程编排** | 一个定时任务编排「发现→选题→创作→发布→复盘」任意子集，到点串行执行，逐步落记录与产出归档 | `apps/api/zimeiti_autonomous/`（flows/runner/store/router） |
+| **数据回流** | 汇总发布事实成「校准信号」（平台分布/最近发布/规避重复），**只注入发现层**；无数据如实降级，绝不虚构表现数值 | `feedback.py` + `GET /api/feedback` |
+| **无人值守护栏** | 步骤级重试（配置性错误不重试）、连续失败熔断自动停用、当日预算上限（无单价放行不臆造）、需人工确认动作标 **blocked 不阻塞** | `guardrails.py` + `GET /api/autonomous/status` |
+| **状态看板** | 「自主运营」页：流程列表/执行记录逐步明细/待确认项/熔断态/预算用量 | `apps/web/src/components/AutonomousPage.tsx` |
+
+分层纪律：`zimeiti_autonomous` 不 import `zimeiti_harness`——agent 入口与用量来源
+由组装层注入（`set_agent_entry` / `set_budget_provider`），单测机械守卫。
+
+demo：[06-autonomous.mp4](docs/demo/06-autonomous.mp4)；E2E：S13 场景。
+
 ## 测试与质量
 
 ```bash

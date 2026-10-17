@@ -202,3 +202,12 @@ export const IconPublish = ({ size, className, strokeWidth }: P) => (
     <path d="m3 11 18-5v12L3 14v-3z" /><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
   </svg>
 );
+
+export const IconAutonomous = ({ size, className, strokeWidth }: P) => (
+  <svg {...svg(size, strokeWidth)} className={className}>
+    <path d="M4 12a8 8 0 0 1 13.7-5.7" />
+    <path d="M18 4v4h-4" />
+    <path d="M20 12a8 8 0 0 1-13.7 5.7" />
+    <path d="M6 20v-4h4" />
+  </svg>
+);

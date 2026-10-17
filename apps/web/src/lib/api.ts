@@ -8,7 +8,7 @@ const BASE = getBasePath();
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   // 全部是动态应用接口（登录态/数据等），禁止浏览器 HTTP 缓存——否则 /api/accounts 等可能被启发式
-  // 缓存住旧响应（曾表现为“扫码登录后卡片仍显示未登录”）。调用方可用 options.cache 覆盖。
+  // 缓存住旧响应（曾表现为"扫码登录后卡片仍显示未登录"）。调用方可用 options.cache 覆盖。
   const res = await fetch(`${BASE}${url}`, { cache: 'no-store', ...options });
   if (!res.ok) {
     // 优先显示后端返回的实质错误信息（FastAPI 的 {detail}），而不是无意义的 "API error: 400"
@@ -913,4 +913,95 @@ export function fetchAvailableModels(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ baseUrl, key, protocol, slot }),
   });
+}
+
+// ── 自主运营（autonomous-*）：运营流程编排 + 数据回流 + 护栏 + 看板 ──────────
+export type FlowStep = 'discover' | 'plan' | 'produce' | 'publish' | 'review';
+
+export interface StepOption {
+  value: FlowStep;
+  label: string;
+}
+
+export interface Flow {
+  id: string;
+  name: string;
+  steps: FlowStep[];
+  schedule: string;
+  config: { topic?: string; platform?: string; draft_only?: boolean; feedback?: boolean };
+  enabled: boolean;
+}
+
+export interface FlowStepRun {
+  step: FlowStep;
+  index: number;
+  status: 'running' | 'done' | 'failed' | 'blocked';
+  output_path: string;
+  summary: string;
+  error: string;
+  duration_ms: number;
+}
+
+export interface FlowRun {
+  id: string;
+  flow_id: string;
+  status: 'running' | 'done' | 'failed';
+  failed_step: string;
+  duration_ms: number;
+  started: number;
+  finished: number;
+  steps: FlowStepRun[];
+}
+
+export interface AutonomousStatus {
+  available: boolean;
+  blocked: unknown[];
+  circuit: { disabled_flows?: { id: string; name: string }[]; error?: string };
+  budget: { spent_usd?: number | null; partial?: boolean; unknown?: string; error?: string };
+}
+
+export interface FeedbackSignal {
+  date: string;
+  published_count: number;
+  calibration: string;
+  has_facts: boolean;
+}
+
+export function fetchFlows(): Promise<{ flows: Flow[] }> {
+  return request('/api/flows');
+}
+
+export function fetchFlowStepCatalog(): Promise<{ steps: StepOption[] }> {
+  return request('/api/flows/steps/catalog');
+}
+
+export function createFlow(body: {
+  name: string;
+  steps: FlowStep[];
+  schedule?: string;
+  config?: Record<string, unknown>;
+}): Promise<{ id: string }> {
+  return request('/api/flows', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+}
+
+export function deleteFlow(id: string): Promise<{ ok: boolean }> {
+  return request(`/api/flows/${id}`, { method: 'DELETE' });
+}
+
+export function runFlowNow(id: string): Promise<FlowRun> {
+  return request(`/api/flows/${id}/run`, { method: 'POST' });
+}
+
+export function fetchFlowRuns(flowId = ''): Promise<{ runs: FlowRun[] }> {
+  return request(`/api/flows/runs${flowId ? `?flow_id=${encodeURIComponent(flowId)}` : ''}`);
+}
+
+export function fetchAutonomousStatus(): Promise<AutonomousStatus> {
+  return request('/api/autonomous/status');
+}
+
+export function fetchFeedback(): Promise<FeedbackSignal> {
+  return request('/api/feedback');
 }

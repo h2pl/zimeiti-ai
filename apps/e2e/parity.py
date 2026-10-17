@@ -45,7 +45,7 @@ def compare(zo: dict, eo: dict) -> tuple[list[str], list[str]]:
                 if not (zv or {}).get("dashboard"):
                     diffs.append(f"S1.dashboard: zimeiti={zv}")
                 notes.append(f"S1 首启引导（zimeiti 已有画像，正当缺席）: zimeiti={_short(zv)} easel={_short(ev)}")
-        elif sid in ("S11", "S12"):
+        elif sid in ("S11", "S12", "S13"):
             # zimeiti 独有功能（自动化页/用量可视化）：Easel 无此能力是预期差异 → NOTE
             if zv != ev:
                 notes.append(f"{sid} zimeiti 独有功能（预期差异）: zimeiti={_short(zv)} easel={_short(ev)}")

@@ -85,6 +85,15 @@ def run_flow(flow_id: str) -> dict:
     return res
 
 
+@router.get("/api/flows/runs")
+def list_runs(flow_id: str = "", limit: int = 20) -> dict:
+    """执行记录（含逐步明细）——自主运营看板读侧。"""
+    try:
+        return {"runs": st.list_runs(flow_id=flow_id.strip() or None, limit=limit)}
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=f"执行记录不可用：{e}") from e
+
+
 @router.get("/api/autonomous/status")
 def autonomous_status() -> dict:
     """护栏状态（autonomous-guardrails）：熔断态（被停用的流程）+ 当日预算用量。

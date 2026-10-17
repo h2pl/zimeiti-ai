@@ -30,7 +30,7 @@ def check(name: str, ok: bool, detail: str = "") -> None:
     print(f"  [{'PASS' if ok else 'FAIL'}] {name}" + (f" — {detail}" if detail and not ok else ""))
 
 
-SCENARIO_IDS = [f"S{i:02d}" for i in range(1, 13)]
+SCENARIO_IDS = [f"S{i:02d}" for i in range(1, 14)]
 
 
 def load_scenarios(ids: list[str]):

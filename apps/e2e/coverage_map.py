@@ -21,6 +21,7 @@ COVERAGE_MAP = {
     "skills 执行 / profile-build 深链": "S7 覆盖画像向导链路；技能执行为后台任务 → API parity 覆盖",
     "POST/GET/PATCH/DELETE /api/automations* + run-now": "S11",
     "GET /api/usage + 工作台/设置用量卡片": "S12",
+    "/api/flows CRUD + /api/flows/runs + /api/autonomous/status + 自主运营页": "S13",
     "memory_record/search（跨会话记忆）": "无独立 UI（agent 工具）→ evals 行为层 test_04 覆盖",
     "exec_script（白名单脚本）": "无独立 UI（agent 工具）→ evals 行为层 + 单测覆盖",
     "模型 fallback / key 轮换": "运行时机制（无 UI）→ 单测 + evals 行为层 test_05 覆盖",
