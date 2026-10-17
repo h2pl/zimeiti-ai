@@ -2,6 +2,7 @@
 change: autonomous-flow
 design-doc: docs/openspec/changes/autonomous-flow/design.md
 base-ref: 35de70b
+archived-with: 2026-10-18-autonomous-flow
 ---
 
 # Plan：运营流程编排
