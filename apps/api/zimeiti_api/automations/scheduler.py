@@ -57,6 +57,8 @@ async def _run_one(a: dict) -> None:
         _LOG_DIR.mkdir(parents=True, exist_ok=True)
         if a["kind"] == "case":
             summary = await asyncio.to_thread(_run_case, a["payload"], log)
+        elif a["kind"] == "flow":
+            summary = await asyncio.to_thread(_run_flow, a["payload"], log)
         else:
             summary = await _run_prompt(a["payload"], log)
         store.run_finish(rid, "done", summary)
@@ -112,6 +114,37 @@ async def _run_prompt(payload: str, log: Path) -> str:
     )
     log.write_text(reply or "", encoding="utf-8")
     return (reply or "")[:500]
+
+
+def _run_flow(payload: str, log: Path) -> str:
+    """运营流程编排（autonomous-flow）：payload=flow id → 串行跑五层步骤子集。
+
+    走线程池（与 case 一致）避免长链路阻塞调度 tick；产出逐步归档到
+    outputs/_automations/<run>/ 下，摘要写入 automation_runs。
+    """
+    from zimeiti_autonomous import runner as _rn
+    from zimeiti_autonomous import store as _fstore
+
+    flow = _fstore.get_flow(payload.strip())
+    if not flow:
+        raise RuntimeError(f"流程不存在：{payload}")
+
+    root = _LOG_DIR / payload
+    res = _rn.run_flow(
+        flow_id=payload,
+        name=flow["name"],
+        steps=flow["steps"],
+        config=flow.get("config") or {},
+        archive_root=root,
+    )
+    rid = _fstore.save_run(payload, res)  # 步骤级记录落 PG
+    done = [s for s in res["steps"] if s["status"] == "done"]
+    if res["status"] == "failed":
+        raise RuntimeError(
+            f"流程在「{res['failed_step']}」步失败（已完成 {len(done)} 步，run={rid}）："
+            f"{res['steps'][-1].get('error', '')[:200]}"
+        )
+    return f"流程完成 {len(done)} 步（run={rid}）"
 
 
 async def _loop() -> None:

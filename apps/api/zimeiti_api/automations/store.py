@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS automations (
     id        TEXT NOT NULL,
     user_id   TEXT NOT NULL DEFAULT 'local',
     name      TEXT NOT NULL,
-    kind      TEXT NOT NULL DEFAULT 'case',     -- case=运营脚本 / prompt=预置指令
+    kind      TEXT NOT NULL DEFAULT 'case',     -- case=运营脚本 / prompt=预置指令 / flow=运营流程
     schedule  TEXT NOT NULL,                    -- cron 五段式 或 HH:MM 每日时刻
     payload   TEXT NOT NULL DEFAULT '',         -- case=脚本参数 / prompt=指令文本
     enabled   BOOLEAN NOT NULL DEFAULT TRUE,

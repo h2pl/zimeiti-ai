@@ -43,7 +43,7 @@ dependencies = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["zimeiti_api*", "zimeiti_harness*"]
+include = ["zimeiti_api*", "zimeiti_harness*", "zimeiti_autonomous*"]
 
 # ---- 质量门禁配置（对齐 comet-integration 家规 check-api.sh）----
 [tool.ruff]
@@ -74,7 +74,7 @@ module = ["model_registry"]
 ignore_missing_imports = true
 
 [tool.coverage.run]
-source = ["zimeiti_api", "zimeiti_harness"]
+source = ["zimeiti_api", "zimeiti_harness", "zimeiti_autonomous"]
 
 [tool.coverage.report]
 fail_under = 80

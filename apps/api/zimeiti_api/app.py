@@ -57,6 +57,8 @@ from zimeiti_api.platforms import login as _login_router
 from zimeiti_api.platforms import publish as _publish_router
 from zimeiti_api.platforms import wechat as _wechat_router
 from zimeiti_api.platforms.wechat import _stop_mp_login_on_shutdown
+from zimeiti_autonomous import router as _flows_router
+from zimeiti_autonomous import runner as _auto_runner
 from zimeiti_harness import contract as _harness_contract
 from zimeiti_harness.runtime import agent_runtime as _agent_runtime
 
@@ -66,6 +68,9 @@ from zimeiti_harness.runtime import agent_runtime as _agent_runtime
 _personas_router.set_enhance_runtime(_agent_runtime.ask_sync)
 _auto_scheduler.set_ask_sync(_agent_runtime.ask_sync)
 _harness_contract.register_skills_provider(_skills_router.get_skills)
+_auto_runner.set_agent_entry(
+    _agent_runtime.ask_sync
+)  # 自主运营流程的 agent 入口（注入，非 import）
 
 load_dotenv(ENV_FILE, override=False)  # 已存在环境变量优先（同原 _load_dotenv 语义）
 
@@ -98,6 +103,9 @@ async def _lifespan(_app: FastAPI):
     except Exception as e:  # noqa: BLE001  记忆表不可用不阻断启动（对话降级无记忆）
         print(f"[memory] 表初始化失败（无碍，对话继续）：{e}")
     try:
+        from zimeiti_autonomous import store as _flow_store
+
+        await asyncio.to_thread(_flow_store.setup)  # 流程表（幂等）
         from zimeiti_harness import usage as _usage
 
         await asyncio.to_thread(_usage.setup)  # 用量表（幂等）
@@ -193,6 +201,7 @@ for _r in (
     _schedule_router.router,  # /api/schedule...
     _trends_router.router,  # /api/trends
     _automations_router.router,  # /api/automations...（定时任务）
-    _usage_router.router,  # /api/usage（会话用量统计）
+    _usage_router.router,  # /api/usage
+    _flows_router.router,  # /api/flows（自主运营流程编排，autonomous-flow）
 ):
     app.include_router(_r)
