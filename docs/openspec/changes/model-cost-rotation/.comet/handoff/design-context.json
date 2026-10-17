@@ -1,0 +1,16 @@
+{
+  "change": "model-cost-rotation",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "70bffb44f36f9362673ac40bfe618f33440ebf6ba1a2714c0f5166732397e13b",
+  "files": [
+    { "path": "docs/openspec/changes/model-cost-rotation/proposal.md", "sha256": "ae9418e94a4747b9d1794456caa00634c33b565d669787cebc0514881a20b71d" },
+    { "path": "docs/openspec/changes/model-cost-rotation/design.md", "sha256": "e634466b0acaf167e3d5b6ede59114fefbb947d371e1a71f0ca4f2e98eea2828" },
+    { "path": "docs/openspec/changes/model-cost-rotation/tasks.md", "sha256": "042c989ec6800e0b587ace7efc6d723c72c80760c76f82d6e0055ba06ad5e913" },
+    { "path": "docs/openspec/changes/model-cost-rotation/.openspec.yaml", "sha256": "4c39792c289debca8ac94a151082057ea2a2931a0cf9910b40c425e493bd3ab9" },
+    { "path": "docs/openspec/changes/model-cost-rotation/specs/usage-pricing/spec.md", "sha256": "69e9e81cb35442bc5a3cfbbfc88c431b4fc36e472677e72e99b04279d45eee0d" }
+  ]
+}
