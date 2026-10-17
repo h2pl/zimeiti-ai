@@ -87,7 +87,8 @@ def ensure_fresh() -> None:
     if now["files"] != _SNAPSHOT["files"]:
         # 内容变更的路径（增删 + 哈希不同都算；前缀 ❌ 由 chat_router 统一加）
         changed = sorted(
-            p for p in set(now["files"]) | set(_SNAPSHOT["files"])
+            p
+            for p in set(now["files"]) | set(_SNAPSHOT["files"])
             if now["files"].get(p) != _SNAPSHOT["files"].get(p)
         )[:5]
         raise StaleProcessError(
