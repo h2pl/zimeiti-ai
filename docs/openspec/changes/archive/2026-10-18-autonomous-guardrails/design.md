@@ -2,6 +2,7 @@
 comet_change: autonomous-guardrails
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-18-autonomous-guardrails
 status: final
 ---
 

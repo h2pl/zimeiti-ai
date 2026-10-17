@@ -2,6 +2,7 @@
 change: autonomous-guardrails
 design-doc: docs/openspec/changes/autonomous-guardrails/design.md
 base-ref: 0486563
+archived-with: 2026-10-18-autonomous-guardrails
 ---
 
 # Plan：无人值守护栏
