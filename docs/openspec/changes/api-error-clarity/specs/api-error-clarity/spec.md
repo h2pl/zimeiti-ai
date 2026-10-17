@@ -9,8 +9,8 @@ API 链路上的「200 + HTML」（代理失效/后端未就绪/版本错位）�
 
 ### Requirement: 非 JSON 响应的可读报错
 
-`request()` 对成功状态码的响应校验 Content-Type；非 JSON 时抛出可行动错误，
-错误信息包含「收到 HTML」与处置指引（重启 make dev / 检查后端）。
+`request()` 对成功状态码的响应 MUST 校验 Content-Type；非 JSON 时 SHALL 抛出
+可行动错误，错误信息 MUST 包含「收到 HTML」与处置指引（重启 make dev / 检查后端）。
 
 #### Scenario: 代理失效返回 HTML
 - **WHEN** `/api/*` 请求返回 200 且响应体是 HTML（如 vite SPA 兜底）
@@ -23,5 +23,9 @@ API 链路上的「200 + HTML」（代理失效/后端未就绪/版本错位）�
 
 ### Requirement: 故障排查文档
 
-README 含「故障排查」一节：dev 代理失效的表象（页面报 HTML/JSON 错）、
+README SHALL 包含「故障排查」一节：dev 代理失效的表象（页面报 HTML/JSON 错）、
 自查方法（直接 curl :8000/api/status 区分前后端）、处置（重启 make dev）。
+
+#### Scenario: 用户按文档自助处置
+- **WHEN** 用户遇到「服务返回了 HTML 而非 JSON」报错并查阅 README 故障排查
+- **THEN** 文档给出可执行的自查命令（curl :8000/api/status）与处置步骤（重启 make dev）
