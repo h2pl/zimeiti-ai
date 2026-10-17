@@ -31,10 +31,11 @@ BANNED_NAMES = {
     "_oc_config_path", "_oc_state_dir",
 }
 # 运行级唯一 api 路径数（递归 _IncludedRouter 后统计；与旧单体 app.py 严格一致，A7 零新增/零删除）。
-# 旧单体 52 个唯一 api 路径，重构后运行级同样 52 个；顶层 app.app.routes 因 Starlette
+# 旧单体 52 个唯一 api 路径；harness 批次新增 automations(6)/usage(1) 后为 57
+# （harness-business-split 复核修正：该脚本长期未跑，期望值随端点增长同步更新）
 # include_router 产生嵌套 _IncludedRouter，扁平 path 仅 5 条静态 + 15 个 _IncludedRouter，
 # 故必须用递归收集器统计真实路由。
-EXPECTED_API_PATHS = 52
+EXPECTED_API_PATHS = 57
 EXPECTED_RUNTIME_API = ("run_turn", "ask", "ask_sync", "delete_session",
                         "answer", "pending_status", "model_configured")
 
@@ -52,7 +53,8 @@ def imported_modules(tree: ast.AST) -> set[str]:
 def main() -> int:
     failures: list[str] = []
 
-    py_files = [API / "zimeiti_api" / "app.py", *sorted((API / "zimeiti_api").rglob("*.py"))]
+    py_files = [API / "zimeiti_api" / "app.py", *sorted((API / "zimeiti_api").rglob("*.py")),
+                *sorted((API / "zimeiti_harness").rglob("*.py"))]
     for py in py_files:
         tree = ast.parse(py.read_text(encoding="utf-8"), filename=str(py))
         for mod in imported_modules(tree):
@@ -90,14 +92,14 @@ def main() -> int:
     if any("openclaw" in p.lower() for p in api_paths):
         failures.append("openclaw-related route present")
 
-    from zimeiti_api.runtime import agent_runtime as rt
+    from zimeiti_harness.runtime import agent_runtime as rt
     for fn in EXPECTED_RUNTIME_API:
         if not callable(getattr(rt, fn, None)):
             failures.append(f"agent_runtime.{fn} missing")
 
-    if "ZIMEITI_RUNTIME" in ast.dump(ast.parse((API / "zimeiti_api" / "runtime" / "agent_runtime.py").read_text(encoding="utf-8"))):
+    if "ZIMEITI_RUNTIME" in ast.dump(ast.parse((API / "zimeiti_harness" / "runtime" / "agent_runtime.py").read_text(encoding="utf-8"))):
         # 允许出现在 docstring 之外为零：dump 含 docstring，改查非 docstring 的字符串常量与 Name
-        tree = ast.parse((API / "zimeiti_api" / "runtime" / "agent_runtime.py").read_text(encoding="utf-8"))
+        tree = ast.parse((API / "zimeiti_harness" / "runtime" / "agent_runtime.py").read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if isinstance(node, ast.Name) and node.id == "ZIMEITI_RUNTIME":
                 failures.append(f"agent_runtime.py: ZIMEITI_RUNTIME referenced at line {node.lineno}")
