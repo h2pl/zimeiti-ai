@@ -2,6 +2,7 @@
 change: model-cost-rotation
 design-doc: docs/openspec/changes/model-cost-rotation/design.md
 base-ref: bef4762
+archived-with: 2026-10-17-model-cost-rotation
 ---
 
 # Plan：成本折算与多 key 轮换
