@@ -1,9 +1,0 @@
-{
-  "openspec_proposal": "docs/openspec/changes/stale-process-guard/proposal.md",
-  "openspec_design": "docs/openspec/changes/stale-process-guard/design.md",
-  "openspec_tasks": "docs/openspec/changes/stale-process-guard/tasks.md",
-  "openspec_delta_spec": "docs/openspec/changes/stale-process-guard/specs/stale-process-guard/spec.md",
-  "design_document": "docs/openspec/changes/stale-process-guard/design.md",
-  "handoff_context": "docs/openspec/changes/stale-process-guard/.comet/handoff/design-context.json",
-  "handoff_markdown": "docs/openspec/changes/stale-process-guard/.comet/handoff/design-context.md"
-}

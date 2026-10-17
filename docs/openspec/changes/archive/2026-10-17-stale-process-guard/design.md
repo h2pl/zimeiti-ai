@@ -2,6 +2,7 @@
 comet_change: stale-process-guard
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-17-stale-process-guard
 status: final
 ---
 
