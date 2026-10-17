@@ -2,6 +2,7 @@
 comet_change: api-error-clarity
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-17-api-error-clarity
 status: final
 ---
 
