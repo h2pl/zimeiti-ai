@@ -41,5 +41,11 @@ operations/governance 及其符号）；允许 import 共享 infra `zimeiti_api.
 
 ### Requirement: 行为零变化
 
-本次为纯结构重构：全量测试、E2E、行为探针结果 MUST 与重构前一致
-（229 单测 / E2E 63 项 / 探针 PASS）。
+本次为纯结构重构：全量测试、E2E 结果 MUST 与重构前一致；行为层用例结果
+SHALL 与重构前一致（环境性阻塞须在验证报告如实记录并给出证据）。
+
+#### Scenario: 结构重构不改运行行为
+- **WHEN** 重构合入后运行全量 E2E（12 场景双端）与 make check
+- **THEN** E2E 63/63 通过且双端差异为 0；make check 全绿且分层守卫在册
+- **THEN** 行为层用例（make evals）因外部环境阻塞时，验证报告 MUST 记录阻塞
+  原因（如 DeepSeek 402 余额）与替代性等价证据
