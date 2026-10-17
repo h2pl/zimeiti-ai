@@ -1,0 +1,6 @@
+{
+  "id": "classic-archive:harness-business-split",
+  "stepId": "full.archive.execute",
+  "type": "checkpoint",
+  "ref": "harness-business-split"
+}

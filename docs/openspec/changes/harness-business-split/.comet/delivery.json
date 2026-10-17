@@ -1,0 +1,7 @@
+{
+  "action": "local",
+  "targetBranch": "h2pl/zimeiti-ai",
+  "schemaVersion": 1,
+  "changeIdentity": "run:f1d56126-7d38-4795-837b-748f8a78292a",
+  "authorizationId": "e104ec70-9e59-41cd-86f6-306cb618e18c"
+}
