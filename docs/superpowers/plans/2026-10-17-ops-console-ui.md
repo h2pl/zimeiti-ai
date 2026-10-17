@@ -2,6 +2,7 @@
 change: ops-console-ui
 design-doc: docs/openspec/changes/ops-console-ui/design.md
 base-ref: ad6e97c
+archived-with: 2026-10-17-ops-console-ui
 ---
 
 # Plan：运营控制台（定时任务 + 用量统计）
