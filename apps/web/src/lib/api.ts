@@ -237,9 +237,11 @@ export interface AutomationRun {
 }
 
 export interface UsageSummary {
-  rows: { session_key: string; model: string; prompt_tokens: number; completion_tokens: number; turns: number }[];
+  rows: { session_key: string; model: string; prompt_tokens: number; completion_tokens: number; turns: number; cost_usd: number | null }[];
   total_prompt: number;
   total_completion: number;
+  cost_usd: number | null;
+  cost_usd_partial: boolean;
 }
 
 export function fetchAutomations(): Promise<{ automations: Automation[] }> {

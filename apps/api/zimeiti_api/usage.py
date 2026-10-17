@@ -83,6 +83,17 @@ def summary(session_key: str | None = None, days: int = 30) -> dict:
                 tuple(params),
             )
             rows = cur.fetchall()
+
+    # 金额折算（model-cost-rotation D4）：行级「可得则计、不可得则 None」；
+    # 总计=已知行之和；存在未知行时 cost_usd_partial=True（不把 None 当 0）。
+    try:
+        from .runtime.pricing import cost_usd
+
+        priced = [(r, cost_usd(r[1], r[2] or 0, r[3] or 0)) for r in rows]
+    except Exception:  # noqa: BLE001   定价模块不可用时退回纯 token 视图
+        priced = [(r, None) for r in rows]
+    known = [c for _, c in priced if c is not None]
+    partial = len(known) < len(priced)
     return {
         "rows": [
             {
@@ -91,9 +102,12 @@ def summary(session_key: str | None = None, days: int = 30) -> dict:
                 "prompt_tokens": r[2],
                 "completion_tokens": r[3],
                 "turns": r[4],
+                "cost_usd": c,
             }
-            for r in rows
+            for (r, c) in priced
         ],
         "total_prompt": sum(r[2] or 0 for r in rows),
         "total_completion": sum(r[3] or 0 for r in rows),
+        "cost_usd": round(sum(known), 6) if known else None,
+        "cost_usd_partial": partial,
     }

@@ -44,7 +44,14 @@ export default function UsageCard({ variant = 'compact' }: UsageCardProps) {
           <div className="usage-total">
             <span>输入 {data.total_prompt.toLocaleString()}</span>
             <span>输出 {data.total_completion.toLocaleString()}</span>
-            <span className="usage-unit">token（未折算费用）</span>
+            {typeof data.cost_usd === 'number' ? (
+              <span className="usage-cost">
+                ≈ ${data.cost_usd.toFixed(4)}
+                {data.cost_usd_partial && <em className="usage-unit">（部分模型未计价）</em>}
+              </span>
+            ) : (
+              <span className="usage-unit">token（未折算费用）</span>
+            )}
           </div>
           {variant === 'full' && (
             <div className="usage-rows">

@@ -321,7 +321,20 @@ def _build_model():
         return ChatOpenAI(model=model_name, **kw)
 
     primary = os.environ.get("OPENAI_MODEL") or os.environ.get("ZIMEITI_MODEL", "gpt-4o-mini")
-    main = _mk(primary)
+
+    # 多 key 轮换（model-cost-rotation）：ZIMEITI_API_KEYS 逗号分隔；
+    # 「主模型 × 各 key」作为链上最前置节点——key 限流先换 key，key 用尽才切备用模型
+    # （对齐 OpenClaw auth-profile 轮换先于模型 fallback）。未配置时行为不变。
+    keys = [k.strip() for k in os.environ.get("ZIMEITI_API_KEYS", "").split(",") if k.strip()]
+    primary_variants: list[ChatOpenAI] = []
+    if len(keys) > 1:
+        for k in keys:
+            kw = dict(base)
+            kw["api_key"] = k
+            primary_variants.append(ChatOpenAI(model=primary, **kw))
+    else:
+        primary_variants = [_mk(primary)]
+    main = primary_variants[0]
 
     # fallback 链（model-resilience-cron）：ZIMEITI_FALLBACK_MODELS 逗号分隔；
     # 用户在设置里显式选择的模型（ZIMEITI_EXPLICIT_MODEL）严格不 fallback。
@@ -329,18 +342,37 @@ def _build_model():
         return main
     _fb_env = os.environ.get("ZIMEITI_FALLBACK_MODELS", "")
     chain_names = [m.strip() for m in _fb_env.split(",") if m.strip()]
-    if not chain_names:
+    if not chain_names and len(primary_variants) == 1:
         return main
 
     from .model_fallback import FallbackChatModel
 
-    def _on_switch(idx: int, exc: Exception) -> None:
-        print(
-            f"[model-fallback] 主模型 {primary} 失败（{type(exc).__name__}），"
-            f"切换第 {idx + 1} 个备用模型"
-        )
+    n_keys = len(primary_variants)
 
-    return FallbackChatModel(models=[main, *[_mk(n) for n in chain_names]], on_switch=_on_switch)
+    def _on_switch(idx: int, exc: Exception) -> None:
+        if idx < n_keys - 1:
+            print(
+                f"[key-rotation] 主模型 {primary} 在 key#{idx + 1} 失败"
+                f"（{type(exc).__name__}），换 key#{idx + 2} 重试"
+            )
+        else:
+            fb_idx = idx - (n_keys - 1)
+            print(
+                f"[model-fallback] 主模型 {primary} 失败（{type(exc).__name__}），"
+                f"切换第 {fb_idx + 1} 个备用模型"
+            )
+
+    # 备用模型沿用第一个 key（design D3：备用计费 key 需独立时调整 ZIMEITI_API_KEYS 顺序）
+    fb_models = []
+    for n in chain_names:
+        fb = _mk(n)
+        if len(keys) > 1 and hasattr(fb, "openai_api_key"):
+            from pydantic import SecretStr
+
+            fb.openai_api_key = SecretStr(keys[0])
+        fb_models.append(fb)
+
+    return FallbackChatModel(models=[*primary_variants, *fb_models], on_switch=_on_switch)
 
 
 _AGENT = None
