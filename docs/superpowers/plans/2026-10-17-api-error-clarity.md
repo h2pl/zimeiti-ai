@@ -2,6 +2,7 @@
 change: api-error-clarity
 design-doc: docs/openspec/changes/api-error-clarity/design.md
 base-ref: 764af27
+archived-with: 2026-10-17-api-error-clarity
 ---
 
 # Plan：API 非 JSON 响应可读报错
