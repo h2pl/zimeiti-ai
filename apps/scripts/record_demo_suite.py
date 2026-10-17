@@ -262,11 +262,84 @@ def demo_outputs_browse(page) -> None:
     banner(page, "④ 内容库 = 你的稿库：预览、下载、上传草稿一站式", 2.8)
 
 
+def _wait_text(page, needle: str, timeout_s: int = 8) -> bool:
+    """轮询等 app-layout 出现目标文案（列表异步刷新）。"""
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        try:
+            if needle in page.locator(".app-layout").inner_text():
+                return True
+        except Exception:
+            pass
+        page.wait_for_timeout(300)
+    return False
+
+
+# ── Demo 5：定时自动化与用量（S11/S12）────────────────────────────────────
+def demo_automations_usage(page) -> None:
+    human_click(page, page.get_by_role("button", name="自动化").first, 0.5)
+    page.wait_for_timeout(1200)
+    banner(page, "① 自动化：每天定时跑的运营任务，重启不丢", 2.8)
+
+    # 清场：删除历史演示任务，保证画面从空态开始
+    try:
+        for a in api("GET", "/api/automations").get("automations", []):
+            api("DELETE", f"/api/automations/{a['id']}")
+        page.reload(wait_until="load")
+        page.wait_for_timeout(1200)
+        # reload 回到工作台——重新进自动化页
+        human_click(page, page.get_by_role("button", name="自动化").first, 0.5)
+        page.wait_for_timeout(900)
+    except Exception:
+        pass
+
+    banner(page, "② 新建任务：每天早上 8 点自动找热点出选题", 2.8)
+    human_click(page, page.get_by_role("button", name="+ 新建任务").first, 0.6)
+    page.wait_for_timeout(500)
+    page.locator("input[placeholder='如：每日出稿']").fill("每日早报")
+    # 注意：页面有多个 select（侧栏画像下拉/表单类型选择），必须按选项值定位表单那个
+    page.locator("select:has(option[value='prompt'])").first.select_option("prompt")
+    page.locator("input[placeholder='如：找今天的 AI 热点并给三个角度']").fill("找今天的 AI 热点并给三个角度")
+    page.wait_for_timeout(400)
+    human_click(page, page.get_by_role("button", name="保存").first, 0.6)
+    _wait_text(page, "每日早报")
+    page.wait_for_timeout(900)
+
+    banner(page, "③ 立即执行：后台跑起来，记录可查", 2.8)
+    human_click(page, page.get_by_role("button", name="立即执行").first, 0.6)
+    _wait_text(page, "最近执行", 6)
+    page.wait_for_timeout(1500)
+    page.mouse.wheel(0, 240)
+    page.wait_for_timeout(900)
+
+    banner(page, "④ 停用 / 删除：任务完全由你掌控", 2.6)
+    btn = page.get_by_role("button", name="停用")
+    if btn.count():
+        human_click(page, btn.first, 0.5)
+        _wait_text(page, "已停用")
+        page.wait_for_timeout(700)
+    try:
+        for a in api("GET", "/api/automations").get("automations", []):
+            if a.get("name") == "每日早报":
+                api("DELETE", f"/api/automations/{a['id']}")
+        page.reload(wait_until="load")
+        page.wait_for_timeout(1000)
+    except Exception:
+        pass
+
+    back_to_dash(page)
+    page.wait_for_timeout(1000)
+    banner(page, "⑤ 用量透明：每轮对话的 token 与费用一目了然", 2.8)
+    page.mouse.wheel(0, 260)
+    page.wait_for_timeout(1000)
+
+
 DEMOS = [
     ("01-profile-wizard", "首次使用：创建你的第一个画像", demo_profile_wizard),
     ("02-chat-sessions", "对话创作与会话管理", demo_chat_sessions),
     ("03-ideas-crud", "选题库：新建 / 编辑 / 删除", demo_ideas_crud),
     ("04-outputs-browse", "内容库：浏览与预览", demo_outputs_browse),
+    ("05-automations-usage", "定时自动化与用量统计", demo_automations_usage),
 ]
 
 
