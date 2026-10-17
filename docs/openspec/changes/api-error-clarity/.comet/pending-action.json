@@ -1,0 +1,6 @@
+{
+  "id": "classic-archive:api-error-clarity",
+  "stepId": "full.archive.execute",
+  "type": "checkpoint",
+  "ref": "api-error-clarity"
+}
