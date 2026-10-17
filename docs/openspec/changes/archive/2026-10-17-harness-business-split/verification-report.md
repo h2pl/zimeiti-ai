@@ -20,13 +20,13 @@ comet_change: harness-business-split
 - **E2E 全量**：**63/63、双端差异 0**（MockLLM——浏览器级行为零变化）
 - **mypy/ruff/bandit**：harness 纳入全部检查范围（50 文件 0 问题）
 
-## 已知阻塞（非回归）
+## 已知阻塞（非回归）—— 已解除
 
-- **make evals 5/5 暂阻**：5 条行为用例全部因 **DeepSeek 402 Insufficient Balance**
-  失败（request_id 4ca4b7ae 等）。这是账户计费问题——重构前的最后一次 evals
-  全绿在账户余额耗尽之前；402 正确地未触发 fallback（4xx 直抛设计），错误
-  信息如实透传。**需充值后复跑确认**；行为层等价性暂由 E2E（MockLLM 全链路）
-  + 确定性层（契约/工具/提示词断言）背书。
+- ~~**make evals 5/5 暂阻~~ → **已充值复跑确认：5/5 passed（72.6s）**。
+  阻塞期间 5 条行为用例全部因 **DeepSeek 402 Insufficient Balance** 失败
+  （request_id 4ca4b7ae 等）——账户计费问题，非重构回归；402 正确地未触发
+  fallback（4xx 直抛设计）。等价性在阻塞期间已由 E2E（MockLLM 全链路）+
+  确定性层（契约/工具/提示词断言）背书，充值后复跑补齐最后一环。
 
 ## 过程发现
 
