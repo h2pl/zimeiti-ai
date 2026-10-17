@@ -4,7 +4,7 @@ import {
   runAutomationNow, fetchAutomationRuns,
 } from '../lib/api';
 import type { Automation, AutomationRun } from '../lib/api';
-import { IconTrash, IconCalendar } from './icons';
+import { IconAutomations, IconTrash, IconCalendar } from './icons';
 
 const EMPTY = { name: '', kind: 'case', schedule: '08:00', payload: '' };
 
@@ -42,7 +42,7 @@ export default function AutomationsPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const flash = (msg: string) => { setToast(msg); window.setTimeout(() => setToast(''), 2500); };
+  const flash = (msg: string) => { setToast(msg); window.setTimeout(() => setToast(''), 2200); };
 
   const submit = () => {
     if (!form || !form.name.trim()) { flash('请填写任务名称'); return; }
@@ -74,64 +74,64 @@ export default function AutomationsPage() {
   };
 
   return (
-    <div className="page">
+    <div className="page-scroll automations-page">
       <div className="page-head">
         <div>
-          <h2>自动化</h2>
-          <p className="page-sub">每天定时跑的运营任务：到点自动执行，重启不丢（任务存在数据库）。</p>
+          <h1 className="page-title"><IconAutomations size={21} /> 自动化</h1>
+          <p className="page-subtitle">每天定时跑的运营任务：到点自动执行，任务存在数据库，重启不丢。</p>
         </div>
-        <button className="btn-primary" onClick={() => setForm(form ? null : { ...EMPTY })}>
+        <button className="btn btn-sm btn-primary" onClick={() => setForm(form ? null : { ...EMPTY })}>
           {form ? '取消' : '+ 新建任务'}
         </button>
       </div>
 
-      {toast && <div className="toast">{toast}</div>}
-
-      {form && (
-        <div className="panel">
-          <div className="form-row">
-            <label>名称</label>
-            <input value={form.name} placeholder="如：每日出稿"
-              onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          </div>
-          <div className="form-row">
-            <label>类型</label>
-            <select value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })}>
-              <option value="case">运营流程（跑完整运营 case）</option>
-              <option value="prompt">自定义指令（按你写的指令跑一轮）</option>
-            </select>
-          </div>
-          <div className="form-row">
-            <label>每日时刻</label>
-            <input type="time" value={form.schedule}
-              onChange={(e) => setForm({ ...form, schedule: e.target.value })} />
-          </div>
-          {form.kind === 'prompt' && (
-            <div className="form-row">
-              <label>指令</label>
-              <input value={form.payload} placeholder="如：找今天的 AI 热点并给三个角度"
-                onChange={(e) => setForm({ ...form, payload: e.target.value })} />
-            </div>
-          )}
-          <button className="btn-primary" onClick={submit}>保存</button>
+      {toast && <div className="toast ok"><span className="toast-icon">✓</span>{toast}</div>}
+      {error && <div className="notice-error">加载失败：{error}</div>}
+      {loading && <p className="auto-empty">加载中…</p>}
+      {!loading && !error && items.length === 0 && !form && (
+        <div className="card auto-empty-card">
+          还没有定时任务。点右上角「新建任务」，比如每天早上 8 点自动出稿。
         </div>
       )}
 
-      {loading && <p className="page-empty">加载中…</p>}
-      {error && <p className="page-empty">加载失败：{error}</p>}
-      {!loading && !error && items.length === 0 && (
-        <p className="page-empty">还没有定时任务。点右上角「新建任务」，比如每天早上 8 点自动出稿。</p>
+      {form && (
+        <div className="panel auto-form">
+          <div className="panel-title">新建定时任务</div>
+          <label className="field-label" htmlFor="auto-name">任务名称</label>
+          <input id="auto-name" className="field" value={form.name} placeholder="如：每日出稿"
+            onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <label className="field-label" htmlFor="auto-kind">类型</label>
+          <select id="auto-kind" className="field" value={form.kind}
+            onChange={(e) => setForm({ ...form, kind: e.target.value })}>
+            <option value="case">运营流程（跑完整运营 case）</option>
+            <option value="prompt">自定义指令（按你写的指令跑一轮）</option>
+          </select>
+          <label className="field-label" htmlFor="auto-schedule">每日时刻</label>
+          <input id="auto-schedule" type="time" className="field" value={form.schedule}
+            onChange={(e) => setForm({ ...form, schedule: e.target.value })} />
+          {form.kind === 'prompt' && (
+            <>
+              <label className="field-label" htmlFor="auto-payload">指令</label>
+              <input id="auto-payload" className="field" value={form.payload}
+                placeholder="如：找今天的 AI 热点并给三个角度"
+                onChange={(e) => setForm({ ...form, payload: e.target.value })} />
+            </>
+          )}
+          <div style={{ marginTop: 14 }}>
+            <button className="btn btn-sm btn-primary" onClick={submit}>保存</button>
+          </div>
+        </div>
       )}
 
       <div className="auto-list">
         {items.map((a) => (
-          <div className={`auto-card${a.enabled ? '' : ' is-off'}`} key={a.id}>
+          <div className={`card auto-card${a.enabled ? '' : ' auto-card-off'}`} key={a.id}>
             <div className="auto-main">
               <div className="auto-title">
                 <IconCalendar size={14} />
                 <strong>{a.name}</strong>
-                <span className="tag">{a.kind === 'case' ? '运营流程' : '自定义指令'}</span>
-                {!a.enabled && <span className="tag tag-off">已停用</span>}
+                <span className="badge badge-accent">{a.kind === 'case' ? '运营流程' : '自定义指令'}</span>
+                {!a.enabled && <span className="badge badge-warn">已停用</span>}
               </div>
               <div className="auto-meta">
                 每天 {a.schedule} · 下次 {fmtTime(a.next_run)}
@@ -140,10 +140,10 @@ export default function AutomationsPage() {
               </div>
             </div>
             <div className="auto-actions">
-              <button className="btn-ghost" onClick={() => toggle(a)}>{a.enabled ? '停用' : '启用'}</button>
-              <button className="btn-ghost" onClick={() => runNow(a)}>立即执行</button>
-              <button className="btn-ghost" onClick={() => remove(a)} title="删除">
-                <IconTrash size={14} />
+              <button className="btn btn-sm" onClick={() => toggle(a)}>{a.enabled ? '停用' : '启用'}</button>
+              <button className="btn btn-sm" onClick={() => runNow(a)}>立即执行</button>
+              <button className="session-act danger" title="删除" onClick={() => remove(a)}>
+                <IconTrash size={13} />
               </button>
             </div>
           </div>
@@ -151,8 +151,8 @@ export default function AutomationsPage() {
       </div>
 
       {runs.length > 0 && (
-        <div className="panel">
-          <h3>最近执行</h3>
+        <div className="panel auto-runs">
+          <div className="panel-title">最近执行</div>
           <div className="run-list">
             {runs.slice(0, 10).map((r) => (
               <div className="run-item" key={r.id}>

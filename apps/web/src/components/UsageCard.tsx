@@ -20,17 +20,17 @@ export default function UsageCard({ variant = 'compact' }: UsageCardProps) {
 
   useEffect(() => { load(); }, [load]);
 
-  if (error) return <div className="usage-card">用量加载失败：{error}</div>;
-  if (!data) return <div className="usage-card">用量加载中…</div>;
+  if (error) return <div className="card usage-card">用量加载失败：{error}</div>;
+  if (!data) return <div className="card usage-card">用量加载中…</div>;
 
   const empty = (data.total_prompt || 0) + (data.total_completion || 0) === 0;
 
   return (
-    <div className={`usage-card usage-${variant}`}>
+    <div className={`card usage-card usage-${variant}`}>
       <div className="usage-head">
         <strong>用量</strong>
         {variant === 'full' && (
-          <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
+          <select className="field usage-days" value={days} onChange={(e) => setDays(Number(e.target.value))}>
             <option value={7}>近 7 天</option>
             <option value={30}>近 30 天</option>
             <option value={90}>近 90 天</option>

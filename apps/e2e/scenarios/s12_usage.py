@@ -23,7 +23,10 @@ def run(page, ctx, check) -> dict:
     click_nav(page, "工作台")
     page.wait_for_timeout(1200)
     txt = page.locator(".app-layout").inner_text()
-    dash_card = "用量" in txt and ("暂无用量数据" in txt or "token" in txt)
+    # 卡片三种合法形态：空态 / token 视图 / 金额视图（已知模型折算后不再显示 token 字样）
+    dash_card = "用量" in txt and (
+        "暂无用量数据" in txt or "token" in txt or "$" in txt or "≈" in txt
+    )
     check(f"[{ctx.target}] 工作台用量卡片", dash_card)
 
     # 设置面板：用量明细区（齿轮 → 模型通道分区含用量 + 环境变量只读说明）
@@ -48,7 +51,9 @@ def run(page, ctx, check) -> dict:
         pass
     page.wait_for_timeout(1000)
     stxt = page.locator("body").inner_text()
-    settings_usage = ("用量" in stxt) and ("部分模型未计价" in stxt or "token" in stxt or "暂无用量数据" in stxt)
+    settings_usage = ("用量" in stxt) and (
+        "部分模型未计价" in stxt or "token" in stxt or "$" in stxt or "暂无用量数据" in stxt
+    )
     check(f"[{ctx.target}] 设置面板用量明细", settings_usage and opened, f"opened={opened}")
 
     return {"dash_card": dash_card, "settings_usage": bool(settings_usage and opened)}
