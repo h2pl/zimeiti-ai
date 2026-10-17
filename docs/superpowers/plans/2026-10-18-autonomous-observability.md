@@ -2,6 +2,7 @@
 change: autonomous-observability
 design-doc: docs/openspec/changes/autonomous-observability/design.md
 base-ref: d512769
+archived-with: 2026-10-18-autonomous-observability
 ---
 
 # Plan：自主运营看板
