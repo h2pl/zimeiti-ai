@@ -1,7 +1,7 @@
 # 「程序员江湖」快速上手 Demo 系列
 
 真实界面 + 真实 LLM 录制（Playwright 驱动，可见虚拟光标标注每次点击，逐步中文横幅）。
-与 `apps/e2e/` 十场景一一对应，覆盖每个典型用户路径。
+与 `apps/e2e/` 十二场景逐路径对应，覆盖每个典型用户路径。
 
 | 视频 | 用户路径 | 时长 | 对应 E2E |
 |---|---|---|---|
@@ -10,6 +10,7 @@
 | [02-chat-sessions.mp4](./02-chat-sessions.mp4) | **对话创作与会话管理**——流式回复 → 新对话 → 会话切换（上下文保留）→ 删除 | 1'04" | S5 |
 | [03-ideas-crud.mp4](./03-ideas-crud.mp4) | **选题库生命周期**——新建 → 编辑改名 → 删除 | 32" | S3 |
 | [04-outputs-browse.mp4](./04-outputs-browse.mp4) | **内容库浏览与预览**——稿件树 → Markdown 在线预览 → 素材预览 | 18" | S6 |
+| [05-automations-usage.mp4](./05-automations-usage.mp4) | **定时自动化与用量统计**——自动化页新建「每日早报」→ 立即执行+执行记录 → 停用/删除 → 工作台用量卡片（token+折算金额） | ~40" | S11/S12 |
 
 ## 核心工作流（品牌运营主线）
 
@@ -24,7 +25,7 @@
 ```bash
 # 品牌全流程
 cd apps/api && uv run python ../scripts/record_brand_demo.py
-# 四段路径 demo
+# 五段路径 demo
 cd apps/api && uv run python ../scripts/record_demo_suite.py
 ```
 
