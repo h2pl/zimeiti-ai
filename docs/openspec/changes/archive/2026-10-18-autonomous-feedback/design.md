@@ -2,6 +2,7 @@
 comet_change: autonomous-feedback
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-18-autonomous-feedback
 status: final
 ---
 

@@ -2,6 +2,7 @@
 change: autonomous-feedback
 design-doc: docs/openspec/changes/autonomous-feedback/design.md
 base-ref: a052903
+archived-with: 2026-10-18-autonomous-feedback
 ---
 
 # Plan：发布数据回流校准下一轮选题
