@@ -2,6 +2,7 @@
 change: stale-process-guard
 design-doc: docs/openspec/changes/stale-process-guard/design.md
 base-ref: 4b22b4c
+archived-with: 2026-10-17-stale-process-guard
 ---
 
 # Plan：stale-process-guard
