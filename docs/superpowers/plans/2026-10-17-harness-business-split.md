@@ -2,6 +2,7 @@
 change: harness-business-split
 design-doc: docs/openspec/changes/harness-business-split/design.md
 base-ref: a7b175a
+archived-with: 2026-10-17-harness-business-split
 ---
 
 # Plan：harness/business 分层
