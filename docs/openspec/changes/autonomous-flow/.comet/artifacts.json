@@ -1,0 +1,9 @@
+{
+  "openspec_proposal": "docs/openspec/changes/autonomous-flow/proposal.md",
+  "openspec_design": "docs/openspec/changes/autonomous-flow/design.md",
+  "openspec_tasks": "docs/openspec/changes/autonomous-flow/tasks.md",
+  "openspec_delta_spec": "docs/openspec/changes/autonomous-flow/specs/autonomous-flow/spec.md",
+  "design_document": "docs/openspec/changes/autonomous-flow/design.md",
+  "handoff_context": "docs/openspec/changes/autonomous-flow/.comet/handoff/design-context.json",
+  "handoff_markdown": "docs/openspec/changes/autonomous-flow/.comet/handoff/design-context.md"
+}

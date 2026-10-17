@@ -1,0 +1,16 @@
+{
+  "change": "autonomous-flow",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "07eacefe558efea1bdf2cbf70ab87a6916cd5075402b0f2134424bbf467e393f",
+  "files": [
+    { "path": "docs/openspec/changes/autonomous-flow/proposal.md", "sha256": "7bd628268568b64242c77712b2e56ded01c56f7fc17dd7a537d21bc1b56a7f5b" },
+    { "path": "docs/openspec/changes/autonomous-flow/design.md", "sha256": "7692d0c8dd1979e2a6cf9af1a70f108ffbd69d1840360e08cba827e7257b9285" },
+    { "path": "docs/openspec/changes/autonomous-flow/tasks.md", "sha256": "d54ef94605d6f20c2fd115f636c6d0a0b3a35433df2fb7e66f481862c15f43da" },
+    { "path": "docs/openspec/changes/autonomous-flow/.openspec.yaml", "sha256": "dc08c29816def5c12ac71497ed005c1c0d6d779aa76f03fa6cd1d3ed38d91ec9" },
+    { "path": "docs/openspec/changes/autonomous-flow/specs/autonomous-flow/spec.md", "sha256": "f48a80dcaf4690cfb9db2bedd4b1c3492a4efa5f888730282ff8a732e9fd0df9" }
+  ]
+}
