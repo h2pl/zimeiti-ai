@@ -1,9 +1,0 @@
-{
-  "openspec_proposal": "docs/openspec/changes/harness-business-split/proposal.md",
-  "openspec_design": "docs/openspec/changes/harness-business-split/design.md",
-  "openspec_tasks": "docs/openspec/changes/harness-business-split/tasks.md",
-  "openspec_delta_spec": "docs/openspec/changes/harness-business-split/specs/harness-business-split/spec.md",
-  "design_document": "docs/openspec/changes/harness-business-split/design.md",
-  "handoff_context": "docs/openspec/changes/harness-business-split/.comet/handoff/design-context.json",
-  "handoff_markdown": "docs/openspec/changes/harness-business-split/.comet/handoff/design-context.md"
-}

@@ -2,6 +2,7 @@
 comet_change: harness-business-split
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-17-harness-business-split
 status: final
 ---
 
