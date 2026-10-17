@@ -57,6 +57,7 @@ from zimeiti_api.platforms import login as _login_router
 from zimeiti_api.platforms import publish as _publish_router
 from zimeiti_api.platforms import wechat as _wechat_router
 from zimeiti_api.platforms.wechat import _stop_mp_login_on_shutdown
+from zimeiti_autonomous import guardrails as _auto_guard
 from zimeiti_autonomous import router as _flows_router
 from zimeiti_autonomous import runner as _auto_runner
 from zimeiti_harness import contract as _harness_contract
@@ -71,6 +72,17 @@ _harness_contract.register_skills_provider(_skills_router.get_skills)
 _auto_runner.set_agent_entry(
     _agent_runtime.ask_sync
 )  # 自主运营流程的 agent 入口（注入，非 import）
+
+
+def _budget_provider() -> dict:
+    """护栏的预算用量来源（注入，非 import——分层纪律）。"""
+    from zimeiti_harness.usage import summary as _s
+
+    u = _s()
+    return {"spent_usd": u.get("cost_usd"), "partial": bool(u.get("cost_usd_partial"))}
+
+
+_auto_guard.set_budget_provider(_budget_provider)
 
 load_dotenv(ENV_FILE, override=False)  # 已存在环境变量优先（同原 _load_dotenv 语义）
 

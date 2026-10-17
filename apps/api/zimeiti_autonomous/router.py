@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from . import feedback as fb
 from . import flows as fl
+from . import guardrails as gr
 from . import runner as rn
 from . import store as st
 
@@ -82,6 +83,15 @@ def run_flow(flow_id: str) -> dict:
         raise HTTPException(status_code=500, detail=str(e)[:300]) from e
     st.save_run(flow_id, res)
     return res
+
+
+@router.get("/api/autonomous/status")
+def autonomous_status() -> dict:
+    """护栏状态（autonomous-guardrails）：熔断态（被停用的流程）+ 当日预算用量。
+
+    用量由组装层注入（本包不 import harness）；未注入时如实标注 unknown。
+    """
+    return gr.status()
 
 
 @router.get("/api/feedback")

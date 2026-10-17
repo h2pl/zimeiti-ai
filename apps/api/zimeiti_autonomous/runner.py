@@ -11,6 +11,27 @@ from collections.abc import Callable
 from pathlib import Path
 
 from . import flows as fl
+from .guardrails import AutonomyPolicy
+
+_POLICY = AutonomyPolicy()
+_LAST_ATTEMPTS: dict = {"n": 0}
+
+
+def _retry(fn, tries: int) -> str:
+    """步骤级重试（记录尝试次数；配置性错误不重试——见 guardrails.is_retryable）。"""
+    from .guardrails import is_retryable
+
+    last: BaseException | None = None
+    for i in range(max(0, int(tries)) + 1):
+        try:
+            _LAST_ATTEMPTS["n"] = i + 1
+            return fn()
+        except Exception as e:  # noqa: BLE001
+            last = e
+            if not is_retryable(e) or i == int(tries):
+                raise
+    raise last if last else RuntimeError("重试逻辑异常")
+
 
 AgentEntry = Callable[[str, str], str]
 
@@ -78,6 +99,7 @@ def run_flow(
             "output_path": "",
             "summary": "",
             "error": "",
+            "retries": 0,
         }
         try:
             feedback = ""
@@ -89,8 +111,28 @@ def run_flow(
                 except Exception:  # noqa: BLE001   回流失败不阻断流程
                     feedback = ""
             prompt = fl.build_step_prompt(step, cfg, prev_summary, feedback=feedback)
-            out = entry(f"flow-{flow_id}-{step}", prompt)
-            out = out or ""
+
+            use_guard = bool(cfg.get("guardrails", True))
+            tries = int(cfg.get("retry", 2)) if use_guard else 0
+            attempts = 0
+
+            # 默认参数绑定循环变量，避免闭包延迟绑定（ruff B023）
+            def _call(_step: str = step, _prompt: str = prompt) -> str:
+                return entry(f"flow-{flow_id}-{_step}", _prompt) or ""
+
+            out = _call() if not use_guard else _retry(_call, tries)
+            attempts = _LAST_ATTEMPTS.get("n", 0)
+            rec["retries"] = max(0, attempts - 1)
+
+            # 自主模式 HITL 策略：需人工确认的动作标 blocked（不阻塞，继续后续步骤）
+            if use_guard and _POLICY.classify(out) == "blocked":
+                rec["status"] = "blocked"
+                rec["summary"] = fl.summarize(out)
+                rec["output_path"] = _archive(root, flow_id, i, step, out)
+                rec["needs_confirm"] = True
+                prev_summary = rec["summary"]
+                results.append(rec)
+                continue
             rec["output_path"] = _archive(root, flow_id, i, step, out)
             rec["summary"] = fl.summarize(out)
             rec["status"] = "done"
@@ -98,6 +140,7 @@ def run_flow(
         except Exception as e:  # noqa: BLE001   失败即停，原因如实记录
             rec["status"] = "failed"
             rec["error"] = f"{type(e).__name__}: {e}"
+            rec["retries"] = max(0, _LAST_ATTEMPTS.get("n", 1) - 1)
             rec["duration_ms"] = int((time.time() - t0) * 1000)
             results.append(rec)
             failed_step = step
