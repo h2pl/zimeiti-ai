@@ -16,7 +16,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from ..core.paths import PROJECT_ROOT
+from zimeiti_api.core.paths import PROJECT_ROOT
 
 DEFAULT_TIMEOUT = 120
 _MAX_STDOUT = 8 * 1024

@@ -13,7 +13,7 @@ import os
 
 import pytest
 
-from zimeiti_api.runtime import agent_runtime as ar
+from zimeiti_harness.runtime import agent_runtime as ar
 
 
 @pytest.fixture(autouse=True)
@@ -82,7 +82,7 @@ def test_disabled_switch(monkeypatch):
 
 
 def test_schemas_available():
-    from zimeiti_api.runtime import schemas
+    from zimeiti_harness.runtime import schemas
 
     ev = schemas.TopicEvaluation(
         dimensions={"赛道匹配": 9, "差异化": 7},

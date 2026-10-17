@@ -12,7 +12,7 @@ import pytest
 from langchain_core.messages import AIMessageChunk
 
 from zimeiti_api.core import pg
-from zimeiti_api.runtime import agent_runtime as art
+from zimeiti_harness.runtime import agent_runtime as art
 
 
 class FakeAgent:

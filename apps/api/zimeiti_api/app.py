@@ -34,8 +34,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
+from zimeiti_api import chat_router as _chat_router
+from zimeiti_api import status_router as _status_router
 from zimeiti_api import usage_router as _usage_router
 from zimeiti_api.automations import router as _automations_router
+from zimeiti_api.automations import scheduler as _auto_scheduler
 from zimeiti_api.content import ideas as _ideas_router
 from zimeiti_api.content import outputs as _outputs_router
 from zimeiti_api.content import personas as _personas_router
@@ -54,13 +57,15 @@ from zimeiti_api.platforms import login as _login_router
 from zimeiti_api.platforms import publish as _publish_router
 from zimeiti_api.platforms import wechat as _wechat_router
 from zimeiti_api.platforms.wechat import _stop_mp_login_on_shutdown
-from zimeiti_api.runtime import agent_runtime as _agent_runtime
-from zimeiti_api.runtime import chat as _chat_router
-from zimeiti_api.runtime import status as _status_router
+from zimeiti_harness import contract as _harness_contract
+from zimeiti_harness.runtime import agent_runtime as _agent_runtime
 
-# 依赖注入（组装层职责）：画像增强调用 agent 运行时——content 层不 import runtime（分层单向），
-# 由本组装层把 runtime.agent_runtime.ask_sync 注入 personas（backend-restructure）。
+# 依赖注入（组装层职责，分层单向）：业务侧不 import harness 的 agent 入口，
+# 由本组装层统一注入——画像增强（personas）与定时任务 prompt 型（scheduler）。
+# harness 的技能目录 provider 同理反向注入：harness 不知道 content 的存在。
 _personas_router.set_enhance_runtime(_agent_runtime.ask_sync)
+_auto_scheduler.set_ask_sync(_agent_runtime.ask_sync)
+_harness_contract.register_skills_provider(_skills_router.get_skills)
 
 load_dotenv(ENV_FILE, override=False)  # 已存在环境变量优先（同原 _load_dotenv 语义）
 
@@ -84,13 +89,13 @@ async def _lifespan(_app: FastAPI):
     _agent_runtime.set_main_loop(asyncio.get_running_loop())  # 线程侧 ask_sync 投回主循环
     _trends_router.start_trends_warmup()  # 热点缓存后台保热（冷抓 12s+ 的空窗不该让用户等）
     try:
-        from .memory import store as _mem
+        from zimeiti_harness.memory import store as _mem
 
         await asyncio.to_thread(_mem.setup)  # 记忆表（幂等）
     except Exception as e:  # noqa: BLE001  记忆表不可用不阻断启动（对话降级无记忆）
         print(f"[memory] 表初始化失败（无碍，对话继续）：{e}")
     try:
-        from . import usage as _usage
+        from zimeiti_harness import usage as _usage
 
         await asyncio.to_thread(_usage.setup)  # 用量表（幂等）
         from .automations import scheduler as _auto_sched

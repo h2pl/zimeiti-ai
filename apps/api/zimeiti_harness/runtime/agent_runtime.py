@@ -39,8 +39,8 @@ if TYPE_CHECKING:  # 仅供类型检查（deepagents 的 SubAgent 规格类型�
 
 from langchain_core.messages import AIMessageChunk
 
-from ..core import pg
-from ..core.paths import PROJECT_ROOT
+from zimeiti_api.core import pg
+from zimeiti_api.core.paths import PROJECT_ROOT
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 TTL_SECONDS = 30 * 60
@@ -126,7 +126,7 @@ def _skills_catalog() -> str:
     契约的其余部分不依赖目录存在。
     """
     try:
-        from ..content.skills import get_skills
+        from ..contract import get_skills
 
         groups: dict[str, list[str]] = {}
         for s in get_skills():

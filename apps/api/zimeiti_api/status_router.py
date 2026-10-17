@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from ..content.personas import list_personas
-from ..content.skills import get_skills
-from . import agent_runtime as _agent_runtime
+from zimeiti_harness.runtime import agent_runtime as _agent_runtime
+
+from .content.personas import list_personas
+from .content.skills import get_skills
 
 router = APIRouter()
 

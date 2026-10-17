@@ -16,7 +16,7 @@ import uuid
 from contextlib import contextmanager
 from typing import Any
 
-from ..core import pg
+from zimeiti_api.core import pg
 
 ORIGINS = ("owner", "agent", "system")  # 白名单：模型无法经 prose 写入任意 origin
 SCOPES = ("curated", "episodic")

@@ -1,12 +1,12 @@
 """模型 fallback 链（model-resilience-cron）。
 
-TDD RED：zimeiti_api.runtime.model_fallback 尚不存在。
+TDD RED：zimeiti_harness.runtime.model_fallback 尚不存在。
 只对基础设施类失败（连接/限流/5xx）切换；4xx 直抛不掩盖配置错误。
 """
 
 import pytest
 
-MOD = "zimeiti_api.runtime.model_fallback"
+MOD = "zimeiti_harness.runtime.model_fallback"
 
 
 class _Err(Exception):
@@ -35,7 +35,7 @@ def _make_stub(status_code=None, conn=False, msg="boom"):
 
 @pytest.fixture()
 def fb():
-    from zimeiti_api.runtime import model_fallback as m
+    from zimeiti_harness.runtime import model_fallback as m
 
     return m
 

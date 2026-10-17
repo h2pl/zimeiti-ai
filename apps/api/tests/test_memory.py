@@ -1,6 +1,6 @@
 """agent 记忆系统（agent-memory-system）。
 
-TDD RED：zimeiti_api.memory 尚不存在；实现后 GREEN。
+TDD RED：zimeiti_harness.memory 尚不存在；实现后 GREEN。
 存储层测试直连 PG（与 test_pg 系列同前提：本地 PG 可用）。
 """
 
@@ -11,12 +11,12 @@ pytestmark = pytest.mark.skipif(
     reason="PG 不可用",
 )
 
-MOD = "zimeiti_api.memory"
+MOD = "zimeiti_harness.memory"
 
 
 @pytest.fixture()
 def store():
-    from zimeiti_api.memory import store as st
+    from zimeiti_harness.memory import store as st
 
     st.setup()
     # 清出干净测试床
@@ -54,7 +54,7 @@ def test_injection_dedup(store):
 
 
 def test_episodic_flush_writes(store):
-    from zimeiti_api.memory.flush import flush_if_long
+    from zimeiti_harness.memory.flush import flush_if_long
 
     messages = [{"role": "user", "content": f"第{i}条消息" * 50} for i in range(40)]
     n = flush_if_long("sess-flush", messages)
@@ -64,7 +64,7 @@ def test_episodic_flush_writes(store):
 
 
 def test_flush_skips_short(store):
-    from zimeiti_api.memory.flush import flush_if_long
+    from zimeiti_harness.memory.flush import flush_if_long
 
     assert flush_if_long("sess-short", [{"role": "user", "content": "短"}]) == 0
 

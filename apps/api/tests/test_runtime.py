@@ -8,9 +8,9 @@ import uuid
 import pytest
 from fastapi import HTTPException
 
+from zimeiti_api import chat_router as chat_mod
 from zimeiti_api.core import paths as paths_mod
-from zimeiti_api.runtime import agent_runtime as agent_rt
-from zimeiti_api.runtime import chat as chat_mod
+from zimeiti_harness.runtime import agent_runtime as agent_rt
 
 
 @pytest.fixture

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from zimeiti_api import usage
+from zimeiti_harness import usage
 
 router = APIRouter()
 

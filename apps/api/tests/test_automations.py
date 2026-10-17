@@ -12,8 +12,8 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture(autouse=True)
 def clean():
-    from zimeiti_api import usage
     from zimeiti_api.automations import store as st
+    from zimeiti_harness import usage
 
     st.setup()
     usage.setup()
@@ -60,7 +60,7 @@ def test_crud_and_due():
 
 
 def test_usage_record_and_summary():
-    from zimeiti_api import usage
+    from zimeiti_harness import usage
 
     usage.record("sess-u1", "t1", "gpt-4o-mini", 100, 200)
     usage.record("sess-u1", "t2", "gpt-4o-mini", 50, 80)
@@ -74,7 +74,7 @@ def test_usage_record_and_summary():
 
 
 def test_usage_summary_all():
-    from zimeiti_api import usage
+    from zimeiti_harness import usage
 
     usage.record("sess-u2", "t1", "m1", 10, 20)
     s = usage.summary()

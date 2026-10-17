@@ -17,14 +17,15 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
-from ..content.personas import _persona_prefix, chat_turn_message
-from ..content.skills import find_skill
-from ..content.uploads import _attachment_id, _attachment_scope
-from ..core.paths import (
+from zimeiti_harness.runtime import agent_runtime as _agent_runtime
+
+from .content.personas import _persona_prefix, chat_turn_message
+from .content.skills import find_skill
+from .content.uploads import _attachment_id, _attachment_scope
+from .core.paths import (
     SESSIONS_DIR,
     _safe_output_target,
 )
-from . import agent_runtime as _agent_runtime
 
 router = APIRouter()
 

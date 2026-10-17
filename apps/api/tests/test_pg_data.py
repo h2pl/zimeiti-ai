@@ -100,7 +100,7 @@ def test_delete_session_wiring_clears_pending(uid):
     """A9 接线：agent_runtime.delete_session 真的联动清 pending（不只是 pg 层）。"""
     import asyncio
 
-    from zimeiti_api.runtime import agent_runtime as ar
+    from zimeiti_harness.runtime import agent_runtime as ar
 
     sk = f"sess-{uuid.uuid4().hex[:8]}"
     qid = uuid.uuid4().hex

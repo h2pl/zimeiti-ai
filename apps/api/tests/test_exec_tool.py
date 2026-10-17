@@ -5,13 +5,13 @@ TDD RED：exec_tool 模块尚不存在；实现后 GREEN。
 
 import pytest
 
-MOD = "zimeiti_api.runtime.exec_tool"
+MOD = "zimeiti_harness.runtime.exec_tool"
 
 
 @pytest.fixture()
 def reg(monkeypatch):
     """把注册表替换为测试专用（不依赖真实技能脚本）。"""
-    from zimeiti_api.runtime import exec_tool as et
+    from zimeiti_harness.runtime import exec_tool as et
 
     monkeypatch.setattr(
         et,

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 from ..core.paths import PROJECT_ROOT
@@ -91,12 +92,23 @@ def _run_case(payload: str, log: Path) -> str:
     return out[-500:]
 
 
+# agent 入口由组装层注入（harness-business-split D3，对齐 personas.set_enhance_runtime 范式）；
+# scheduler 源码不得 import harness 的 agent 入口（tests/test_layering.py 机械守卫）。
+_ask_sync: Callable[[str, str], str] | None = None
+
+
+def set_ask_sync(fn: Callable[[str, str], str]) -> None:
+    """注入 agent 同步对话入口（app.py 组装层调用一次）。"""
+    global _ask_sync
+    _ask_sync = fn
+
+
 async def _run_prompt(payload: str, log: Path) -> str:
     """预置 prompt 走对话链路（ask_sync 投主循环）。"""
-    from ..runtime.agent_runtime import ask_sync
-
+    if _ask_sync is None:
+        raise RuntimeError("agent 入口未注入（组装层未调用 set_ask_sync）")
     reply = await asyncio.get_running_loop().run_in_executor(
-        None, ask_sync, f"auto-{int(time.time())}", payload
+        None, _ask_sync, f"auto-{int(time.time())}", payload
     )
     log.write_text(reply or "", encoding="utf-8")
     return (reply or "")[:500]

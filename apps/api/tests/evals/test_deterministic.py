@@ -7,9 +7,9 @@
 import pytest
 
 from zimeiti_api.content import skills as skills_mod
-from zimeiti_api.runtime import agent_runtime as ar
-from zimeiti_api.runtime import exec_tool
-from zimeiti_api.runtime import model_fallback as mfb
+from zimeiti_harness.runtime import agent_runtime as ar
+from zimeiti_harness.runtime import exec_tool
+from zimeiti_harness.runtime import model_fallback as mfb
 
 
 @pytest.fixture(autouse=True)
@@ -68,8 +68,8 @@ def test_tools_registered():
     _build_tools 是 _build_agent 的内嵌函数（ask_human 需绑定会话上下文），
     故此处断言两个工厂产出的工具名 + 源码含 ask_human，避免起真实 agent（需 PG）。
     """
-    from zimeiti_api.memory.tools import make_memory_tools
-    from zimeiti_api.runtime.exec_tool import make_exec_tool
+    from zimeiti_harness.memory.tools import make_memory_tools
+    from zimeiti_harness.runtime.exec_tool import make_exec_tool
 
     def _names(obj):
         items = obj if isinstance(obj, (list, tuple)) else [obj]

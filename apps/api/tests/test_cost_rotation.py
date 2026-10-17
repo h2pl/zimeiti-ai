@@ -4,8 +4,8 @@ import os
 
 import pytest
 
-from zimeiti_api.runtime import agent_runtime as ar
-from zimeiti_api.runtime import pricing
+from zimeiti_harness.runtime import agent_runtime as ar
+from zimeiti_harness.runtime import pricing
 
 
 @pytest.fixture(autouse=True)
@@ -62,7 +62,7 @@ def test_zero_tokens_zero_cost():
 
 
 def test_usage_summary_cost_fields():
-    from zimeiti_api import usage
+    from zimeiti_harness import usage
 
     usage.setup()
     usage._exec("DELETE FROM chat_usage")
@@ -81,7 +81,7 @@ def test_usage_summary_cost_fields():
 
 
 def test_usage_all_unknown():
-    from zimeiti_api import usage
+    from zimeiti_harness import usage
 
     usage.setup()
     usage._exec("DELETE FROM chat_usage")

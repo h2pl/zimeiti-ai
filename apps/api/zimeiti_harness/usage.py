@@ -9,7 +9,7 @@ import time
 import uuid
 from contextlib import contextmanager
 
-from .core import pg
+from zimeiti_api.core import pg
 
 _DDL = """
 CREATE TABLE IF NOT EXISTS chat_usage (
