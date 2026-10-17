@@ -34,6 +34,21 @@ def compare(zo: dict, eo: dict) -> tuple[list[str], list[str]]:
                 diffs.append(f"S10.rendered: zimeiti={zv} easel={ev}")
             else:
                 notes.append(f"S10 热点条目（环境差异）: zimeiti={(zv or {}).get('topics')} easel={(ev or {}).get('topics')}")
+        elif sid == "S1":
+            # 首启引导条件是「画像数为 0」：zimeiti 数据根带真实画像时引导正当缺席
+            #（easel 无画像概念恒显示）→ 该状态记 NOTE，其余结构仍比对
+            if not (zv or {}).get("personas_present"):
+                for f in ("skeleton", "onboarding_modal", "dashboard"):
+                    if bool((zv or {}).get(f)) != bool((ev or {}).get(f)):
+                        diffs.append(f"S1.{f}: zimeiti={zv} easel={ev}")
+            else:
+                if not (zv or {}).get("dashboard"):
+                    diffs.append(f"S1.dashboard: zimeiti={zv}")
+                notes.append(f"S1 首启引导（zimeiti 已有画像，正当缺席）: zimeiti={_short(zv)} easel={_short(ev)}")
+        elif sid in ("S11", "S12"):
+            # zimeiti 独有功能（自动化页/用量可视化）：Easel 无此能力是预期差异 → NOTE
+            if zv != ev:
+                notes.append(f"{sid} zimeiti 独有功能（预期差异）: zimeiti={_short(zv)} easel={_short(ev)}")
         elif key == "js_errors_total":
             if bool(zv) != bool(ev):
                 diffs.append(f"JS 错误: zimeiti={zv} easel={ev}")
