@@ -42,6 +42,23 @@ from langchain_core.messages import AIMessageChunk
 from zimeiti_api.core import pg
 from zimeiti_api.core.paths import PROJECT_ROOT
 
+
+def _ensure_fresh() -> None:
+    """进程启动后源码若变更（重构/移动模块/git pull），拦在 harness 最早入口。
+
+    把「No module named ...」天书换成「请重启后端」行动指引
+    （stale-process-guard；fingerprint 自身异常不阻断对话）。
+    """
+    try:
+        from .fingerprint import ensure_fresh
+
+        ensure_fresh()
+    except Exception as e:  # noqa: BLE001   守卫自身故障降级放行
+        if type(e).__name__ == "StaleProcessError":
+            raise
+        return
+
+
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 TTL_SECONDS = 30 * 60
 
@@ -447,6 +464,7 @@ async def _build_structured_agent(schema_name: str, schema: type):
 
 async def chat_structured(schema_name: str, message: str, session_key: str = "") -> dict:
     """结构化对话：返回 schema 实例（dict 形式）。首个场景 topic_evaluation。"""
+    _ensure_fresh()
     from .schemas import TopicEvaluation
 
     schemas = {"topic_evaluation": TopicEvaluation}
@@ -576,6 +594,7 @@ async def run_turn(
     save_turn: Callable | None = None,
 ) -> None:
     """跑一轮 deepagents 对话，按 Easel SSE 契约发帧；结束负责落盘与 done 帧。"""
+    _ensure_fresh()
     async with _session_lock(session_key):
         _gc_live()
         model = _build_model()
@@ -802,6 +821,7 @@ def model_configured() -> bool:
 
 
 async def ask(session_key: str, message: str) -> str:
+    _ensure_fresh()
     """非流式执行一轮，返回最终文本。
 
     被 ask_human 中断时不续答（非流式无法交互），返回提示文本让调用方改走流式对话。
@@ -884,6 +904,7 @@ def set_main_loop(loop: asyncio.AbstractEventLoop) -> None:
 
 
 def ask_sync(session_key: str, message: str) -> str:
+    _ensure_fresh()
     """同步包装 ask（供线程池 / 同步上下文调用）。
 
     主循环已登记时投回主循环执行（跨线程安全）；否则退回本地自建循环

@@ -295,6 +295,11 @@ async def api_chat_stream(req: ChatRequest):
             _save_turn(pk, "stopped", "", {"turn_id": turn_id, "stopped": True})
             client_q.put_nowait(CLIENT_DONE)
             return
+        except Exception as e:  # noqa: BLE001   run_turn 早抛（如 stale-process-guard）也要让用户看到原因
+            # 无此行：后台任务静默死亡，前端只收到空流（用户看到「什么都没发生」）
+            to_client("error", f"❌ {str(e)[:300]}")
+            client_q.put_nowait(CLIENT_DONE)
+            return
         return
 
     # 把 run 跑在独立后台任务里（持强引用防 GC）——客户端断开不取消它。

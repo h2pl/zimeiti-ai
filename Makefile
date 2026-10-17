@@ -37,7 +37,7 @@ e2e-browser: ## 浏览器级双端对齐 E2E（apps/e2e/ 套件，每用户路�
 
 test: verify ## 别名
 
-check: ## 质量门禁五连：format → lint → types → security → tests+coverage≥80（对齐 Comet 家规 check-api.sh）
+check: verify ## 质量门禁六连：归零校验 → format → lint → types → security → tests+coverage≥80
 	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync ruff format zimeiti_api zimeiti_harness tests
 	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync ruff check zimeiti_api zimeiti_harness tests
 	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync mypy zimeiti_api zimeiti_harness
