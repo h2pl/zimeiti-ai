@@ -20,13 +20,14 @@ export default function UsageCard({ variant = 'compact' }: UsageCardProps) {
 
   useEffect(() => { load(); }, [load]);
 
-  if (error) return <div className="card usage-card">用量加载失败：{error}</div>;
-  if (!data) return <div className="card usage-card">用量加载中…</div>;
+  if (error) return <div className={`usage-card usage-${variant}`}>用量加载失败：{error}</div>;
+  if (!data) return <div className={`usage-card usage-${variant}`}>用量加载中…</div>;
 
   const empty = (data.total_prompt || 0) + (data.total_completion || 0) === 0;
 
   return (
-    <div className={`card usage-card usage-${variant}`}>
+    // compact：工作台独立卡片（.card 外壳）；full：设置面板内裸内容（st-panel 已有面板壳）
+    <div className={`usage-card usage-${variant}${variant === 'compact' ? ' card' : ''}`}>
       <div className="usage-head">
         <strong>用量</strong>
         {variant === 'full' && (

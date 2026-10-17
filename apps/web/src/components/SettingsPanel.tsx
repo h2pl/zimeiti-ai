@@ -569,13 +569,12 @@ export default function SettingsPanel({ onClose }: Props) {
           <div className="settings-main">
             {sec === 'model' && (
               <section className="st-sec active">
-                <h4 className="st-h4">用量</h4>
                 <UsageCard variant="full" />
-                <p className="st-note">
+                <div className="foot-note">
                   模型 fallback 链（ZIMEITI_FALLBACK_MODELS）与子代理模型
                   （ZIMEITI_SUBAGENT_MODEL）是进程环境变量，改界面不会生效——
-                  需在 .env 中设置后重启后端。此处不做可编辑控件，避免造成"已生效"的错觉。
-                </p>
+                  需在 .env 中设置后重启后端。此处不做可编辑控件，避免造成「已生效」的错觉。
+                </div>
                 <div className="tabbar">
                   {CHANNELS.map((c) => (
                     <button key={c.id} className={`tab${chan === c.id ? ' active' : ''}`} onClick={() => setChan(c.id)}>

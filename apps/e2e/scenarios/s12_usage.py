@@ -56,4 +56,13 @@ def run(page, ctx, check) -> dict:
     )
     check(f"[{ctx.target}] 设置面板用量明细", settings_usage and opened, f"opened={opened}")
 
+    # 收尾必须关设置面板——否则 overlay 挡死后续场景（S11 曾因此整场景崩溃）
+    if opened:
+        close = page.locator(".settings-close")
+        if close.count():
+            close.first.click()
+        else:
+            page.keyboard.press("Escape")
+        page.wait_for_timeout(500)
+
     return {"dash_card": dash_card, "settings_usage": bool(settings_usage and opened)}
