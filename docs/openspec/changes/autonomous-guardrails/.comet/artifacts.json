@@ -1,0 +1,9 @@
+{
+  "openspec_proposal": "docs/openspec/changes/autonomous-guardrails/proposal.md",
+  "openspec_design": "docs/openspec/changes/autonomous-guardrails/design.md",
+  "openspec_tasks": "docs/openspec/changes/autonomous-guardrails/tasks.md",
+  "openspec_delta_spec": "docs/openspec/changes/autonomous-guardrails/specs/autonomous-guardrails/spec.md",
+  "design_document": "docs/openspec/changes/autonomous-guardrails/design.md",
+  "handoff_context": "docs/openspec/changes/autonomous-guardrails/.comet/handoff/design-context.json",
+  "handoff_markdown": "docs/openspec/changes/autonomous-guardrails/.comet/handoff/design-context.md"
+}
