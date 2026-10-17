@@ -2,6 +2,7 @@
 comet_change: model-cost-rotation
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-17-model-cost-rotation
 status: final
 ---
 
