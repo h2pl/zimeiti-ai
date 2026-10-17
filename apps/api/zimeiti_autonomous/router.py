@@ -10,6 +10,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from . import feedback as fb
 from . import flows as fl
 from . import runner as rn
 from . import store as st
@@ -81,6 +82,18 @@ def run_flow(flow_id: str) -> dict:
         raise HTTPException(status_code=500, detail=str(e)[:300]) from e
     st.save_run(flow_id, res)
     return res
+
+
+@router.get("/api/feedback")
+def get_feedback(days: int = 14) -> dict:
+    """最近一次选题校准信号（autonomous-feedback）：发布事实汇总与缺口提示。
+
+    无发布记录时如实返回「暂无发布记录」，不虚构任何表现数值。
+    """
+    try:
+        return fb.latest(days=days)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=f"校准信号不可用：{e}") from e
 
 
 @router.get("/api/flows/steps/catalog")

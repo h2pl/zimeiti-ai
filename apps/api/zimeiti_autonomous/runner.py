@@ -80,7 +80,15 @@ def run_flow(
             "error": "",
         }
         try:
-            prompt = fl.build_step_prompt(step, cfg, prev_summary)
+            feedback = ""
+            if step == "discover" and cfg.get("feedback", True):
+                from .feedback import context_for_discover  # 局部导入：无数据时降级为空
+
+                try:
+                    feedback = context_for_discover()
+                except Exception:  # noqa: BLE001   回流失败不阻断流程
+                    feedback = ""
+            prompt = fl.build_step_prompt(step, cfg, prev_summary, feedback=feedback)
             out = entry(f"flow-{flow_id}-{step}", prompt)
             out = out or ""
             rec["output_path"] = _archive(root, flow_id, i, step, out)

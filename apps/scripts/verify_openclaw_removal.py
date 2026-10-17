@@ -33,10 +33,10 @@ BANNED_NAMES = {
 # 运行级唯一 api 路径数（递归 _IncludedRouter 后统计；与旧单体 app.py 严格一致，A7 零新增/零删除）。
 # 旧单体 52 个唯一 api 路径；harness 批次新增 automations(6)/usage(1) 后为 57
 # （harness-business-split 复核修正：该脚本长期未跑，期望值随端点增长同步更新；
-#   autonomous-flow 新增 /api/flows 系列 4 条 → 61）
+#   autonomous-flow 新增 /api/flows 系列 4 条 → 61；autonomous-feedback 新增 /api/feedback → 62）
 # include_router 产生嵌套 _IncludedRouter，扁平 path 仅 5 条静态 + 15 个 _IncludedRouter，
 # 故必须用递归收集器统计真实路由。
-EXPECTED_API_PATHS = 61
+EXPECTED_API_PATHS = 62
 EXPECTED_RUNTIME_API = ("run_turn", "ask", "ask_sync", "delete_session",
                         "answer", "pending_status", "model_configured")
 

@@ -42,10 +42,12 @@ def validate_steps(steps: list[str] | tuple[str, ...] | None) -> list[str]:
     return got
 
 
-def build_step_prompt(step: str, config: dict, prev_summary: str) -> str:
-    """组装单步 prompt：层指令 + 全局配置 + 上一步摘要（D2）。
+def build_step_prompt(step: str, config: dict, prev_summary: str, feedback: str = "") -> str:
+    """组装单步 prompt：层指令 + 全局配置 + 上一步摘要（D2）+ 校准段（仅 discover）。
 
     完整产出不进 prompt（只落文件），摘要截断防上下文膨胀。
+    feedback 只作用于 discover 步——闭环的意义是「上一轮影响下一轮选题」，
+    其他步骤注入只会污染上下文（autonomous-feedback D3）。
     """
     parts = [STEP_INSTRUCTION[step]]
     topic = (config or {}).get("topic") or ""
@@ -58,6 +60,8 @@ def build_step_prompt(step: str, config: dict, prev_summary: str) -> str:
         parts.append("只产出草稿，不要执行真实发布动作。")
     if prev_summary:
         parts.append("上一步产出摘要：\n" + prev_summary[:_SUMMARY_LIMIT])
+    if feedback and step == "discover":
+        parts.append("已发布校准信号：\n" + feedback[:_SUMMARY_LIMIT])
     return "\n".join(parts)
 
 
