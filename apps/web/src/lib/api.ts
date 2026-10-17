@@ -21,6 +21,16 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     }
     throw new Error(detail || `请求失败（${res.status} ${res.statusText}）`);
   }
+  // 200 但不是 JSON：一定是链路故障——dev 代理失效（/api/* 落进 vite SPA 兜底
+  // 返回 index.html）、后端未就绪、或前后端版本不一致。直接抛可行动的中文错误，
+  // 而不是让 res.json() 抛出 "Unexpected token '<'" 这种无法定位的原始异常。
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) {
+    throw new Error(
+      `服务返回了 HTML 而非 JSON（${url}）——API 代理/后端未就绪，或前后端版本不一致。`
+      + '请重启 make dev（或改用 http://localhost:8000 生产形态）后刷新页面。',
+    );
+  }
   return res.json() as Promise<T>;
 }
 

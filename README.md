@@ -70,6 +70,14 @@ make dev          # 或分开跑 make api / make web
 
 无 `.env` / 无密钥时应用照常启动，对话优雅降级并如实提示——其余页面功能不受影响。
 
+### 故障排查
+
+**页面报「服务返回了 HTML 而非 JSON」**：API 请求没到后端——多半是 dev 代理失效
+（`/api/*` 落进 vite 的 SPA 兜底返回了 index.html），或前后端版本不一致。
+
+1. 自查：`curl http://localhost:8000/api/status` ——返回 JSON 说明后端正常，问题在前端链路
+2. 处置：重启 `make dev`（vite 代理失效只能靠重启恢复）；或直接用生产形态 `http://localhost:8000`（后端托管前端构建产物，无代理层）
+
 ### 环境变量
 
 | 变量 | 作用 |
