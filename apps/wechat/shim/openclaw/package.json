@@ -1,0 +1,12 @@
+{
+  "name": "openclaw",
+  "version": "0.0.0-shim",
+  "private": true,
+  "description": "zimeiti 本地 shim：仅提供 vendor 协议码实际用到的 2 个 openclaw plugin-sdk helper（account-id / config-mutation）。不提供 openclaw 引擎。",
+  "type": "module",
+  "exports": {
+    "./plugin-sdk/account-id": "./plugin-sdk/account-id.js",
+    "./plugin-sdk/config-mutation": "./plugin-sdk/config-mutation.js",
+    "./plugin-sdk/temp-path": "./plugin-sdk/temp-path.js"
+  }
+}

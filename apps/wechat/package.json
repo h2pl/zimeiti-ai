@@ -1,0 +1,18 @@
+{
+  "name": "zimeiti-wechat",
+  "version": "0.1.0",
+  "private": true,
+  "description": "zimeiti 微信通道桥：vendor 腾讯 ilink 协议码 + 薄宿主（不依赖 openclaw）",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test",
+    "start": "node src/index.js start"
+  },
+  "dependencies": {
+    "openclaw": "file:./shim/openclaw",
+    "qrcode-terminal": "0.12.0"
+  }
+}

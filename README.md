@@ -94,6 +94,26 @@ make dev          # 或分开跑 make api / make web
 | `ZIMEITI_SUBAGENT_MODEL` / `ZIMEITI_SUBAGENT_ENABLED` | 子代理模型降档 / 总开关 |
 | `DATABASE_URL` | PostgreSQL 连接串（会话持久化/记忆/自动化/用量） |
 
+## 微信通道（开发中）
+
+`apps/wechat/` 是微信通道桥——**vendor 腾讯官方 ilink 协议码**
+（`@tencent-weixin/openclaw-weixin` v2.4.10，MIT，原样收录 + 哈希校验），
+**不依赖 openclaw 引擎**（协议函数零 SDK 依赖，仅登录态落盘用 3 个 helper，
+由本地 shim 提供）。
+
+```bash
+cd apps/wechat && npm install
+node src/index.js login      # 扫码登录（终端二维码，8 分钟有效）
+node src/index.js status     # 登录态 / 会话映射自检
+node src/index.js version    # 协议码与桥版本
+npm test                     # node:test 单测（零网络）
+```
+
+**前提**：需要 Node ≥ 18（协议码是 JS；Python 主服务不受影响）。
+**当前进度**：协议码 vendor + 宿主骨架（扫码登录/长轮询/发送/会话映射）已就位；
+把入站消息桥到 zimeiti agent 的变更（wechat-bridge-transport）随后。
+**注意**：协议登录（非官方客户端）有账号风险，建议专用微信小号。
+
 ## 命令行入口
 
 不开浏览器也能用 zimeiti（`make install` 后可用，模型凭据留在服务端）：

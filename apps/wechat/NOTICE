@@ -1,0 +1,18 @@
+# NOTICE — vendored third-party code
+
+## @tencent-weixin/openclaw-weixin v2.4.10
+
+- **来源**：npm 公开包 `@tencent-weixin/openclaw-weixin`（Tencent 官方），本目录
+  `vendor/openclaw-weixin/` 收录其编译产物 `dist/` 与 `LICENSE`。
+- **许可**：MIT（全文见 `vendor/openclaw-weixin/LICENSE`）。
+  Copyright (C) 2026 Tencent. All rights reserved.
+- **改动声明**：**未改动任何协议码**。`vendor/openclaw-weixin/MANIFEST.json` 记录
+  全部文件的内容哈希，`scripts/verify_wechat_vendor.py`（随 `make check` 执行）
+  校验一致性——任何改动或漂移都会让门禁失败。
+- **版本 pin**：v2.4.10（`vendor/openclaw-weixin/VERSION`）。升级须人工复核：
+  重新 vendor → 更新 VERSION/MANIFEST → 复核 shim 假设（协议码若新增
+  `openclaw/plugin-sdk/*` import，需补对应 shim 实现）。
+- **用途**：zimeiti 微信通道桥（`apps/wechat/`）的 ilink 协议实现——长轮询收消息
+  （`ilink/bot/getupdates`）、发送（`ilink/bot/sendmessage`）、二维码登录。
+  **不依赖 openclaw 引擎**（协议函数零 SDK 依赖，仅登录态落盘用 2 个 helper，
+  由本地 shim 提供）。
