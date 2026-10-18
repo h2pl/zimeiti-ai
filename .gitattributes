@@ -2,3 +2,5 @@
 # 禁止 git 做行尾转换，否则 autocrlf 环境下 checkout 会把 LF 改成 CRLF、
 # 重算哈希失配，guard archive 阶段报 "Existing Skill snapshot is invalid"。
 **/.comet/skill-snapshots/** -text
+# vendored 第三方协议码：按字节哈希校验（MANIFEST.json），禁 git 行尾转换
+apps/wechat/vendor/** -text

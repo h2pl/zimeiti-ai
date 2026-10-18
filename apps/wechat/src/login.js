@@ -19,13 +19,13 @@ import {
   clearWeixinAccount,
   listIndexedWeixinAccountIds,
 } from "../vendor/openclaw-weixin/dist/src/auth/accounts.js";
-import { ACCOUNTS_FILE, STATE_DIR } from "./config.js";
+import { accountsFile, stateDir } from "./config.js";
 
 export { loadWeixinAccount, clearWeixinAccount, listIndexedWeixinAccountIds };
 
 /** 完整扫码登录流程。opts.transport 仅供测试注入（记录调用，不触网时由测试替换模块）。 */
 export async function login(opts = {}) {
-  await mkdir(STATE_DIR, { recursive: true });
+  await mkdir(stateDir(), { recursive: true });
   const accountId = opts.accountId || "default";
   const started = await startWeixinLoginWithQr({ accountId, force: true });
   if (!started.qrcodeUrl) {
@@ -70,5 +70,5 @@ export async function status() {
       });
     }
   }
-  return { loggedIn: accounts.length > 0, accounts, accountsFile: ACCOUNTS_FILE };
+  return { loggedIn: accounts.length > 0, accounts, accountsFile: accountsFile() };
 }

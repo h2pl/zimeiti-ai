@@ -8,19 +8,20 @@
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
-import { SESSIONS_FILE } from "./config.js";
+import { sessionsFile } from "./config.js";
 
 async function _load() {
   try {
-    return JSON.parse(await readFile(SESSIONS_FILE, "utf8"));
+    return JSON.parse(await readFile(sessionsFile(), "utf8"));
   } catch {
     return { version: 1, bindings: {} };
   }
 }
 
 async function _save(data) {
-  await mkdir(path.dirname(SESSIONS_FILE), { recursive: true });
-  await writeFile(SESSIONS_FILE, `${JSON.stringify(data, null, 2)}\n`, "utf8");
+  const file = sessionsFile();
+  await mkdir(path.dirname(file), { recursive: true });
+  await writeFile(file, `${JSON.stringify(data, null, 2)}\n`, "utf8");
 }
 
 /** 取（必要时创建）某微信用户的 zimeiti session id。 */

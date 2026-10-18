@@ -108,16 +108,19 @@ test("bridge 轮询失败按退避重试不崩溃", async () => {
 });
 
 // ── sessions：映射落盘 ────────────────────────────────────────────────────
-test("sessions 映射：同用户稳定、reset 后重建", async () => {
+test("sessions 映射：同用户稳定、reset 后重建、且严格隔离于真实 state", async () => {
   const dir = await mkdtemp(path.join(tmpdir(), "wx-sess-"));
   process.env.WECHAT_STATE_DIR = dir;
+  // 隔离有效性前置断言（曾因 config 不读该变量而假绿灯）
+  const cfg = await import("../src/config.js");
+  assert.equal(cfg.sessionsFile(), path.join(dir, "sessions.json"));
   const { sessionFor, resetSession, listBindings } = await import("../src/sessions.js");
   try {
     const s1 = await sessionFor("wx-user-abc");
     const s2 = await sessionFor("wx-user-abc");
     assert.equal(s1, s2);
     assert.equal(s1, "wx-wx-user-abc");
-    assert.equal(Object.keys(await listBindings()).length, 1);
+    assert.deepEqual(Object.keys(await listBindings()), ["wx-user-abc"]);
     await resetSession("wx-user-abc");
     const s3 = await sessionFor("wx-user-abc");
     assert.equal(s3, s1); // 稳定派生，不是随机
