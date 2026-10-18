@@ -12,6 +12,7 @@
 import { sessionFor, resetSession } from "./sessions.js";
 import { stateDir } from "./config.js";
 import path from "node:path";
+import { isGroupMessage, isBotMentioned, groupUserId, stripMention, requireMention } from "./group.js";
 import {
   extractMediaItems,
   saveInboundMedia,
@@ -48,10 +49,11 @@ export class Dispatcher {
    *        { saveInbound, sendMedia }；另可用 ilinkOpts 传 baseUrl/token/cdnBaseUrl
    * @param {object} [opts.ilinkOpts]   { baseUrl, token, cdnBaseUrl }
    */
-  constructor({ client, transport, mediaHooks, ilinkOpts }) {
+  constructor({ client, transport, mediaHooks, ilinkOpts, bot }) {
     this.client = client;
     this.transport = transport;
     this.ilinkOpts = ilinkOpts || {};
+    this.bot = bot || { id: "", name: "" };
     this._saveInbound = mediaHooks?.saveInbound || saveInboundMedia;
     this._sendMedia = mediaHooks?.sendMedia || defaultSendMedia;
     this._downloadMedia = mediaHooks?.downloadMedia || defaultDownloadMedia;
@@ -68,7 +70,13 @@ export class Dispatcher {
   }
 
   async _process(userId, msg) {
-    const text = String(msg?.content ?? msg?.text ?? "").trim();
+    // ── 群消息：默认仅在@bot 时响应（防骚扰）；非@静默跳过 ──────────────
+    if (isGroupMessage(msg)) {
+      if (requireMention() && !isBotMentioned(msg, this.bot)) return undefined;
+      userId = groupUserId(msg);
+    }
+    let text = String(msg?.content ?? msg?.text ?? "").trim();
+    if (isGroupMessage(msg)) text = stripMention(text, this.bot);
     if (text && NEW_SESSION_CMDS.has(text)) {
       await resetSession(userId);
       await this._send(userId, "已为你开启新会话——之前的上下文已清空，直接说新的话题吧。");

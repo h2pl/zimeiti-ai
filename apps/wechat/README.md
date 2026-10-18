@@ -64,6 +64,34 @@ cd apps/api && PYTHONUTF8=1 ./.venv/Scripts/python.exe -m zimeiti_api --port 812
 PYTHONUTF8=1 python apps/scripts/probe_wechat_bridge.py
 ```
 
+## 群聊
+
+群消息默认**仅在@机器人时响应**（防骚扰）；会话按群隔离（`wxg-<群id>`）。
+
+> ⚠️ **联调校准**：ilink 群消息的字段名无法从协议码证实（vendor 不含群处理）。
+> 若群里@了没反应，先看日志里的原始消息字段，再用环境变量校准：
+> `WECHAT_GROUP_ID_FIELDS`（群 id 字段，逗号分隔）、`WECHAT_GROUP_AT_FIELDS`
+> （@标记字段）、`WECHAT_GROUP_REQUIRE_MENTION=false`（关闭@要求）。
+
+## 开机自驻
+
+```bash
+bash services/install-service.sh            # 安装并启动（Linux/macOS 自动判别）
+bash services/install-service.sh --uninstall
+```
+
+- Linux：systemd 用户服务（`systemctl --user status zimeiti-wechat`），
+  启动前会等待 zimeiti `/api/status` 就绪，崩溃自动重启
+- macOS：launchd LaunchAgent（`launchctl list | grep com.zimeiti.wechat`）
+- Windows：无服务形态——用「任务计划程序」（触发器：登录时；操作：
+  `node <路径>\\src\\index.js start`，起始于 `apps/wechat`）或把 start
+  快捷方式放进 `shell:startup` 文件夹
+
+## 多账号
+
+`login` 多次（每次不同微信扫码）即存入多账号；`start` 会为每个账号各起一个桥
+实例并行运行，单账号异常不影响其余。
+
 ## 注意
 
 - **协议登录有账号风险**（非官方客户端）——建议用专用微信小号，不要用主号

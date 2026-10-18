@@ -26,8 +26,9 @@ dev: ## 双端并行启动（Ctrl+C 一起退出；首次先跑 make install）
 build-web: ## 构建前端（产物在 apps/web/dist，API 直接托管该目录，无需复制）
 	cd $(WEB_DIR) && npm run build
 
-verify: ## 验收：openclaw 归零 + 微信桥 vendor 合规 + 技能校验 + skill 测试套件
+verify: ## 验收：openclaw 归零 + 微信桥 vendor 合规 + 服务单元 + 技能校验 + skill 测试套件
 	@PYTHONUTF8=1 python apps/scripts/verify_wechat_vendor.py
+	@PYTHONUTF8=1 python apps/scripts/verify_wechat_services.py
 	cd $(API_DIR) && uv run --no-sync python ../scripts/verify_openclaw_removal.py
 	cd apps && PYTHONUTF8=1 $(PYTHON) scripts/validate_skills.py
 	cd apps && PYTHONUTF8=1 $(PYTHON) scripts/validate_skill_commands.py
@@ -38,7 +39,7 @@ e2e-browser: ## 浏览器级双端对齐 E2E（apps/e2e/ 套件，每用户路�
 
 test: verify ## 别名
 
-check: verify ## 质量门禁七连：归零校验 → 微信桥 vendor 合规 → format → lint → types → security → tests+coverage≥80
+check: verify ## 质量门禁八连：归零校验 → 微信桥 vendor 合规 + 服务单元 → format → lint → types → security → tests+coverage≥80
 	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync ruff format zimeiti_api zimeiti_harness zimeiti_autonomous zimeiti_cli tests
 	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync ruff check zimeiti_api zimeiti_harness zimeiti_autonomous zimeiti_cli tests
 	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync mypy zimeiti_api zimeiti_harness zimeiti_autonomous zimeiti_cli

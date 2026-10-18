@@ -29,7 +29,10 @@ export async function sessionFor(wechatUserId) {
   const data = await _load();
   const existing = data.bindings[wechatUserId];
   if (existing?.sessionId) return existing.sessionId;
-  const sessionId = `wx-${wechatUserId.slice(0, 24)}`;
+  // 群会话键（wxg- 前缀）已带前缀，不重复加 wx-（wechat-bridge-ops）
+  const sessionId = wechatUserId.startsWith("wxg-")
+    ? wechatUserId
+    : `wx-${wechatUserId.slice(0, 24)}`;
   data.bindings[wechatUserId] = { sessionId, createdAt: Date.now() };
   await _save(data);
   return sessionId;

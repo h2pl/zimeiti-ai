@@ -10,13 +10,13 @@
  * 退出码：0 成功；1 运行错误；2 用法错误。
  */
 
-import { login, status, loadWeixinAccount, listIndexedWeixinAccountIds } from "./login.js";
+import { login, loadWeixinAccount, listIndexedWeixinAccountIds } from "./login.js";
 import { listBindings } from "./sessions.js";
 import { WechatBridge } from "./bridge.js";
 import { Dispatcher } from "./dispatcher.js";
 import { ZimeitiClient } from "./zimeiti-client.js";
 import { IlinkTransport } from "./transport.js";
-import { ILINK_BASE_URL, VENDOR_DIR } from "./config.js";
+import { ILINK_BASE_URL, VENDOR_DIR, zimeitiBase } from "./config.js";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -42,18 +42,19 @@ async function vendorVersion() {
   }
 }
 
-/** 取一个已登录账号（当前单账号运行）。 */
-async function pickAccount() {
+/** 全部已登录账号（多账号并行，wechat-bridge-ops）。 */
+async function loadAccounts() {
+  const out = [];
   for (const id of listIndexedWeixinAccountIds()) {
     const acc = await loadWeixinAccount(id);
-    if (acc?.botToken) return { accountId: id, acc };
+    if (acc?.botToken) out.push({ accountId: id, acc });
   }
-  return null;
+  return out;
 }
 
 async function cmdStart() {
-  const picked = await pickAccount();
-  if (!picked) {
+  const accounts = await loadAccounts();
+  if (!accounts.length) {
     process.stderr.write("未登录。先执行 `node src/index.js login` 扫码连接微信。\n");
     return 1;
   }
@@ -61,47 +62,60 @@ async function cmdStart() {
   const reachable = await client.ping();
   if (!reachable) {
     process.stderr.write(
-      `⚠️ zimeiti 后端不可达（${process.env.ZIMEITI_API || "http://127.0.0.1:8000"}）。\n`
+      `⚠️ zimeiti 后端不可达（${zimeitiBase()}）。\n`
       + "请先启动服务（make api / make dev）——桥仍会启动，但消息将得不到回复。\n",
     );
   }
-  const transport = new IlinkTransport({
-    baseUrl: picked.acc.baseUrl || ILINK_BASE_URL,
-    token: picked.acc.botToken,
-  });
-  const dispatcher = new Dispatcher({
-    client,
-    transport,
-    ilinkOpts: {
-      baseUrl: picked.acc.baseUrl || ILINK_BASE_URL,
-      token: picked.acc.botToken,
-      cdnBaseUrl: picked.acc.cdnBaseUrl || "",
-    },
-  });
-  const bridge = new WechatBridge({
-    token: picked.acc.botToken,
-    baseUrl: picked.acc.baseUrl || ILINK_BASE_URL,
-    transport,
-    onMessage: (msg) => dispatcher.handle(msg),
+
+  // 每账号一个桥实例并行；单账号崩溃隔离（wechat-bridge-ops D3）
+  const loops = accounts.map(({ accountId, acc }) => {
+    const transport = new IlinkTransport({
+      baseUrl: acc.baseUrl || ILINK_BASE_URL,
+      token: acc.botToken,
+    });
+    const bot = { id: acc.ilinkBotId || accountId, name: acc.name || "" };
+    const dispatcher = new Dispatcher({
+      client,
+      transport,
+      bot,
+      ilinkOpts: {
+        baseUrl: acc.baseUrl || ILINK_BASE_URL,
+        token: acc.botToken,
+        cdnBaseUrl: acc.cdnBaseUrl || "",
+      },
+    });
+    const bridge = new WechatBridge({
+      token: acc.botToken,
+      baseUrl: acc.baseUrl || ILINK_BASE_URL,
+      transport,
+      onMessage: (msg) => dispatcher.handle(msg),
+    });
+    return bridge.start().catch((err) => {
+      process.stderr.write(`[${accountId}] 桥实例退出：${String(err)}\n`);
+    });
   });
 
   process.stdout.write(
-    `微信桥已启动：账号 ${picked.accountId} → ${process.env.ZIMEITI_API || "http://127.0.0.1:8000"}\n`
-    + "在微信里对「小贝」说话即可；发「新会话」清空上下文。Ctrl+C 停止。\n",
+    `微信桥已启动：${accounts.length} 个账号 → ${zimeitiBase()}\n`
+    + accounts.map((a) => `  - ${a.accountId}`).join("\n")
+    + "\n在微信里对机器人说话即可；发「新会话」清空上下文；群里需@机器人。Ctrl+C 停止。\n",
   );
   const shutdown = async () => {
     process.stdout.write("\n正在停止…\n");
-    await bridge.stop();
     process.exit(0);
   };
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
-  await bridge.start();
+  await Promise.allSettled(loops);
   return 0;
 }
 
 async function cmdStatus() {
-  const s = await status();
+  const accounts = await loadAccounts();
+  if (!accounts.length) {
+    process.stdout.write("未登录。执行 `node src/index.js login` 扫码连接微信。\n");
+    return 1;
+  }
   if (!s.loggedIn) {
     process.stdout.write("未登录。执行 `node src/index.js login` 扫码连接微信。\n");
     return 1;

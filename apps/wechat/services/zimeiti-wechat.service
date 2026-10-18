@@ -1,0 +1,19 @@
+[Unit]
+Description=zimeiti 微信通道桥（ilink → zimeiti agent）
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# 由 install-service.sh 替换为实际路径
+WorkingDirectory=__WECHAT_DIR__
+ExecStartPre=/bin/bash -c 'for i in $(seq 1 30); do curl -fs -m 2 __ZIMEITI_API__/api/status >/dev/null 2>&1 && exit 0; sleep 2; done; echo "zimeiti 未就绪，仍尝试启动（消息将得不到回复）" >&2; exit 0'
+ExecStart=__NODE_BIN__ src/index.js start
+Restart=always
+RestartSec=5
+# 运行态目录（登录态/会话映射）
+Environment=WECHAT_STATE_DIR=__WECHAT_DIR__/state
+Environment=ZIMEITI_API=__ZIMEITI_API__
+
+[Install]
+WantedBy=default.target
