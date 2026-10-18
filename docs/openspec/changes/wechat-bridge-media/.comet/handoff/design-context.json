@@ -1,0 +1,16 @@
+{
+  "change": "wechat-bridge-media",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "task_hash_policy": "task-content-v1",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "c73ce4ee70c99e8720abb51765854c15b977f492b09724ed21a905186b7b787a",
+  "files": [
+    { "path": "docs/openspec/changes/wechat-bridge-media/proposal.md", "sha256": "e208420462a9ae02823402a1ccb3dc0bf37cf55c1e071db8d221fbca8ccce30d" },
+    { "path": "docs/openspec/changes/wechat-bridge-media/design.md", "sha256": "12580a059aa3c28523773f5b2086892c2d67e8844171e4fa2241fa3f0b839362" },
+    { "path": "docs/openspec/changes/wechat-bridge-media/tasks.md", "sha256": "eedbff7b085b5ddca85ef83af68f8f2b8d42c56994aebef3ddaea9621b36b198" },
+    { "path": "docs/openspec/changes/wechat-bridge-media/.openspec.yaml", "sha256": "dc08c29816def5c12ac71497ed005c1c0d6d779aa76f03fa6cd1d3ed38d91ec9" },
+    { "path": "docs/openspec/changes/wechat-bridge-media/specs/wechat-bridge-media/spec.md", "sha256": "b3136a1e7ec04a2412f98262bbf3c4bf9b941be8e4f3a4ad55a082593429a662" }
+  ]
+}
