@@ -2,6 +2,7 @@
 change: wechat-bridge-media
 design-doc: docs/openspec/changes/wechat-bridge-media/design.md
 base-ref: 967d07d
+archived-with: 2026-10-18-wechat-bridge-media
 ---
 
 # Plan：微信媒体收发
