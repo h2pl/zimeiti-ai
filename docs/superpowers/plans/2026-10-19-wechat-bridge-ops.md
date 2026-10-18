@@ -2,6 +2,7 @@
 change: wechat-bridge-ops
 design-doc: docs/openspec/changes/wechat-bridge-ops/design.md
 base-ref: 6668d19
+archived-with: 2026-10-19-wechat-bridge-ops
 ---
 
 # Plan：群聊@触发 / 多账号 / 开机自驻

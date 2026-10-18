@@ -2,6 +2,7 @@
 comet_change: wechat-bridge-ops
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-19-wechat-bridge-ops
 status: final
 ---
 
