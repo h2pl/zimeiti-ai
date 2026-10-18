@@ -2,6 +2,7 @@
 change: cli-entry-point
 design-doc: docs/openspec/changes/cli-entry-point/design.md
 base-ref: 937ece7
+archived-with: 2026-10-18-cli-entry-point
 ---
 
 # Plan：命令行入口

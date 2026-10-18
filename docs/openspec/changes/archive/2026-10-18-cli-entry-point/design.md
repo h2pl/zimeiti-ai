@@ -2,6 +2,7 @@
 comet_change: cli-entry-point
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-18-cli-entry-point
 status: final
 ---
 
