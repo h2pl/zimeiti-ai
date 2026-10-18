@@ -38,11 +38,11 @@ e2e-browser: ## 浏览器级双端对齐 E2E（apps/e2e/ 套件，每用户路�
 test: verify ## 别名
 
 check: verify ## 质量门禁六连：归零校验 → format → lint → types → security → tests+coverage≥80
-	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync ruff format zimeiti_api zimeiti_harness zimeiti_autonomous tests
-	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync ruff check zimeiti_api zimeiti_harness zimeiti_autonomous tests
-	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync mypy zimeiti_api zimeiti_harness zimeiti_autonomous
-	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync bandit -q -c pyproject.toml -r zimeiti_api zimeiti_harness zimeiti_autonomous
-	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync pytest tests/ -q -m "not behavior" --cov=zimeiti_api --cov=zimeiti_harness --cov=zimeiti_autonomous --cov-report=term --cov-fail-under=80
+	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync ruff format zimeiti_api zimeiti_harness zimeiti_autonomous zimeiti_cli tests
+	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync ruff check zimeiti_api zimeiti_harness zimeiti_autonomous zimeiti_cli tests
+	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync mypy zimeiti_api zimeiti_harness zimeiti_autonomous zimeiti_cli
+	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync bandit -q -c pyproject.toml -r zimeiti_api zimeiti_harness zimeiti_autonomous zimeiti_cli
+	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync pytest tests/ -q -m "not behavior" --cov=zimeiti_api --cov=zimeiti_harness --cov=zimeiti_autonomous --cov=zimeiti_cli --cov-report=term --cov-fail-under=80
 
 evals: ## agent 行为回归（真实 LLM 探针，需 OPENAI_API_KEY；无密钥自动跳过）
 	cd $(API_DIR) && PYTHONUTF8=1 uv run --no-sync pytest tests/evals -q -m behavior -s

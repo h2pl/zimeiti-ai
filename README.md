@@ -94,6 +94,23 @@ make dev          # 或分开跑 make api / make web
 | `ZIMEITI_SUBAGENT_MODEL` / `ZIMEITI_SUBAGENT_ENABLED` | 子代理模型降档 / 总开关 |
 | `DATABASE_URL` | PostgreSQL 连接串（会话持久化/记忆/自动化/用量） |
 
+## 命令行入口
+
+不开浏览器也能用 zimeiti（`make install` 后可用，模型凭据留在服务端）：
+
+```bash
+zimeiti --help                        # 全部子命令
+zimeiti chat "今天的 AI 热点"          # 流式对话（token 逐段打印）
+zimeiti flows                         # 运营流程列表
+zimeiti flows new --name 每日选题 --steps discover,plan --schedule 08:00
+zimeiti runs                          # 执行记录（含逐步明细）
+zimeiti usage                         # 用量与折算金额（无单价时显示未折算）
+```
+
+后端地址默认 `http://127.0.0.1:8000`，可 `--base` 或 `ZIMEITI_API` 覆盖
+（子命令前后写都行）。连接失败时给出「请先启动服务」的行动指引并以退出码 1 结束。
+注意：`flows run <id>` 会真实消耗模型额度。
+
 ## 自主运营（autonomous）
 
 zimeiti 的运营链路可以**托管给 agent 自己跑**——到点自动执行、已发布事实回流校准
