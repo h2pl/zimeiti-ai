@@ -2,6 +2,7 @@
 change: wechat-bridge-transport
 design-doc: docs/openspec/changes/wechat-bridge-transport/design.md
 base-ref: a065d3e
+archived-with: 2026-10-18-wechat-bridge-transport
 ---
 
 # Plan：微信消息 ↔ zimeiti agent 桥接
