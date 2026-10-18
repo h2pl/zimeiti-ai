@@ -2,6 +2,7 @@
 comet_change: wechat-bridge-scaffold
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-10-18-wechat-bridge-scaffold
 status: final
 ---
 

@@ -2,6 +2,7 @@
 change: wechat-bridge-scaffold
 design-doc: docs/openspec/changes/wechat-bridge-scaffold/design.md
 base-ref: 08fc4f9
+archived-with: 2026-10-18-wechat-bridge-scaffold
 ---
 
 # Plan：微信桥 scaffold

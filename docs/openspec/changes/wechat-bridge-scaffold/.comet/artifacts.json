@@ -1,9 +1,0 @@
-{
-  "openspec_proposal": "docs/openspec/changes/wechat-bridge-scaffold/proposal.md",
-  "openspec_design": "docs/openspec/changes/wechat-bridge-scaffold/design.md",
-  "openspec_tasks": "docs/openspec/changes/wechat-bridge-scaffold/tasks.md",
-  "openspec_delta_spec": "docs/openspec/changes/wechat-bridge-scaffold/specs/wechat-bridge-scaffold/spec.md",
-  "design_document": "docs/openspec/changes/wechat-bridge-scaffold/design.md",
-  "handoff_context": "docs/openspec/changes/wechat-bridge-scaffold/.comet/handoff/design-context.json",
-  "handoff_markdown": "docs/openspec/changes/wechat-bridge-scaffold/.comet/handoff/design-context.md"
-}
