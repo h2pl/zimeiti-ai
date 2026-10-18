@@ -1,0 +1,62 @@
+Check timed out.
+微信桥 vendor 守卫（wechat-bridge-scaffold）
+[1/3] 合规三件套
+[2/3] vendor 完整性（哈希）
+[3/3] 零 openclaw 引擎依赖
+PASS：合规三件套齐备、vendor 未被改动、零 openclaw 引擎依赖
+cd apps/api && uv run --no-sync python ../scripts/verify_openclaw_removal.py
+warning: Using incompatible environment (`.venv`) due to `--no-sync` (The project environment's Python version does not satisfy the request: `path `E:/Dev/Python314/python.exe``)
+OK: openclaw residues zero (AST); import app 64 api routes; runtime API complete (run_turn, ask, ask_sync, delete_session, answer, pending_status, model_configured)
+cd apps && PYTHONUTF8=1 python scripts/validate_skills.py
+OK: 119 skills and publisher execution contracts conform
+cd apps && PYTHONUTF8=1 python scripts/validate_skill_commands.py
+OK: 273 documented Python commands match their argparse schemas
+cd apps/skills/builtin/skill-wechat-publisher/tests && PYTHONUTF8=1 python -m pytest -q
+...................ss.sss..................                              [100%]
+38 passed, 5 skipped in 0.65s
+cd apps/api && PYTHONUTF8=1 uv run --no-sync ruff format zimeiti_api zimeiti_harness zimeiti_autonomous zimeiti_cli tests
+warning: Using incompatible environment (`.venv`) due to `--no-sync` (The project environment's Python version does not satisfy the request: `path `E:/Dev/Python314/python.exe``)
+90 files left unchanged
+cd apps/api && PYTHONUTF8=1 uv run --no-sync ruff check zimeiti_api zimeiti_harness zimeiti_autonomous zimeiti_cli tests
+warning: Using incompatible environment (`.venv`) due to `--no-sync` (The project environment's Python version does not satisfy the request: `path `E:/Dev/Python314/python.exe``)
+All checks passed!
+cd apps/api && PYTHONUTF8=1 uv run --no-sync mypy zimeiti_api zimeiti_harness zimeiti_autonomous zimeiti_cli
+warning: Using incompatible environment (`.venv`) due to `--no-sync` (The project environment's Python version does not satisfy the request: `path `E:/Dev/Python314/python.exe``)
+Success: no issues found in 61 source files
+cd apps/api && PYTHONUTF8=1 uv run --no-sync bandit -q -c pyproject.toml -r zimeiti_api zimeiti_harness zimeiti_autonomous zimeiti_cli
+warning: Using incompatible environment (`.venv`) due to `--no-sync` (The project environment's Python version does not satisfy the request: `path `E:/Dev/Python314/python.exe``)
+[tester]	WARNING	nosec encountered (B608), but no failed test on file zimeiti_api\automations\store.py:113
+[manager]	WARNING	Test in comment: WHERE is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: int is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: TTL is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: s is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: WHERE is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: int is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: TTL is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: s is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: WHERE is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: ANY is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: s is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: WHERE is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: int is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: TTL is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: s is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: k is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: s is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: k is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: s is not a test name or id, ignoring
+[tester]	WARNING	nosec encountered (B608), but no failed test on file zimeiti_api\core\pg.py:416
+[tester]	WARNING	nosec encountered (B608), but no failed test on file zimeiti_api\core\pg.py:511
+[manager]	WARNING	Test in comment: CLI is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: 127 is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: 0 is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: 0 is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: 1 is not a test name or id, ignoring
+[manager]	WARNING	Test in comment: CLI is not a test name or id, ignoring
+[tester]	WARNING	nosec encountered (B608), but no failed test on file zimeiti_harness\usage.py:81
+cd apps/api && PYTHONUTF8=1 uv run --no-sync pytest tests/ -q -m "not behavior" --cov=zimeiti_api --cov=zimeiti_harness --cov=zimeiti_autonomous --cov=zimeiti_cli --cov-report=term --cov-fail-under=80
+warning: Using incompatible environment (`.venv`) due to `--no-sync` (The project environment's Python version does not satisfy the request: `path `E:/Dev/Python314/python.exe``)
+........................................................................ [ 25%]
+........................................................................ [ 51%]
+........................................................................ [ 77%]
+................................................
