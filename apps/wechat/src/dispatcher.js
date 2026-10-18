@@ -1,14 +1,26 @@
 /**
- * 入站分发（wechat-bridge-transport）：微信消息 → zimeiti → 微信。
+ * 入站分发（wechat-bridge-transport + media）：微信消息 → zimeiti → 微信。
  *
  * - 「新会话」指令：重置映射（不进 agent）
  * - 每用户 Promise 链串行（不同用户并行）
- * - typing 先行（长耗时有反馈）
- * - 回复按协议上限 4000 字符分段
+ * - 入站媒体：落盘 → agent 附注路径（不假装理解）→ 用户确认
+ * - 出站媒体：agent 回复中独占一行 `MEDIA:<path|url>` → 先文本后媒体
+ * - typing 先行；回复按协议上限 4000 字符分段
  * - 错误如实翻译成中文可行动提示，绝不静默丢弃
  */
 
 import { sessionFor, resetSession } from "./sessions.js";
+import { stateDir } from "./config.js";
+import path from "node:path";
+import {
+  extractMediaItems,
+  saveInboundMedia,
+  buildInboundNote,
+  buildInboundReceipt,
+  parseMediaDirectives,
+  defaultDownloadMedia,
+  defaultSendMedia,
+} from "./media.js";
 
 const TEXT_CHUNK_LIMIT = 4000; // 协议码 outbound.textChunkLimit
 const NEW_SESSION_CMDS = new Set(["新会话", "新建会话", "reset", "/reset"]);
@@ -32,32 +44,50 @@ export class Dispatcher {
    * @param {object} opts
    * @param {{chat: Function, ping?: Function}} opts.client     zimeiti 客户端
    * @param {{typing: Function, send: Function}} opts.transport ilink transport
+   * @param {object} [opts.mediaHooks]  媒体注入点（测试用）：
+   *        { saveInbound, sendMedia }；另可用 ilinkOpts 传 baseUrl/token/cdnBaseUrl
+   * @param {object} [opts.ilinkOpts]   { baseUrl, token, cdnBaseUrl }
    */
-  constructor({ client, transport }) {
+  constructor({ client, transport, mediaHooks, ilinkOpts }) {
     this.client = client;
     this.transport = transport;
+    this.ilinkOpts = ilinkOpts || {};
+    this._saveInbound = mediaHooks?.saveInbound || saveInboundMedia;
+    this._sendMedia = mediaHooks?.sendMedia || defaultSendMedia;
+    this._downloadMedia = mediaHooks?.downloadMedia || defaultDownloadMedia;
     this._locks = new Map(); // wechatUserId -> Promise（链尾）
   }
 
-  /** 处理一条入站消息（返回给桥的回复文本，桥不再重复发送）。 */
+  /** 处理一条入站消息。 */
   async handle(msg) {
     const userId = msg?.from_user_id || msg?.ilink_user_id || msg?.user_id || "unknown";
-    const text = String(msg?.content ?? msg?.text ?? "").trim();
-    if (!text) return undefined;
-
-    // 每用户串行：把本轮挂到该用户链尾
     const prev = this._locks.get(userId) ?? Promise.resolve();
-    const run = prev.then(() => this._process(userId, text), () => this._process(userId, text));
+    const run = prev.then(() => this._process(userId, msg), () => this._process(userId, msg));
     this._locks.set(userId, run.catch(() => {}));
     return run;
   }
 
-  async _process(userId, text) {
-    if (NEW_SESSION_CMDS.has(text)) {
+  async _process(userId, msg) {
+    const text = String(msg?.content ?? msg?.text ?? "").trim();
+    if (text && NEW_SESSION_CMDS.has(text)) {
       await resetSession(userId);
       await this._send(userId, "已为你开启新会话——之前的上下文已清空，直接说新的话题吧。");
       return "已开新会话";
     }
+
+    // ── 入站媒体：落盘 + 附注（失败隔离，不影响文本）────────────────────
+    const mediaItems = extractMediaItems(msg);
+    let note = "";
+    let receipt = "";
+    if (mediaItems.length) {
+      const saved = await this._saveInbound(mediaItems, {
+        downloadMedia: (it) => this._downloadMedia(it, { cdnBaseUrl: this.ilinkOpts.cdnBaseUrl }),
+        dir: path.join(stateDir(), "media"),
+      });
+      note = buildInboundNote(saved);
+      receipt = buildInboundReceipt(saved);
+    }
+    if (!text && !note) return undefined; // 空消息且无媒体
 
     const sessionId = await sessionFor(userId);
     try {
@@ -66,19 +96,37 @@ export class Dispatcher {
       /* typing 失败不影响主流程 */
     }
 
+    const toAgent = [text, note].filter(Boolean).join("\n");
     let reply;
     try {
-      reply = await this.client.chat({ sessionId, message: text });
+      reply = await this.client.chat({ sessionId, message: toAgent });
     } catch (err) {
       await this._send(userId, `⚠️ ${err?.message || "zimeiti 处理失败"}（会话保持，可直接重发）`);
       return undefined;
     }
+    if (receipt) await this._send(userId, receipt);
+
     if (!reply || !reply.trim()) {
       await this._send(userId, "（agent 未产生文本回复）");
       return reply;
     }
-    for (const part of splitText(reply)) {
+
+    // ── 出站媒体：MEDIA: 指令（先文本后媒体；指令行剥离）────────────────
+    const { text: bodyText, media: refs } = parseMediaDirectives(reply);
+    for (const part of splitText(bodyText)) {
       await this._send(userId, part);
+    }
+    for (const ref of refs) {
+      try {
+        await this._sendMedia({
+          filePath: ref,
+          to: userId,
+          text: "",
+          ...this.ilinkOpts,
+        });
+      } catch (err) {
+        await this._send(userId, `⚠️ 媒体发送失败：${err?.message || err}（文本已送达）`);
+      }
     }
     return reply;
   }

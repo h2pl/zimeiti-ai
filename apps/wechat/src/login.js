@@ -45,6 +45,7 @@ export async function login(opts = {}) {
   await saveWeixinAccount(result.accountId || accountId, {
     botToken: result.botToken,
     baseUrl: result.baseUrl,
+    cdnBaseUrl: result.cdnBaseUrl || "",
     userId: result.userId,
     connectedAt: Date.now(),
   });

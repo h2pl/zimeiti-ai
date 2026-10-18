@@ -69,7 +69,15 @@ async function cmdStart() {
     baseUrl: picked.acc.baseUrl || ILINK_BASE_URL,
     token: picked.acc.botToken,
   });
-  const dispatcher = new Dispatcher({ client, transport });
+  const dispatcher = new Dispatcher({
+    client,
+    transport,
+    ilinkOpts: {
+      baseUrl: picked.acc.baseUrl || ILINK_BASE_URL,
+      token: picked.acc.botToken,
+      cdnBaseUrl: picked.acc.cdnBaseUrl || "",
+    },
+  });
   const bridge = new WechatBridge({
     token: picked.acc.botToken,
     baseUrl: picked.acc.baseUrl || ILINK_BASE_URL,

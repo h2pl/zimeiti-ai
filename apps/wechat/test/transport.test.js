@@ -124,7 +124,7 @@ test("dispatcher 正常消息带稳定 sessionId 进 agent 并回发", async () 
     assert.equal(seen.length, 2);
     assert.equal(seen[0].sessionId, seen[1].sessionId, "同用户会话稳定");
     assert.match(seen[0].sessionId, /^wx-/);
-    assert.deepEqual(sent, [["u1", " agent 回复 "], ["u1", " agent 回复 "]]);
+    assert.deepEqual(sent, [["u1", "agent 回复"], ["u1", "agent 回复"]]);
   } finally {
     delete process.env.WECHAT_STATE_DIR;
     await rm(dir, { recursive: true, force: true });
