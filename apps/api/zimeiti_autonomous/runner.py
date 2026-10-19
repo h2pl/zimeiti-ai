@@ -65,6 +65,12 @@ def _archive(archive_root: Path, flow_id: str, idx: int, step: str, text: str) -
     return str(p)
 
 
+# 默认归档根：apps/outputs/_automations（runner.py → parents[2]=apps），
+# 与调度器 _LOG_DIR 一致。None 时曾用 Path(".")（进程 CWD）——真机联调实测
+# 立即执行的产出散落到 apps/api/<flow_id>/ 下。
+_DEFAULT_ARCHIVE_ROOT = Path(__file__).resolve().parents[2] / "outputs" / "_automations"
+
+
 def run_flow(
     flow_id: str,
     name: str,
@@ -82,7 +88,7 @@ def run_flow(
     entry = _require_entry()
     steps = fl.validate_steps(steps)
     cfg = config or {}
-    root = Path(archive_root) if archive_root else Path(".")
+    root = Path(archive_root) if archive_root else _DEFAULT_ARCHIVE_ROOT
 
     results: list[dict] = []
     prev_summary = ""
