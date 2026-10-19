@@ -119,3 +119,14 @@ def test_flows_list_prints_table():
     assert rc == 0
     text = out.getvalue()
     assert "每日选题" in text and "发现" in text and "选题" in text
+
+
+def test_sse_token_frame_json_decodes():
+    """token 帧是 JSON 编码字符串——必须 json.loads，否则 \n 残留（联调 bug 回归）。"""
+    import io
+
+    frames = ['event: token', 'data: "第一行\\n第二行"', '', 'data: [DONE]', '']
+    resp = io.BytesIO(("\n".join(frames) + "\n").encode("utf-8"))
+    out = "".join(t for ev, t in cl._iter_sse(resp) if ev == "token")
+    assert out == "第一行\n第二行"
+    assert "\\n" not in out

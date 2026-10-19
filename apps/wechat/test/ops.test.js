@@ -174,3 +174,41 @@ test("launchd plist 含 KeepAlive 与启动参数", async () => {
   assert.match(plist, /index\.js/);
   assert.match(plist, /start/);
 });
+
+
+// ── 联调修复回归：登录态落盘字段契约 ───────────────────────────────────────
+test("login 落盘用 vendor 契约字段 token（联调首扫 bug 回归，源码契约）", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const { APP_DIR } = await import("../src/config.js");
+  const src = await readFile(`${APP_DIR}/src/login.js`, "utf8");
+  // save 调用必须是 token（vendor accounts.js 读 update.token）；不得出现 botToken 传入
+  assert.match(src, /token: result\.botToken/, "落盘必须用 vendor 契约字段 token");
+  const saveCall = src.slice(src.indexOf("const save = opts.saveAccount"));
+  assert.ok(!/botToken:/.test(saveCall.split("});")[0]), "save 入参不得再用 botToken");
+});
+
+test("账号读取侧读 token 而非 botToken（vendor 契约 roundtrip）", async () => {
+  const { loadWeixinAccount, saveWeixinAccount } = await import(
+    "../vendor/openclaw-weixin/dist/src/auth/accounts.js"
+  );
+  const { mkdtemp } = await import("node:fs/promises");
+  const { join } = await import("node:path");
+  const { tmpdir } = await import("node:os");
+  const dir = await mkdtemp(join(tmpdir(), "wx-acct-"));
+  process.env.OPENCLAW_STATE_DIR = dir;
+  try {
+    saveWeixinAccount("acct-1", { token: "tk", baseUrl: "https://x", userId: "u1" });
+    const acc = await loadWeixinAccount("acct-1");
+    assert.equal(acc.token, "tk", "读取字段名是 token");
+    assert.equal(acc.baseUrl, "https://x");
+  } finally {
+    delete process.env.OPENCLAW_STATE_DIR;
+  }
+});
+
+test("index.js 读取侧用 acc.token（不是 botToken）", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const { APP_DIR } = await import("../src/config.js");
+  const src = await readFile(`${APP_DIR}/src/index.js`, "utf8");
+  assert.ok(!/botToken/.test(src), "index.js 不应再出现 botToken");
+});

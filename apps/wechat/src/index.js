@@ -47,7 +47,7 @@ async function loadAccounts() {
   const out = [];
   for (const id of listIndexedWeixinAccountIds()) {
     const acc = await loadWeixinAccount(id);
-    if (acc?.botToken) out.push({ accountId: id, acc });
+    if (acc?.token) out.push({ accountId: id, acc });
   }
   return out;
 }
@@ -71,7 +71,7 @@ async function cmdStart() {
   const loops = accounts.map(({ accountId, acc }) => {
     const transport = new IlinkTransport({
       baseUrl: acc.baseUrl || ILINK_BASE_URL,
-      token: acc.botToken,
+      token: acc.token,
     });
     const bot = { id: acc.ilinkBotId || accountId, name: acc.name || "" };
     const dispatcher = new Dispatcher({
@@ -79,13 +79,14 @@ async function cmdStart() {
       transport,
       bot,
       ilinkOpts: {
+        accountId,
         baseUrl: acc.baseUrl || ILINK_BASE_URL,
-        token: acc.botToken,
+        token: acc.token,
         cdnBaseUrl: acc.cdnBaseUrl || "",
       },
     });
     const bridge = new WechatBridge({
-      token: acc.botToken,
+      token: acc.token,
       baseUrl: acc.baseUrl || ILINK_BASE_URL,
       transport,
       onMessage: (msg) => dispatcher.handle(msg),
@@ -116,21 +117,14 @@ async function cmdStatus() {
     process.stdout.write("未登录。执行 `node src/index.js login` 扫码连接微信。\n");
     return 1;
   }
-  if (!s.loggedIn) {
-    process.stdout.write("未登录。执行 `node src/index.js login` 扫码连接微信。\n");
-    return 1;
-  }
   const client = new ZimeitiClient();
   const reachable = await client.ping();
   const bindings = await listBindings();
-  for (const a of s.accounts) {
-    process.stdout.write(
-      `已登录：${a.accountId}（baseUrl=${a.baseUrl}，连接于 ${new Date(a.connectedAt).toLocaleString()}）\n`,
-    );
+  for (const { accountId, acc } of accounts) {
+    process.stdout.write(`已登录：${accountId}（baseUrl=${acc.baseUrl}）\n`);
   }
   process.stdout.write(
-    `zimeiti 后端：${reachable ? "可达 ✅" : "不可达 ❌（请 make api）"}`
-    + `（${process.env.ZIMEITI_API || "http://127.0.0.1:8000"}）\n`,
+    `zimeiti 后端：${reachable ? "可达 ✅" : "不可达 ❌（请 make api）"}（${zimeitiBase()}）\n`,
   );
   process.stdout.write(`会话映射：${Object.keys(bindings).length} 个微信用户\n`);
   return reachable ? 0 : 1;

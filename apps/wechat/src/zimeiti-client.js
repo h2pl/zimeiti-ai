@@ -69,10 +69,16 @@ export class ZimeitiClient {
         if (!line.startsWith("data:")) continue;
         const payload = line.slice(5).trim();
         if (payload === "[DONE]") return text;
-        const chunk =
-          payload.startsWith('"') && payload.endsWith('"')
-            ? payload.slice(1, -1)
-            : payload;
+        // 帧体是 JSON 编码的字符串（服务端 json.dumps）——必须反序列化，
+        // 否则 \n 等转义符原样留在文本里（联调实测：微信回复满屏 \n）。
+        let chunk = payload;
+        if (payload.startsWith('"')) {
+          try {
+            chunk = JSON.parse(payload);
+          } catch {
+            chunk = payload.slice(1, -1);
+          }
+        }
         if (event === "token") {
           text += chunk;
         } else if (event === "activity" && onProgress) {

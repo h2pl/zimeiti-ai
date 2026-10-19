@@ -99,7 +99,15 @@ def _iter_sse(resp: _ReadLineLike) -> Iterator[tuple[str, str]]:
             payload = line[5:].strip()
             if payload == "[DONE]":
                 return
-            text = payload[1:-1] if payload.startswith('"') and payload.endswith('"') else payload
+            # 帧体是 JSON 编码的字符串——必须 json.loads 反序列化，否则 \n 等
+            # 转义符原样留在文本里（联调同源 bug：与 JS 桥客户端同一处）。
+            if payload.startswith('"'):
+                try:
+                    text = json.loads(payload)
+                except ValueError:
+                    text = payload[1:-1]
+            else:
+                text = payload
             yield event, text
             event = "message"
 

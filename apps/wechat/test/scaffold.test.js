@@ -77,6 +77,7 @@ test("bridge 轮询到消息即分发并回复；stop 后退出", async () => {
     token: "t",
     transport: fake,
     onMessage: async (msg) => `回声:${msg.content}`,
+    sendReplies: true, // 桥代发（默认 false：dispatcher 自行回发，见联调修正）
   });
   const loop = bridge.start();
   await new Promise((r) => setTimeout(r, 60));

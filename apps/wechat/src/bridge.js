@@ -1,10 +1,11 @@
 /**
- * 宿主骨架（wechat-bridge-scaffold）。
+ * 宿主骨架（wechat-bridge-scaffold）：长轮询循环 + 入站分发钩子 + 发送封装。
  *
- * 本期只到「能收能发」的骨架：长轮询循环 + 入站分发钩子 + 发送封装。
- * 真正把入站消息桥到 zimeiti agent 是变更 wechat-bridge-transport——
- * 届时只需实现 onMessage 钩子（POST zimeiti /api/chat/stream 拿回复），
- * 循环/游标/退避/优雅停机本期全部就位。
+ * 联调修正：
+ * - start 时调 notifyStart（vendor channel 启动序列的一步；失败不致命）
+ * - 每次轮询结果落一行日志（此前完全静默，消息被吞无从排查）
+ * - onMessage 钩子默认**自行负责回发**（dispatcher 内部发送）；仅当
+ *   opts.sendReplies=true 时桥再代发（避免双重发送——联调实测会重复回复）
  */
 
 import { IlinkTransport } from "./transport.js";
@@ -17,13 +18,15 @@ export class WechatBridge {
    * @param {string} opts.token       ilink bot token（登录态）
    * @param {string} opts.baseUrl     ilink 基础 URL
    * @param {(msg: object) => Promise<string|undefined>} [opts.onMessage]
-   *        入站消息处理钩子，返回要回复的文本（undefined = 不回复）
+   *        入站消息处理钩子（默认自行回发；返回文本仅作记录/桥代发用）
+   * @param {boolean} [opts.sendReplies] 桥代发回复（默认 false，dispatcher 已发）
    * @param {IlinkTransport} [opts.transport] 注入用（测试）
    */
   constructor(opts = {}) {
     this.token = opts.token || "";
     this.transport = opts.transport || new IlinkTransport({ baseUrl: opts.baseUrl, token: this.token });
     this.onMessage = opts.onMessage || (async () => undefined);
+    this.sendReplies = Boolean(opts.sendReplies);
     this.cursor = "";
     this.running = false;
     this.stats = { received: 0, replied: 0, errors: 0 };
@@ -33,6 +36,14 @@ export class WechatBridge {
   async start() {
     this.running = true;
     this._abort = new AbortController();
+    try {
+      const ns = await this.transport.notifyStart?.();
+      if (ns && ns.ret !== undefined && ns.ret !== 0) {
+        process.stderr.write(`[bridge] notifyStart ret=${ns.ret}（不致命，继续）\n`);
+      }
+    } catch (err) {
+      process.stderr.write(`[bridge] notifyStart 失败（不致命）：${String(err).slice(0, 120)}\n`);
+    }
     let failStreak = 0;
     while (this.running) {
       try {
@@ -43,7 +54,11 @@ export class WechatBridge {
         });
         failStreak = 0;
         if (resp?.get_updates_buf) this.cursor = resp.get_updates_buf;
-        for (const msg of resp?.msgs || []) {
+        const msgs = resp?.msgs || [];
+        if (msgs.length) {
+          process.stderr.write(`[bridge] 收到 ${msgs.length} 条消息\n`);
+        }
+        for (const msg of msgs) {
           this.stats.received += 1;
           await this._handle(msg);
         }
@@ -67,7 +82,6 @@ export class WechatBridge {
   }
 
   async _handle(msg) {
-    const text = String(msg?.content ?? msg?.text ?? "").trim();
     const to = msg?.from_user_id || msg?.ilink_user_id || msg?.user_id;
     let reply;
     try {
@@ -76,8 +90,8 @@ export class WechatBridge {
       process.stderr.write(`[bridge] 消息处理失败：${String(err)}\n`);
       reply = undefined;
     }
-    if (reply && to) {
-      await this.transport.send({ to, body: { msg: text ? undefined : undefined, content: reply } });
+    if (this.sendReplies && reply && to) {
+      await this.transport.send({ to, body: { content: reply } });
       this.stats.replied += 1;
     }
   }

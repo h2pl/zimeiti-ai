@@ -18,12 +18,13 @@ import {
   loadWeixinAccount,
   clearWeixinAccount,
   listIndexedWeixinAccountIds,
+  registerWeixinAccountId,
 } from "../vendor/openclaw-weixin/dist/src/auth/accounts.js";
 import { accountsFile, stateDir } from "./config.js";
 
 export { loadWeixinAccount, clearWeixinAccount, listIndexedWeixinAccountIds };
 
-/** 完整扫码登录流程。opts.transport 仅供测试注入（记录调用，不触网时由测试替换模块）。 */
+/** 完整扫码登录流程。opts.saveAccount 可注入（测试断言落盘字段契约）。 */
 export async function login(opts = {}) {
   await mkdir(stateDir(), { recursive: true });
   const accountId = opts.accountId || "default";
@@ -42,12 +43,12 @@ export async function login(opts = {}) {
   if (!result.connected) {
     return { ok: false, message: result.message || "登录未完成" };
   }
+  // vendor 契约：账号字段名是 token（不是 botToken）——联调首扫因字段名不匹配
+  // 导致 token 被静默丢弃、登录态残缺（wechat-bridge-ops 联调修复）。
   await saveWeixinAccount(result.accountId || accountId, {
-    botToken: result.botToken,
+    token: result.botToken,
     baseUrl: result.baseUrl,
-    cdnBaseUrl: result.cdnBaseUrl || "",
     userId: result.userId,
-    connectedAt: Date.now(),
   });
   return {
     ok: true,
@@ -62,7 +63,7 @@ export async function status() {
   const accounts = [];
   for (const id of ids) {
     const acc = await loadWeixinAccount(id);
-    if (acc?.botToken) {
+    if (acc?.token) {
       accounts.push({
         accountId: id,
         baseUrl: acc.baseUrl,

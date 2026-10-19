@@ -204,3 +204,82 @@ test("dispatcher 长回复按 4000 分段不丢内容", async () => {
     await rm(dir, { recursive: true, force: true });
   }
 });
+
+test("dispatcher 从 item_list 提取文本并捕获 contextToken（联调修复回归）", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "wx-itl-"));
+  process.env.WECHAT_STATE_DIR = dir;
+  try {
+    const { Dispatcher, extractInboundText } = await import("../src/dispatcher.js");
+    assert.equal(extractInboundText({ item_list: [{ type: 1, text_item: { text: "你好" } }] }), "你好");
+    const sends = [];
+    const dispatcher = new Dispatcher({
+      client: { chat: async () => "回复" },
+      transport: {
+        typing: async () => ({}),
+        send: async (p) => { sends.push(p); },
+      },
+      ilinkOpts: { accountId: "acct-1" },
+    });
+    await dispatcher.handle({
+      from_user_id: "u9",
+      context_token: "ctx-tok-1",
+      item_list: [{ type: 1, text_item: { text: "你好" } }],
+    });
+    assert.equal(sends.length, 1);
+    assert.equal(sends[0].contextToken, "ctx-tok-1", "回发必须带 contextToken");
+  } finally {
+    delete process.env.WECHAT_STATE_DIR;
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("bridge 默认不代发（dispatcher 自行回发，防双重发送）", async () => {
+  const { WechatBridge } = await import("../src/bridge.js");
+  const sends = [];
+  let delivered = false;
+  const fake = {
+    notifyStart: async () => ({ ret: 0 }),
+    poll: async () => {
+      await new Promise((r) => setTimeout(r, 3));
+      if (delivered) return { ret: 0, msgs: [] };
+      delivered = true;
+      return { ret: 0, msgs: [{ from_user_id: "u1", content: "hi" }] };
+    },
+    send: async (p) => { sends.push(p); },
+  };
+  const bridge = new WechatBridge({
+    token: "t",
+    transport: fake,
+    onMessage: async () => "hook 回复",
+  });
+  const loop = bridge.start();
+  await new Promise((r) => setTimeout(r, 60));
+  await bridge.stop();
+  await loop;
+  assert.equal(sends.length, 0, "默认不代发");
+});
+
+test("SSE token 帧做 JSON 反序列化（联调 \\n 字面量 bug 回归）", async () => {
+  const { ZimeitiClient } = await import("../src/zimeiti-client.js");
+  const sse = [
+    'event: token',
+    'data: "第一行\\n第二行"',  // JSON 编码：\n 是换行转义
+    '',
+    'data: [DONE]',
+    '',
+  ].join("\n");
+  const server = http.createServer((req, res) => {
+    res.writeHead(200, { "Content-Type": "text/event-stream" });
+    res.end(sse);
+  });
+  await new Promise((r) => server.listen(0, "127.0.0.1", r));
+  const port = server.address().port;
+  try {
+    const client = new ZimeitiClient({ baseUrl: `http://127.0.0.1:${port}` });
+    const out = await client.chat({ sessionId: "s1", message: "hi" });
+    assert.equal(out, "第一行\n第二行", "必须含真实换行");
+    assert.ok(!out.includes("\\n"), "不得残留字面量 \\n");
+  } finally {
+    server.close();
+  }
+});
